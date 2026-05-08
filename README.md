@@ -82,6 +82,38 @@ go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
 go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
 ```
 
+## Development
+
+### Verification
+
+Run the full suite:
+
+```bash
+go vet ./...
+make test
+make build
+```
+
+### Git Hooks
+
+This project uses [Lefthook](https://github.com/evilmartians/lefthook) for git hooks.
+
+To install Lefthook:
+
+```bash
+brew install lefthook # or your preferred method
+```
+
+To initialize the hooks:
+
+```bash
+lefthook install
+```
+
+The hooks will run:
+- **pre-commit**: `go fmt`, `go vet`, and `gitignore-check`
+- **pre-push**: `make test` and `make build`
+
 ## Project Layout
 
 ```text
