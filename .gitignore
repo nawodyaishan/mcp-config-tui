@@ -33,3 +33,4 @@ coverage.txt
 *.log
 .cache/
 tmp/
+AGENTS.md
