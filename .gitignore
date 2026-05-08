@@ -31,4 +31,5 @@ coverage.txt
 
 # Runtime logs and scratch space
 *.log
+.cache/
 tmp/
