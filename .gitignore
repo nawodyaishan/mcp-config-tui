@@ -1,0 +1,34 @@
+# macOS and generic temp files
+.DS_Store
+._*
+*.swp
+*.swo
+*~
+
+# Editor and IDE settings
+.vscode/
+.idea/
+*.iml
+
+# Go build outputs
+bin/
+build/
+dist/
+*.exe
+*.out
+*.test
+
+# Coverage and profiling artifacts
+coverage.out
+coverage.txt
+*.coverprofile
+*.prof
+
+# Local environment and machine-specific config
+.env
+.env.*
+*.local
+
+# Runtime logs and scratch space
+*.log
+tmp/
