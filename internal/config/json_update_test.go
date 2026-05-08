@@ -49,6 +49,28 @@ func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	}
 }
 
+func TestUpdateBareMCPServersJSON(t *testing.T) {
+	data := []byte("{\n  \"other\": {\n    \"type\": \"sse\",\n    \"url\": \"https://example.com\"\n  }\n}\n")
+	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+
+	updated, err := UpdateBareMCPServersJSON(data, exaURL)
+	if err != nil {
+		t.Fatalf("UpdateBareMCPServersJSON returned error: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	if _, ok := root["mcpServers"]; ok {
+		t.Fatal("did not expect mcpServers root key")
+	}
+	exa := root["exa"].(map[string]any)
+	if exa["url"] != exaURL {
+		t.Fatalf("expected Exa URL to be updated, got %#v", exa["url"])
+	}
+	if _, ok := root["other"].(map[string]any); !ok {
+		t.Fatal("expected unrelated server entries to remain")
+	}
+}
+
 func TestUpdateNamedServerJSONReplacesMalformedAntigravityURL(t *testing.T) {
 	data := mustReadFixture(t, "antigravity.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"

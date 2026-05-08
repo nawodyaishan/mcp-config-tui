@@ -19,10 +19,11 @@ const (
 type FileKind string
 
 const (
-	FileKindMCPServers    FileKind = "mcpServers"
-	FileKindNamedServer   FileKind = "namedServer"
-	FileKindCodexTOML     FileKind = "codexTOML"
-	FileKindClaudeCodeCLI FileKind = "claudeCodeCLI"
+	FileKindMCPServers     FileKind = "mcpServers"
+	FileKindBareMCPServers FileKind = "bareMCPServers"
+	FileKindNamedServer    FileKind = "namedServer"
+	FileKindCodexTOML      FileKind = "codexTOML"
+	FileKindClaudeCodeCLI  FileKind = "claudeCodeCLI"
 )
 
 type TargetFile struct {
@@ -79,7 +80,7 @@ func DetectAppConfigs(home string) ([]AppConfig, error) {
 			Name: "Gemini CLI",
 			Files: []TargetFile{
 				targetFile("Gemini settings", geminiSettings, FileKindMCPServers, true),
-				targetFile("Gemini MCP config", geminiMCP, FileKindMCPServers, true),
+				targetFile("Gemini MCP config", geminiMCP, FileKindBareMCPServers, true),
 			},
 		},
 		{

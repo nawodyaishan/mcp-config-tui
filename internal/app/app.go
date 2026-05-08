@@ -206,6 +206,9 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 	if seenApps[config.AppClaudeCode] {
 		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "claude", "mcp", "get", "exa"))
 	}
+	if seenApps[config.AppGeminiCLI] {
+		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "gemini", "mcp", "get", "exa"))
+	}
 
 	m.logInfo("apply complete", "updated_targets", len(result.UpdatedTarget))
 	return result, nil
@@ -404,7 +407,7 @@ func (m *Manager) prepareOperations(plan ExecutionPlan, result *ApplyResult) ([]
 
 		seenApps[op.AppID] = true
 		switch op.Kind {
-		case config.FileKindMCPServers, config.FileKindNamedServer, config.FileKindCodexTOML:
+		case config.FileKindMCPServers, config.FileKindBareMCPServers, config.FileKindNamedServer, config.FileKindCodexTOML:
 			item, err := m.prepareFileOperation(op)
 			if err != nil {
 				return nil, nil, nil, err
@@ -434,6 +437,8 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 	switch op.Kind {
 	case config.FileKindMCPServers:
 		updated, err = config.UpdateMCPServersJSON(data, op.URL)
+	case config.FileKindBareMCPServers:
+		updated, err = config.UpdateBareMCPServersJSON(data, op.URL)
 	case config.FileKindNamedServer:
 		updated, err = config.UpdateNamedServerJSON(data, "exa", "serverUrl", op.URL)
 	case config.FileKindCodexTOML:

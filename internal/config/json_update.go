@@ -21,6 +21,20 @@ func UpdateMCPServersJSON(data []byte, exaURL string) ([]byte, error) {
 	return marshalJSON(root)
 }
 
+func UpdateBareMCPServersJSON(data []byte, exaURL string) ([]byte, error) {
+	root, err := decodeJSONObject(data)
+	if err != nil {
+		return nil, err
+	}
+
+	root["exa"] = map[string]any{
+		"type": "sse",
+		"url":  exaURL,
+	}
+
+	return marshalJSON(root)
+}
+
 func UpdateNamedServerJSON(data []byte, serverName, fieldName, exaURL string) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
