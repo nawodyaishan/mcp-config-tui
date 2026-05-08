@@ -347,14 +347,6 @@ func FormatApplyResult(result ApplyResult) string {
 	return strings.TrimRight(builder.String(), "\n")
 }
 
-func allAppsSelected(apps []config.AppConfig) map[config.AppID]bool {
-	selected := make(map[config.AppID]bool, len(apps))
-	for _, appConfig := range apps {
-		selected[appConfig.ID] = true
-	}
-	return selected
-}
-
 func LoadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
 	if keysCSV != "" {
 		keys, err := exa.ParseKeysCSV(keysCSV)
