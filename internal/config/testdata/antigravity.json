@@ -1,0 +1,8 @@
+{
+  "exa": {
+    "serverUrl": "https://mcp.exa.ai/mcp??exaApiKey=old&tools=legacy"
+  },
+  "other": {
+    "serverUrl": "https://example.invalid/mcp"
+  }
+}
