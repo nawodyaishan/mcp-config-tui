@@ -470,26 +470,46 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 	var updated []byte
 	switch op.Kind {
 	case config.FileKindMCPServers:
-		fieldName := "url"
+		rootKey := "mcpServers"
+		urlFieldName := "url"
+		var extra map[string]any
+
 		switch op.AppID {
 		case config.AppGeminiCLI:
-			fieldName = "httpUrl"
-		case config.AppAntigravity:
-			fieldName = "serverUrl"
+			urlFieldName = "httpUrl"
+		case config.AppAntigravity, config.AppWindsurf:
+			urlFieldName = "serverUrl"
+		case config.AppRooCode:
+			extra = map[string]any{"type": "streamable-http"}
 		}
-		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, fieldName, op.Config)
+
+		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindBareMCPServers:
-		fieldName := "url"
+		urlFieldName := "url"
 		if op.AppID == config.AppGeminiCLI {
-			fieldName = "httpUrl"
+			urlFieldName = "httpUrl"
 		}
-		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, fieldName, op.Config)
+		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, urlFieldName, op.Config, nil)
 	case config.FileKindNamedServer:
-		fieldName := "url"
-		if op.AppID == config.AppAntigravity {
-			fieldName = "serverUrl"
+		rootKey := ""
+		urlFieldName := "url"
+		var extra map[string]any
+
+		switch op.AppID {
+		case config.AppVSCode:
+			rootKey = "servers"
+			extra = map[string]any{"type": "http"}
+		case config.AppZed:
+			rootKey = "context_servers"
+		case config.AppOpenCode:
+			rootKey = "mcp"
+			extra = map[string]any{"type": "remote", "enabled": true}
+		case config.AppAntigravity:
+			// Backward compatibility: Antigravity used to be a named server but now we use FileKindMCPServers
+			// with serverUrl if it's nested. If it's a legacy standalone file, this path still works.
+			urlFieldName = "serverUrl"
 		}
-		updated, err = config.UpdateNamedServerJSON(data, op.ProviderID, fieldName, op.Config)
+		updated, err = config.UpdateNamedServerJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindCodexTOML:
 		updated, err = config.UpdateCodexTOML(data, op.ProviderID, op.Config)
 	default:

@@ -45,6 +45,14 @@ var (
 	errorStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("203")).
 			Bold(true)
+	successStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("114")).
+			Bold(true)
+	warningStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("214")).
+			Bold(true)
+	dimStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240"))
 )
 
 func selectedAppIDs(apps []config.AppConfig, selected map[config.AppID]bool) []config.AppID {
