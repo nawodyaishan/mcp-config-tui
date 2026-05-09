@@ -1,76 +1,55 @@
-APP := exa-mcp-manager
-CMD := ./cmd/$(APP)
-BIN := ./bin/$(APP)
-GOCACHE := $(CURDIR)/.cache/go-build
-GOMODCACHE := $(CURDIR)/.cache/go-mod
-GOLANGCI_LINT_CACHE := $(abspath $(CURDIR)/.cache/golangci-lint)
-GOENV := GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE)
-GO := env $(GOENV) go
-
-.PHONY: help tidy tidy-check mod-verify fmt vet lint test build run dry-run apply verify clean gitignore-check
+.PHONY: help tidy tidy-check mod-verify fmt vet lint test build run dry-run apply verify snapshot tag release clean gitignore-check
 
 help:
-	@printf "Targets:\n"
-	@printf "  make tidy            - sync module dependencies\n"
-	@printf "  make tidy-check      - verify module files are tidy\n"
-	@printf "  make mod-verify      - verify downloaded module checksums\n"
-	@printf "  make fmt             - format Go sources\n"
-	@printf "  make vet             - run go vet across packages\n"
-	@printf "  make lint            - run golangci-lint\n"
-	@printf "  make test            - run Go tests\n"
-	@printf "  make build           - build the CLI into ./bin\n"
-	@printf "  make run             - launch the TUI\n"
-	@printf "  make dry-run KEYS_FILE=... - preview config changes\n"
-	@printf "  make apply KEYS_FILE=...   - apply config changes\n"
-	@printf "  make gitignore-check - validate ignore rules\n"
-	@printf "  make clean           - remove local build artifacts\n"
+	@bash scripts/help.sh
 
 tidy:
-	$(GO) mod tidy
+	@bash scripts/tidy.sh
 
 tidy-check:
-	$(GO) mod tidy
-	git diff --exit-code -- go.mod go.sum
+	@bash scripts/tidy-check.sh
 
 mod-verify:
-	$(GO) mod verify
+	@bash scripts/mod-verify.sh
 
 fmt:
-	$(GO) fmt ./...
+	@bash scripts/fmt.sh
 
 vet:
-	$(GO) vet ./...
+	@bash scripts/vet.sh
 
 lint:
-	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint is required; install it to run the local lint guard."; exit 1; }
-	env $(GOENV) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./...
+	@bash scripts/lint.sh
 
 test:
-	$(GO) test ./...
+	@bash scripts/test.sh
 
 build:
-	mkdir -p ./bin
-	$(GO) build -o $(BIN) $(CMD)
+	@bash scripts/build.sh
 
 run:
-	$(GO) run $(CMD)
+	@bash scripts/run.sh
 
 dry-run:
-ifndef KEYS_FILE
-	$(error KEYS_FILE is required, example: make dry-run KEYS_FILE=~/Downloads/exa_keys.txt)
-endif
-	$(GO) run $(CMD) --keys-file $(KEYS_FILE) --dry-run
+	@KEYS_FILE="$(KEYS_FILE)" bash scripts/dry-run.sh
 
 apply:
-ifndef KEYS_FILE
-	$(error KEYS_FILE is required, example: make apply KEYS_FILE=~/Downloads/exa_keys.txt)
-endif
-	$(GO) run $(CMD) --keys-file $(KEYS_FILE) --apply
+	@KEYS_FILE="$(KEYS_FILE)" bash scripts/apply.sh
 
-verify: mod-verify tidy-check vet lint test build gitignore-check
+verify:
+	@bash scripts/verify.sh
+
+snapshot:
+	@bash scripts/snapshot.sh
+
+tag:
+	@V="$(V)" MSG="$(MSG)" bash scripts/tag.sh
+
+release:
+	@V="$(V)" MSG="$(MSG)" bash scripts/release.sh
 
 gitignore-check:
-	bash tests/gitignore_test.sh
+	@bash scripts/gitignore-check.sh
 
 clean:
-	rm -rf ./bin ./coverage.out ./.cache
+	@bash scripts/clean.sh
