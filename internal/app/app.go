@@ -134,7 +134,7 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 				Key:           keys[index],
 				URL:           exaURL,
 				CLIRemoveArgs: []string{"mcp", "remove", "exa", "-s", "user"},
-				CLIAddArgs:    []string{"mcp", "add", "--transport", "sse", "-s", "user", "exa", exaURL},
+				CLIAddArgs:    []string{"mcp", "add", "--transport", "http", "-s", "user", "exa", exaURL},
 			}
 			if _, err := m.Runner.LookPath("claude"); err != nil {
 				op.SkipReason = "claude CLI not found; skipping direct mutation of ~/.claude.json"
@@ -277,21 +277,21 @@ func FormatPlan(plan ExecutionPlan) string {
 		builder.WriteString("warning: " + warning + "\n")
 	}
 	for _, op := range plan.Operations {
-		builder.WriteString(fmt.Sprintf("- %s: %s\n", op.AppName, op.FileLabel))
-		builder.WriteString(fmt.Sprintf("  key: %s\n", exa.RedactKey(op.Key)))
+		fmt.Fprintf(&builder, "- %s: %s\n", op.AppName, op.FileLabel)
+		fmt.Fprintf(&builder, "  key: %s\n", exa.RedactKey(op.Key))
 		if op.SkipReason != "" {
-			builder.WriteString(fmt.Sprintf("  skip: %s\n", op.SkipReason))
+			fmt.Fprintf(&builder, "  skip: %s\n", op.SkipReason)
 			continue
 		}
 		if op.Path != "" {
-			builder.WriteString(fmt.Sprintf("  path: %s\n", op.Path))
+			fmt.Fprintf(&builder, "  path: %s\n", op.Path)
 		}
 		if op.WillCreate {
 			builder.WriteString("  backup: not applicable (new file)\n")
 		} else if op.BackupPath != "" {
-			builder.WriteString(fmt.Sprintf("  backup: %s\n", op.BackupPath))
+			fmt.Fprintf(&builder, "  backup: %s\n", op.BackupPath)
 		}
-		builder.WriteString(fmt.Sprintf("  tools: %d\n", len(exa.DefaultTools)))
+		fmt.Fprintf(&builder, "  tools: %d\n", len(exa.DefaultTools))
 	}
 	return strings.TrimRight(builder.String(), "\n")
 }
@@ -336,7 +336,7 @@ func FormatApplyResult(result ApplyResult) string {
 	if len(result.Verification) > 0 {
 		builder.WriteString("Verification\n")
 		for _, item := range result.Verification {
-			builder.WriteString(fmt.Sprintf("- [%s] %s\n", item.Status, item.Target))
+			fmt.Fprintf(&builder, "- [%s] %s\n", item.Status, item.Target)
 			for _, detail := range item.Details {
 				builder.WriteString("  " + detail + "\n")
 			}
@@ -428,11 +428,26 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 	var updated []byte
 	switch op.Kind {
 	case config.FileKindMCPServers:
-		updated, err = config.UpdateMCPServersJSON(data, op.URL)
+		fieldName := "url"
+		switch op.AppID {
+		case config.AppGeminiCLI:
+			fieldName = "httpUrl"
+		case config.AppAntigravity:
+			fieldName = "serverUrl"
+		}
+		updated, err = config.UpdateMCPServersJSON(data, fieldName, op.URL)
 	case config.FileKindBareMCPServers:
-		updated, err = config.UpdateBareMCPServersJSON(data, op.URL)
+		fieldName := "url"
+		if op.AppID == config.AppGeminiCLI {
+			fieldName = "httpUrl"
+		}
+		updated, err = config.UpdateBareMCPServersJSON(data, fieldName, op.URL)
 	case config.FileKindNamedServer:
-		updated, err = config.UpdateNamedServerJSON(data, "exa", "serverUrl", op.URL)
+		fieldName := "url"
+		if op.AppID == config.AppAntigravity {
+			fieldName = "serverUrl"
+		}
+		updated, err = config.UpdateNamedServerJSON(data, "exa", fieldName, op.URL)
 	case config.FileKindCodexTOML:
 		updated, err = config.UpdateCodexTOML(data, op.URL)
 	default:

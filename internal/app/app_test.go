@@ -118,6 +118,15 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 		t.Fatal("expected verification results")
 	}
 
+	for _, item := range result.Verification {
+		// Optional CLIs might be skipped or warning, but files must be OK
+		if strings.HasSuffix(item.Target, ".json") || strings.HasSuffix(item.Target, ".toml") {
+			if item.Status != verify.StatusOK {
+				t.Fatalf("expected status OK for file %s, got %s: %v", item.Target, item.Status, item.Details)
+			}
+		}
+	}
+
 	foundSkippedCodex := false
 	for _, item := range result.Verification {
 		if item.Target == "codex mcp get exa" {
