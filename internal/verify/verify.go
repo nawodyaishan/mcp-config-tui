@@ -10,6 +10,7 @@ import (
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
 	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 type Status string
@@ -45,6 +46,13 @@ func VerifyFile(path string, kind config.FileKind, expectedTools int) Result {
 	default:
 		return failure(path, "unsupported verification target")
 	}
+}
+
+func VerifyProviderFile(path string, kind config.FileKind, providerID string, cfg provider.MCPConfig) Result {
+	if providerID == "exa" {
+		return VerifyFile(path, kind, len(exa.DefaultTools))
+	}
+	return failure(path, fmt.Sprintf("verification not implemented for provider %s", providerID))
 }
 
 func VerifyOptionalCLI(runner Runner, binary string, args ...string) Result {

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
-	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 func selectedAppIDs(apps []config.AppConfig, selected map[config.AppID]bool) []config.AppID {
@@ -17,11 +17,11 @@ func selectedAppIDs(apps []config.AppConfig, selected map[config.AppID]bool) []c
 	return ids
 }
 
-func assignmentLabel(keys []string, index int) string {
-	if index < 0 || index >= len(keys) {
+func assignmentLabel(profiles []provider.CredentialProfile, index int) string {
+	if index < 0 || index >= len(profiles) {
 		return "unassigned"
 	}
-	return exa.RedactKey(keys[index])
+	return profiles[index].Label
 }
 
 func renderError(err error) string {

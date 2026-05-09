@@ -1,24 +1,25 @@
 package tui
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/huh"
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
 	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 type setupForm struct {
-	form          *huh.Form
-	ctx           *wizardContext
-	rawKeys       string
-	selectedSlice []config.AppID
+	form             *huh.Form
+	ctx              *wizardContext
+	selectedProvider string
+	credentialValues map[string]*string // Maps "ProviderID:Key" to pointer to value
+	selectedSlice    []config.AppID
 }
 
 func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 	sf := &setupForm{
-		ctx:     ctx,
-		rawKeys: initialRaw,
+		ctx:              ctx,
+		selectedProvider: ctx.providerID,
+		credentialValues: make(map[string]*string),
 	}
 
 	// Initialize selectedSlice from context
@@ -28,39 +29,80 @@ func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 		}
 	}
 
-	options := make([]huh.Option[config.AppID], len(ctx.manager.Apps))
+	appOptions := make([]huh.Option[config.AppID], len(ctx.manager.Apps))
 	for i, appConfig := range ctx.manager.Apps {
-		options[i] = huh.NewOption(appConfig.Name, appConfig.ID)
+		appOptions[i] = huh.NewOption(appConfig.Name, appConfig.ID)
+	}
+
+	allProviders := ctx.registry.All()
+	providerOptions := make([]huh.Option[string], len(allProviders))
+	for i, prov := range allProviders {
+		providerOptions[i] = huh.NewOption(prov.Name(), prov.ID())
 	}
 
 	groups := []*huh.Group{
 		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select Provider").
+				Description("Choose the MCP provider you want to configure").
+				Options(providerOptions...).
+				Value(&sf.selectedProvider),
+
 			huh.NewMultiSelect[config.AppID]().
 				Title("Select Target Apps").
-				Description("Choose which applications to update with Exa MCP").
-				Options(options...).
+				Description("Choose which applications to update").
+				Options(appOptions...).
 				Value(&sf.selectedSlice),
 		),
 	}
 
-	if len(ctx.keys) == 0 {
-		groups = append(groups, huh.NewGroup(
-			huh.NewText().
-				Title("Exa API Keys").
-				Description("Paste one or more UUID-style keys (one per line or key = \"...\" format)").
-				Placeholder("11111111-2222-3333-4444-555555555555").
-				Value(&sf.rawKeys).
-				Validate(func(s string) error {
-					keys, err := exa.ParseKeys(s)
-					if err != nil {
-						return fmt.Errorf("invalid keys: %w", err)
-					}
-					if len(keys) == 0 {
-						return fmt.Errorf("at least one valid Exa API key is required")
-					}
-					return nil
-				}),
-		))
+	// For each provider, add a group of credential fields
+	// We use WithHideFunc to only show the relevant group
+	for _, prov := range allProviders {
+		provID := prov.ID()
+		specs := prov.RequiredCredentials()
+		fields := make([]huh.Field, 0, len(specs))
+
+		for _, spec := range specs {
+			// Allocate storage for this credential value
+			val := new(string)
+			sf.credentialValues[provID+":"+spec.Key] = val
+
+			// Special case for backward compatibility: seed initialRaw into Exa key field if not pre-loaded
+			if provID == "exa" && spec.Key == "EXA_API_KEY" && len(ctx.profiles) == 0 {
+				*val = initialRaw
+			}
+
+			var field huh.Field
+			if spec.MultiValue {
+				// Use multiline text area for multivalue credentials (like Exa keys)
+				field = huh.NewText().
+					Title(spec.Label).
+					Description(spec.Description).
+					Value(val).
+					Validate(spec.Validator)
+			} else {
+				// Use single line input, password if secret
+				f := huh.NewInput().
+					Title(spec.Label).
+					Description(spec.Description).
+					Value(val).
+					Validate(spec.Validator)
+				if spec.Secret {
+					f.EchoMode(huh.EchoModePassword)
+				}
+				field = f
+			}
+			fields = append(fields, field)
+		}
+
+		if len(fields) > 0 {
+			group := huh.NewGroup(fields...).
+				WithHideFunc(func() bool {
+					return sf.selectedProvider != provID || len(ctx.profiles) > 0
+				})
+			groups = append(groups, group)
+		}
 	}
 
 	sf.form = huh.NewForm(groups...).WithTheme(huh.ThemeCatppuccin())
@@ -69,6 +111,11 @@ func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 }
 
 func (sf *setupForm) syncToContext() {
+	// Sync provider
+	sf.ctx.providerID = sf.selectedProvider
+	prov, _ := sf.ctx.registry.Get(sf.selectedProvider)
+	sf.ctx.provider = prov
+
 	// Sync selected apps
 	newSelected := make(map[config.AppID]bool)
 	for _, id := range sf.selectedSlice {
@@ -76,7 +123,38 @@ func (sf *setupForm) syncToContext() {
 	}
 	sf.ctx.selected = newSelected
 
-	// Sync keys
-	keys, _ := exa.ParseKeys(sf.rawKeys)
-	sf.ctx.keys = keys
+	// If profiles were NOT pre-loaded from flags, build them from form values
+	if len(sf.ctx.profiles) == 0 && sf.ctx.provider != nil {
+		specs := sf.ctx.provider.RequiredCredentials()
+		profiles := []provider.CredentialProfile{}
+
+		// In Phase 2, we assume a provider defines one set of credentials that might result in multiple profiles.
+		// For Exa, the "EXA_API_KEY" multivalue field is parsed into multiple profiles.
+		// For future single-value providers, it results in one profile.
+
+		// Let's handle Exa's multi-value parsing specifically for now, while allowing generic fallback.
+		if sf.ctx.providerID == "exa" {
+			rawKeys := *sf.credentialValues["exa:EXA_API_KEY"]
+			keys, _ := exa.ParseKeys(rawKeys)
+			for _, key := range keys {
+				profiles = append(profiles, provider.CredentialProfile{
+					ProviderID: "exa",
+					Values:     map[string]string{"EXA_API_KEY": key},
+					Label:      exa.RedactKey(key),
+				})
+			}
+		} else {
+			// Generic fallback: one profile with all gathered values for this provider
+			values := make(map[string]string)
+			for _, spec := range specs {
+				values[spec.Key] = *sf.credentialValues[sf.ctx.providerID+":"+spec.Key]
+			}
+			profiles = append(profiles, provider.CredentialProfile{
+				ProviderID: sf.ctx.providerID,
+				Values:     values,
+				Label:      "Default", // TODO: Better generic labelling
+			})
+		}
+		sf.ctx.profiles = profiles
+	}
 }
