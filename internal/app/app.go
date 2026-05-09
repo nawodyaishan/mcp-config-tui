@@ -32,19 +32,19 @@ type ExecutionPlan struct {
 }
 
 type Operation struct {
-	AppID         config.AppID
-	AppName       string
-	FileLabel     string
-	Path          string
-	Kind          config.FileKind
-	Key           string
-	ProviderID    string
-	Config        provider.MCPConfig
-	BackupPath    string
-	WillCreate    bool
-	SkipReason    string
-	CLIAddArgs    []string
-	CLIRemoveArgs []string
+	AppID           config.AppID
+	AppName         string
+	FileLabel       string
+	Path            string
+	Kind            config.FileKind
+	CredentialLabel string
+	ProviderID      string
+	Config          provider.MCPConfig
+	BackupPath      string
+	WillCreate      bool
+	SkipReason      string
+	CLIAddArgs      []string
+	CLIRemoveArgs   []string
 }
 
 type ApplyResult struct {
@@ -103,9 +103,14 @@ func NewManager(homeDir string, now func() time.Time, runner CommandRunner) (*Ma
 	}, nil
 }
 
-func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {
-	if len(keys) == 0 {
-		return ExecutionPlan{}, fmt.Errorf("at least one Exa API key is required")
+func (m *Manager) PrepareProvider(
+	prov provider.MCPProvider,
+	profiles []provider.CredentialProfile,
+	selected map[config.AppID]bool,
+	assignments map[config.AppID]int,
+) (ExecutionPlan, error) {
+	if len(profiles) == 0 {
+		return ExecutionPlan{}, fmt.Errorf("at least one credential profile is required")
 	}
 
 	plan := ExecutionPlan{}
@@ -116,32 +121,29 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 
 		index, ok := assignments[appConfig.ID]
 		if !ok {
-			return ExecutionPlan{}, fmt.Errorf("missing key assignment for %s", appConfig.Name)
+			return ExecutionPlan{}, fmt.Errorf("missing credential assignment for %s", appConfig.Name)
 		}
-		if index < 0 || index >= len(keys) {
-			return ExecutionPlan{}, fmt.Errorf("invalid key assignment for %s", appConfig.Name)
+		if index < 0 || index >= len(profiles) {
+			return ExecutionPlan{}, fmt.Errorf("invalid credential assignment for %s", appConfig.Name)
 		}
 
-		prov := provider.NewExaProvider()
-		credentials := map[string]string{
-			"EXA_API_KEY": keys[index],
-		}
-		cfg, err := prov.GenerateConfig(credentials)
+		profile := profiles[index]
+		cfg, err := prov.GenerateConfig(profile.Values)
 		if err != nil {
 			return ExecutionPlan{}, fmt.Errorf("generate config for %s: %w", prov.ID(), err)
 		}
 
 		if appConfig.ID == config.AppClaudeCode {
 			op := Operation{
-				AppID:         appConfig.ID,
-				AppName:       appConfig.Name,
-				FileLabel:     "Claude Code CLI",
-				Kind:          config.FileKindClaudeCodeCLI,
-				Key:           keys[index],
-				ProviderID:    prov.ID(),
-				Config:        cfg,
-				CLIRemoveArgs: []string{"mcp", "remove", prov.ID(), "-s", "user"},
-				CLIAddArgs:    []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", prov.ID(), cfg.URL},
+				AppID:           appConfig.ID,
+				AppName:         appConfig.Name,
+				FileLabel:       "Claude Code CLI",
+				Kind:            config.FileKindClaudeCodeCLI,
+				CredentialLabel: profile.Label,
+				ProviderID:      prov.ID(),
+				Config:          cfg,
+				CLIRemoveArgs:   []string{"mcp", "remove", prov.ID(), "-s", "user"},
+				CLIAddArgs:      []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", prov.ID(), cfg.URL},
 			}
 			if _, err := m.Runner.LookPath("claude"); err != nil {
 				op.SkipReason = "claude CLI not found; skipping direct mutation of ~/.claude.json"
@@ -153,21 +155,41 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 
 		for _, file := range appConfig.Files {
 			plan.Operations = append(plan.Operations, Operation{
-				AppID:      appConfig.ID,
-				AppName:    appConfig.Name,
-				FileLabel:  file.Label,
-				Path:       file.Path,
-				Kind:       file.Kind,
-				Key:        keys[index],
-				ProviderID: prov.ID(),
-				Config:     cfg,
-				BackupPath: backupPathFor(file, m.Now()),
-				WillCreate: !file.Exists,
+				AppID:           appConfig.ID,
+				AppName:         appConfig.Name,
+				FileLabel:       file.Label,
+				Path:            file.Path,
+				Kind:            file.Kind,
+				CredentialLabel: profile.Label,
+				ProviderID:      prov.ID(),
+				Config:          cfg,
+				BackupPath:      backupPathFor(file, m.Now()),
+				WillCreate:      !file.Exists,
 			})
 		}
 	}
 
 	return plan, nil
+}
+
+func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {
+	if len(keys) == 0 {
+		return ExecutionPlan{}, fmt.Errorf("at least one Exa API key is required")
+	}
+
+	prov := provider.NewExaProvider()
+	profiles := make([]provider.CredentialProfile, len(keys))
+	for i, key := range keys {
+		profiles[i] = provider.CredentialProfile{
+			ProviderID: prov.ID(),
+			Values: map[string]string{
+				"EXA_API_KEY": key,
+			},
+			Label: exa.RedactKey(key),
+		}
+	}
+
+	return m.PrepareProvider(prov, profiles, selected, assignments)
 }
 
 func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
@@ -207,7 +229,7 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 		}
 	}
 
-	result.Verification = append(result.Verification, verifyFiles(seenFiles)...)
+	result.Verification = append(result.Verification, verifyFiles(prepared)...)
 	if seenApps[config.AppCodexCLI] {
 		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "codex", "mcp", "get", "exa"))
 	}
@@ -286,7 +308,7 @@ func FormatPlan(plan ExecutionPlan) string {
 	}
 	for _, op := range plan.Operations {
 		fmt.Fprintf(&builder, "- %s: %s\n", op.AppName, op.FileLabel)
-		fmt.Fprintf(&builder, "  key: %s\n", exa.RedactKey(op.Key))
+		fmt.Fprintf(&builder, "  credential: %s\n", op.CredentialLabel)
 		if op.SkipReason != "" {
 			fmt.Fprintf(&builder, "  skip: %s\n", op.SkipReason)
 			continue
@@ -485,16 +507,15 @@ func (m *Manager) rollback(outcomes []config.WriteOutcome, result *ApplyResult) 
 	return warnings
 }
 
-func verifyFiles(seenFiles map[string]config.FileKind) []verify.Result {
-	paths := make([]string, 0, len(seenFiles))
-	for path := range seenFiles {
-		paths = append(paths, path)
-	}
-	sort.Strings(paths)
+func verifyFiles(prepared []preparedWrite) []verify.Result {
+	// Sort by path for consistent output
+	sort.Slice(prepared, func(i, j int) bool {
+		return prepared[i].op.Path < prepared[j].op.Path
+	})
 
-	results := make([]verify.Result, 0, len(paths))
-	for _, path := range paths {
-		results = append(results, verify.VerifyFile(path, seenFiles[path], len(exa.DefaultTools)))
+	results := make([]verify.Result, 0, len(prepared))
+	for _, item := range prepared {
+		results = append(results, verify.VerifyProviderFile(item.op.Path, item.op.Kind, item.op.ProviderID, item.op.Config))
 	}
 	return results
 }

@@ -175,8 +175,8 @@ func TestManagerApplyRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 
 	plan := ExecutionPlan{
 		Operations: []Operation{
-			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: firstPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
-			{AppName: "Gemini CLI", FileLabel: "Gemini MCP config", Path: secondPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
+			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: firstPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
+			{AppName: "Gemini CLI", FileLabel: "Gemini MCP config", Path: secondPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
 		},
 	}
 
@@ -223,7 +223,7 @@ func TestManagerLoggerRedactsKeysAndURLs(t *testing.T) {
 
 	_, err = manager.Apply(ExecutionPlan{
 		Operations: []Operation{
-			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: targetPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
+			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: targetPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
 		},
 	})
 	if err == nil {
