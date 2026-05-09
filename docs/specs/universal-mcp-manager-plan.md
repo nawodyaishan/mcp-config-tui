@@ -34,7 +34,7 @@ Based on community usage data (Smithery.ai, official MCP GitHub org), the archit
 To support multiple MCP types without creating a tangled monolith, we must transition to a **Provider/Registry Architecture**.
 
 ### A. The Provider Interface (`internal/provider`)
-We will decouple the hardcoded Exa logic by introducing a standard `MCPProvider` interface. Every supported MCP server will implement this interface.
+We decoupled the hardcoded Exa logic by introducing a standard `MCPProvider` interface. To support dynamic TUI generation, the provider exposes structured credential metadata.
 
 ```go
 type TransportType string
@@ -49,78 +49,92 @@ type MCPConfig struct {
     URL       string            // For HTTP/SSE
     Command   string            // For stdio (e.g., "npx")
     Args      []string          // For stdio
-    Env       map[string]string // Environment variables (e.g., GITHUB_PERSONAL_ACCESS_TOKEN)
+    Env       map[string]string // Environment variables
+}
+
+type CredentialSpec struct {
+    Key         string
+    Label       string
+    Description string
+    Secret      bool
+    MultiValue  bool
+    Validator   func(string) error
 }
 
 type MCPProvider interface {
-    // Unique identifier (e.g., "github", "exa")
     ID() string
-    
-    // Display name for the TUI (e.g., "GitHub (Official)")
     Name() string
-    
-    // Explanation of what the tool does
     Description() string
     
-    // Prompts required from the user
-    // Returns a map of env keys to prompt descriptions (e.g., {"GITHUB_PAT": "Enter GitHub Personal Access Token"})
-    RequiredCredentials() map[string]string
+    // RequiredCredentials returns an ordered list of credential metadata
+    RequiredCredentials() []CredentialSpec
     
     // Generates the final configuration block based on user inputs
     GenerateConfig(credentials map[string]string) (MCPConfig, error)
 }
 ```
 
-### B. The Provider Registry
-A central registry will hold all supported providers. Scaling support for a new MCP server simply requires creating a new struct implementing `MCPProvider` and registering it.
+### B. The Explicit Provider Registry
+An explicit, static registry holds all supported providers, making discovery easy to test and render without complex plugin loading overhead during early phases.
 
 ```go
 // internal/provider/registry.go
-var Registry = []MCPProvider{
-    NewExaProvider(),
-    NewGitHubProvider(),
-    NewSequentialThinkingProvider(),
+type Registry struct {
+    providers map[string]MCPProvider
+    order     []string
+}
+
+func DefaultRegistry() Registry {
+    // Registers ExaProvider, GitHubProvider, etc.
 }
 ```
 
-### C. Refactoring Configuration Mutators (`internal/config`)
-Currently, `json_update.go` and `toml_update.go` hardcode the "exa" object key and expect a single URL. They must be refactored to accept the generic `MCPConfig` struct.
+### C. Provider-Aware Planning (`internal/app`)
+Operations no longer store raw secret material. We introduce `CredentialProfile` to separate user inputs from the generated config payload. `app.Manager` is updated to plan across providers.
 
-*Example target JSON structure generation for stdio:*
-```json
-"mcpServers": {
-  "<Provider.ID()>": {
-    "command": "<Config.Command>",
-    "args": [<Config.Args>],
-    "env": {
-      "KEY": "VALUE"
-    }
-  }
+```go
+type CredentialProfile struct {
+    ProviderID string
+    Values     map[string]string
+    Label      string
 }
+
+func (m *Manager) PrepareProvider(
+    prov provider.MCPProvider,
+    profiles []provider.CredentialProfile,
+    selected map[config.AppID]bool,
+    assignments map[config.AppID]int,
+) (ExecutionPlan, error)
 ```
 
 ### D. TUI Wizard Evolution
-The TUI Wizard (`internal/tui`) will be updated to a robust, multi-step flow using `huh`:
+The TUI Wizard (`internal/tui`) will act as a Bubble Tea router with a 6-stage flow using `huh` for structured inputs:
 
-1. **Provider Discovery**: A searchable `huh.Select` displaying the list of servers from the Provider Registry, categorized by capability.
-2. **Credential Collection**: Dynamically generated `huh.Text` or `huh.Password` fields based on the selected provider's `RequiredCredentials()`.
+1. **Provider Setup**: A searchable `huh.Select` displaying the list of servers from the Provider Registry.
+2. **Credential Collection**: Dynamically generated fields (`huh.Text`, `huh.Password`) based on the selected provider's `RequiredCredentials()`. Exa multi-value fields fall back to text areas.
 3. **Target Fleet Selection**: Selecting which AI clients (Claude, Gemini, etc.) should receive the server.
-4. **Intelligent Preview & Apply**: Rendering the translated `stdio` or `http` config blocks before committing atomic writes.
+4. **Assignment**: Distributing generated credential profiles across the selected fleet.
+5. **Preview**: Rendering the translated `stdio` or `http` config blocks with fully redacted secrets.
+6. **Results**: Presenting atomic apply outputs and provider-aware verification.
 
 ---
 
 ## 4. Phased Implementation Strategy
 
-### Phase 1: Core Interface & Exa Abstraction
-- Define `MCPProvider`, `MCPConfig`, and `TransportType` in a new `internal/provider` package.
-- Abstract the existing Exa logic into `ExaProvider`.
-- Overhaul `internal/config` mutators to accept the generic `MCPConfig` struct instead of hardcoded string URLs.
-- *Validation*: Ensure the tool still works identically for Exa before introducing new providers.
+### Phase 1: Core Interface & Exa Abstraction (Completed)
+- [x] Define `MCPProvider`, `MCPConfig`, and `TransportType` in `internal/provider`.
+- [x] Abstract existing Exa logic into `ExaProvider`.
+- [x] Overhaul `internal/config` mutators to accept the generic `MCPConfig` struct instead of hardcoded strings.
+- [x] Refactor core orchestration to generate configs via providers.
+- [x] Verify total backward compatibility for existing Exa usage.
 
-### Phase 2: Dynamic TUI Wizard
-- Update `internal/tui/setup_form.go`.
-- Introduce a Provider Discovery screen.
-- Replace the hardcoded Exa key input with a dynamic credential collector that queries the selected `MCPProvider`.
+### Phase 2: Provider Registry and Dynamic TUI Wizard (Next)
+*This phase introduces the UX required to consume multiple providers, while strictly keeping Exa as the only registered provider to validate the generic abstraction.*
+- **Task 1: Registry & Credential Specs**: Implement the `Registry` and `CredentialSpec` types. Update `ExaProvider` to return ordered credential metadata.
+- **Task 2: Provider-Aware Planning**: Implement `PrepareProvider` using `CredentialProfile`. Remove raw `Operation.Key` storage in favor of `CredentialLabel`.
+- **Task 3: Dynamic Setup Form**: Update the `huh` wizard to include a Provider Selection step and dynamically generate credential input fields based on registry data.
+- **Task 4: Assignment & Preview Refactor**: Move assignment logic to operate on `CredentialProfile` slices. Update the preview screens to be provider-neutral.
+- **Task 5: Compatibility & Tests**: Ensure existing Exa `--keys` flags continue to work seamlessly via backward-compatibility wrappers. Ensure robust secret redaction.
 
 ### Phase 3: The `stdio` Engine & High-Value Providers
 - **GitHub Provider**: Implement `NewGitHubProvider()`. This will be the flagship `stdio` provider, requiring a `GITHUB_PERSONAL_ACCESS_TOKEN` and generating an `npx -y @modelcontextprotocol/server-github` configuration.
@@ -129,6 +143,11 @@ The TUI Wizard (`internal/tui`) will be updated to a robust, multi-step flow usi
 ### Phase 4: Capability Mapping & Safety Fallbacks
 - **The Protocol Matrix**: Some clients (like Antigravity) currently only support remote HTTP endpoints, not local `stdio` processes.
 - Update `internal/app/app.go` to maintain a capability matrix. If a user attempts to install a `stdio`-only provider (like GitHub) into a client that only supports `http`, the manager must gracefully warn and skip that target rather than writing a broken configuration.
+
+### Phase 5: Infinite Scale (Hybrid Dynamic Registry + RPC Plugins)
+*Based on the scalability research, this phase transitions the tool from a statically compiled registry to a dynamically extensible engine.*
+- **Dynamic Provider Engine**: Act as a Subregistry Aggregator. Fetch schemas directly from `registry.modelcontextprotocol.io` on startup and use a "Generic Provider" to dynamically generate `huh` forms for standard MCP servers without requiring Go code changes.
+- **Custom RPC Plugin System**: Implement `hashicorp/go-plugin`. For complex servers requiring local OAuth flows or bespoke setup logic, developers can write isolated provider plugins (in Go, Python, etc.) that the CLI wizard communicates with over local RPC.
 
 ---
 
