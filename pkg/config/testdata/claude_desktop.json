@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "mcpServers": {
+    "context7": {
+      "type": "sse",
+      "url": "https://context7.example/mcp"
+    }
+  }
+}

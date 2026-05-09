@@ -7,9 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/nawodyaishan/mcp-config-tui/internal/app"
-	"github.com/nawodyaishan/mcp-config-tui/internal/config"
-	"github.com/nawodyaishan/mcp-config-tui/internal/tui"
+	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
+	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
+	"github.com/nawodyaishan/mcp-config-tui/pkg/tui"
 )
 
 func main() {
