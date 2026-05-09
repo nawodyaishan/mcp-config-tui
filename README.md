@@ -63,10 +63,20 @@ Current supported app targets on macOS:
 
 ## Quick Start
 
+### macOS
 1. **Install** the binary via Homebrew:
    ```bash
    brew tap nawodyaishan/homebrew-tap
    brew install usync
+   ```
+
+### Linux
+1. **Build** from source (requires Go 1.21+):
+   ```bash
+   git clone https://github.com/nawodyaishan/universal-mcp-sync
+   cd universal-mcp-sync
+   make build
+   ./bin/usync --help
    ```
 
 2. **Run a Dry Run** to preview changes:
