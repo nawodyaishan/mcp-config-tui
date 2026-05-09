@@ -1,259 +1,185 @@
-# MCP Config
+# Universal MCP Sync (Exa-First)
+
+<p align="center">
+  <img src="assets/images/banner.jpeg" width="800" alt="Universal MCP Sync Banner">
+</p>
 
 [![Release](https://img.shields.io/github/v/release/nawodyaishan/mcp-config-tui?display_name=tag)](https://github.com/nawodyaishan/mcp-config-tui/releases)
 [![CI](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/nawodyaishan/mcp-config-tui)](./LICENSE)
 
-> [!NOTE]
-> **Project Status:** Universal MCP manager direction, with Exa as the launch provider today.
+**`exa-mcp-manager` is an Exa-first MCP configuration sync tool for 12+ local AI clients. Internally, it is evolving into a provider-based Universal MCP Sync engine.**
 
-One source of truth for your local AI toolchain. Sync MCP server configuration across Claude Desktop, Claude Code, Gemini CLI, Antigravity, and Codex with dry-run previews, redaction, backups, and rollback.
+One source of truth for your local AI toolchain. Sync your Exa MCP configuration across Claude Desktop, Cursor, Gemini CLI, Zed, and more with dry-run previews, secret redaction, and atomic rollbacks.
 
-`mcp-config-tui` is a macOS-first MCP sync utility for developers who run multiple local AI tools on the same machine. The current shipped binary is `exa-mcp-manager`, which provides first-class Exa support on top of a provider-based architecture that is being generalized into a broader MCP manager.
+## Demo
+
+Coming soon: TUI walkthrough and dry-run preview.
 
 ## Who This Is For
 
-Primary audience:
+Use this if you:
+- Use **Exa MCP** across multiple local AI clients (Claude, Cursor, Windsurf, etc.).
+- Want **dry-run previews** before any local configuration files are modified.
+- Want **backups, automatic rollback**, and credential redaction.
+- Are building **platform engineering tools** around MCP and need a Go library.
 
-- developers using Claude Desktop, Claude Code, Gemini CLI, Antigravity, or Codex on the same machine
-- developers who want to stop hand-editing several MCP config files every time a server URL, tool list, or credential changes
-- developers who care about dry-run previews, rollback, redaction, and verification before touching local config
+Not for you yet if:
+- You need Windows support (macOS-first today).
+- You require many providers beyond Exa (GitHub, Filesystem, etc. are on the roadmap).
 
-Secondary audience:
+## Current Status
 
-- contributors extending the tool from Exa-only rollout into a broader provider-driven MCP manager
-- internal tooling engineers experimenting with a local MCP sync workflow before generalizing it
-
-This is not yet a generic MCP installer for every server or client. It is a focused tool with a clear next step toward that architecture.
+- **Exa provider**: Supported (High-fidelity)
+- **12 Local AI Clients**: Supported on macOS
+- **Provider-neutral TUI**: In progress (Phase 2 complete)
+- **Provider-neutral CLI flags**: Planned
+- **Windows config paths**: Planned
 
 ## What It Does Today
 
 Core value:
-
-- unified, safe MCP configuration for a multi-client local AI setup
+- **Fleet Sync**: Distribute one provider (Exa) across **12+ AI clients** with a single command.
+- **Client-Specific Logic**: Automatically handles `stdio` bridges for Claude, custom root keys (`servers`, `context_servers`) for editors, and specialized fields (`httpUrl`, `serverUrl`).
+- **High-Fidelity QA**: Every configuration is verified against "Golden Path" scenarios from official documentation.
+- **Public API**: Core logic is exposed as a Go library under `pkg/`.
 
 Current supported app targets on macOS:
+- Claude Desktop & Code, Cursor, VS Code, Windsurf, Zed, Roo Code, OpenCode, Kiro, Codex, Antigravity, Gemini CLI.
 
-- Claude Desktop
-- Claude Code
-- Gemini CLI
-- Antigravity
-- Codex CLI
+## Quick Start
 
-Current provider support:
+1. **Install** the binary via Homebrew:
+   ```bash
+   brew tap nawodyaishan/homebrew-tap
+   brew install exa-mcp-manager
+   ```
 
-- Exa
+2. **Run a Dry Run** to preview changes:
+   ```bash
+   exa-mcp-manager --keys-file ./exa_keys.txt --dry-run
+   ```
 
-Client-specific notes:
+3. **Review Output** (Redacted for safety):
+   ```text
+   Exa MCP update plan
+   ===================
+   - Claude Desktop: Claude Desktop config
+     credential: exa_****abcd
+     path: ~/Library/Application Support/Claude/claude_desktop_config.json
+     backup: .../claude_desktop_config.json.bak-exa-20260509-084228
+     action: update existing file
+   ```
 
-- Claude Desktop file-based setup uses a `stdio` bridge for Exa instead of a raw remote URL entry
-- Claude Desktop also supports Exa as a native connector outside this tool's file-mutation path
+4. **Apply** the changes:
+   ```bash
+   exa-mcp-manager --keys-file ./exa_keys.txt --apply
+   ```
 
-Current capabilities:
+## What Files Can It Modify?
 
-- select an MCP provider from the provider registry
-- collect provider-defined credentials through the TUI
-- preview redacted config changes before apply
-- back up touched files and roll back failed write sequences
-- verify updated file state and run optional CLI checks when available
-- distribute multiple keys across supported apps
-- update JSON and TOML client configs in client-specific formats
-- parse Exa API keys from flags, files, or TUI input
+The tool only modifies detected MCP config files for selected clients. No files are changed unless `--apply` is used or the TUI wizard is completed.
 
-## Why Use It
+| Client | Configuration Path |
+| :--- | :--- |
+| **Claude Desktop** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Cursor** | `~/.cursor/mcp.json` |
+| **VS Code** | `~/.vscode/mcp.json` |
+| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` |
+| **Zed** | `~/.config/zed/settings.json` |
+| **Gemini CLI** | `~/.gemini/settings.json` |
 
-MCP configuration drifts quickly when you use more than one local AI client:
+*...and 6 others. A dry run always shows the exact path for your machine.*
 
-- each client wants a different config shape
-- one tool may still point at an old MCP endpoint
-- one credential may end up taking all traffic
-- manual edits are easy to get wrong and hard to verify
+## Safety & Trust
 
-This tool gives you a single flow to detect targets, generate the correct config form for each client, preview changes, apply safely, and verify the result.
+- **Redaction**: Full API keys and secret URLs never appear in UI, logs, or reports.
+- **Atomic Writes**: Uses a write-and-rename pattern; if one file fails in a sequence, the tool attempts to roll back previous changes.
+- **Backups**: Every modified file gets a timestamped `.bak-exa-...` copy in the same directory.
+- **QA Suite**: Internal tests validate generated JSON/TOML against official "Golden Path" documentation.
 
-Today that flow is Exa-first. The engine underneath is already provider-shaped, so new MCP servers can plug into the same setup, planning, and apply path instead of introducing one-off config mutations for each client.
+## Go Library Usage
 
-## Install
+The core logic is available under `pkg/`. **Note**: The API is pre-stable; breaking changes may occur before v2.0.
 
-Requirements:
+```go
+import (
+    "fmt"
+    "github.com/nawodyaishan/mcp-config-tui/pkg/app"
+    "github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+    "github.com/nawodyaishan/mcp-config-tui/pkg/config"
+)
 
-- Go `1.23+` for local builds
-- macOS for the currently supported config-path workflow
+func main() {
+    manager, err := app.NewManager("/custom/home", nil, nil)
+    if err != nil {
+        panic(err)
+    }
 
-Release distribution currently includes:
+    prov := provider.NewExaProvider()
+    
+    // Define credentials
+    profiles := []provider.CredentialProfile{{
+        ProviderID: prov.ID(),
+        Values:     map[string]string{"EXA_API_KEY": "YOUR_SECRET_KEY"},
+        Label:      "personal",
+    }}
 
-- Homebrew formula via `nawodyaishan/homebrew-tap`
-- release archives for macOS and Linux
-- `deb` and `rpm` packages via GoReleaser/nFPM
+    // Target specific apps (e.g., Claude Desktop)
+    selected := map[config.AppID]bool{config.AppClaudeDesktop: true}
+    assignments := map[config.AppID]int{config.AppClaudeDesktop: 0}
 
-Homebrew:
+    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+    if err != nil {
+        panic(err)
+    }
 
-```bash
-brew tap nawodyaishan/homebrew-tap
-brew install exa-mcp-manager
+    result, err := manager.Apply(plan)
+    if err != nil {
+        fmt.Printf("Apply failed: %v\n", err)
+    }
+    fmt.Printf("Successfully updated %d targets\n", len(result.UpdatedTarget))
+}
 ```
 
-Build locally:
+## Contributing
 
-```bash
-make build
+### Adding a Provider
+
+New providers are added via the `MCPProvider` interface:
+
+```go
+type MCPProvider interface {
+    ID() string
+    Name() string
+    Description() string
+    RequiredCredentials() []CredentialSpec
+    GenerateConfig(credentials map[string]string) (MCPConfig, error)
+}
 ```
-
-Run the compiled binary:
-
-```bash
-./bin/exa-mcp-manager --version
-./bin/exa-mcp-manager
-```
-
-## Use
-
-Interactive TUI:
-
-```bash
-make run
-```
-
-Dry run:
-
-```bash
-make dry-run KEYS_FILE=~/Downloads/exa_keys.txt
-```
-
-Apply without launching the TUI:
-
-```bash
-make apply KEYS_FILE=~/Downloads/exa_keys.txt
-```
-
-Direct CLI usage:
-
-```bash
-./bin/exa-mcp-manager --version
-./bin/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
-./bin/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
-go run ./cmd/exa-mcp-manager
-go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
-go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
-```
-
-Current non-interactive flags are still Exa-specific:
-
-- `--keys`
-- `--keys-file`
-- `--dry-run`
-- `--apply`
-
-## Safety Model
-
-This tool edits local developer config, so the design favors correctness over speed.
-
-- full API keys should never appear in UI, logs, dry-run output, apply output, or verification output
-- file-backed updates create backups and use rollback-aware writes
-- optional CLI verification should not fail the run only because a CLI is missing
-- Claude Code is handled through CLI commands rather than direct `~/.claude.json` mutation
-
-## Development
-
-Default workflow:
-
-```bash
-make tidy
-make vet
-make lint
-make test
-make build
-make gitignore-check
-```
-
-The repo uses local caches for Go build, module, and lint artifacts through `make`, which keeps the development loop reproducible and avoids polluting global caches.
-
-### Git Hooks
-
-This repo uses [Lefthook](https://github.com/evilmartians/lefthook) as a local guard for the same classes of failures CI should catch.
-
-Install and enable it:
-
-```bash
-brew install lefthook
-lefthook install
-```
-
-Current hooks:
-
-- `pre-commit`: `gofmt` on staged Go files with auto-restaging, `make vet`, and `make gitignore-check`
-- `pre-push`: `make lint`, `make test`, `make build`, and `make gitignore-check`
-
-### Adding New MCP Servers
-
-This tool is designed to grow into a universal MCP manager. New MCP servers should be added through the provider abstraction rather than by adding server-specific branches to the app or TUI flow.
 
 Implementation path:
+1. Implement the interface in `pkg/provider/<name>.go`.
+2. Register it in `DefaultRegistry()` in `pkg/provider/registry.go`.
+3. Add client compatibility rules in `pkg/app/app.go` (`configForTarget`).
 
-1. Add a provider in `pkg/provider/`, for example `github.go`.
-2. Implement `MCPProvider`:
-   - `ID()` returns the stable config key, such as `"github"`.
-   - `Name()` and `Description()` provide TUI display text.
-   - `RequiredCredentials()` describes the credential fields the TUI should collect.
-   - `GenerateConfig()` converts credential values into `MCPConfig` using `http`, `sse`, or `stdio`.
-3. Register the provider in `DefaultRegistry()` in `pkg/provider/registry.go`.
-4. Verify target compatibility. The existing config writers can persist provider-generated `MCPConfig`, but each local client may support a different transport shape.
-5. Add focused tests for credential validation, generated config, registry inclusion, redaction, and any target-specific behavior.
-6. Update docs when the provider changes user-facing setup, flags, or supported transports.
+### Testing
 
-Once registered, the TUI can list the provider and build credential inputs from `RequiredCredentials()`. Non-interactive CLI flags are still Exa-specific today; provider-neutral CLI arguments are part of the next product step.
+Reliability is our primary feature. When contributing:
+- **Provider Tests**: Validate credential parsing and config generation in `pkg/provider/...`.
+- **Config Tests**: Validate JSON/TOML mutation logic in `pkg/config/...`.
+- **QA Scenarios**: Update `pkg/app/qa_scenarios_test.go` to include "Golden Path" fixtures for new clients or providers.
 
-For the deeper technical direction, see the [Universal MCP Architecture Plan](docs/arch/universal-mcp-manager-plan.md). For long-term plugin and registry research, see [Future Scalability Research](docs/arch/future-scalability-research.md).
-
-## Project Layout
-
-```text
-cmd/exa-mcp-manager/   current CLI entrypoint
-pkg/app/          planning, apply flow, rollback, formatting
-pkg/config/       path detection and file mutation helpers
-pkg/exa/          Exa key parsing, redaction, URL construction
-pkg/provider/     provider abstraction and provider implementations
-pkg/tui/          Bubble Tea router and TUI screens
-pkg/verify/       file and optional CLI verification
-docs/                  product, architecture, and phase plans
-tests/                 repo-level validation scripts
+```bash
+make test               # Run all tests
+go test ./pkg/provider  # Run provider logic tests
+go test ./pkg/app -v    # Run E2E and QA scenario tests
 ```
 
-## Architecture Direction
+---
 
-The runtime product is still Exa-first, but the internals now use a provider-based MCP manager shape.
-
-That direction shows up in the code:
-
-- `pkg/provider` defines `MCPProvider`, `MCPConfig`, and transport types
-- `pkg/provider.DefaultRegistry()` controls which MCP providers the TUI can offer
-- `pkg/config` now mutates client config from provider-generated config rather than raw Exa-only strings
-- `pkg/app.PrepareProvider` owns provider-aware planning before apply, rollback, and verification
-- `pkg/tui` builds provider and credential setup screens from registry metadata
-
-The next major step is removing the remaining Exa-specific CLI path so interactive and non-interactive usage both run through the same provider-neutral workflow.
-
-## Docs
-
-Primary references:
-
-- [Product Spec](docs/main-spec.md)
-- [Next Phase Plan](docs/plans/next-phase.md)
-- [Phase 2 Plan](docs/plans/phase2.md)
-- [Universal MCP Architecture Plan](docs/arch/universal-mcp-manager-plan.md)
-- [Future Scalability Research](docs/arch/future-scalability-research.md)
-
-## Roadmap
-
-Near term:
-
-- remove the remaining Exa-specific non-interactive CLI wiring
-- keep Exa behavior backward compatible while shifting to provider-neutral internals
-- improve previews, summaries, warnings, and test coverage
-
-After that:
-
-- add stdio-capable providers such as GitHub
-- add client capability checks so unsupported transport combinations are skipped safely
-- expand from Exa-only rollout into a reusable MCP sync tool
-- revisit binary and repository branding once the user-facing product is no longer Exa-only
+## Detailed Documentation
+- [Main Project Specification](docs/main-spec.md)
+- [Universal Architecture Direction](docs/arch/universal-mcp-manager-plan.md)
+- [Phase 2 Implementation Details](docs/plans/phase2.md)
+- [Scalability & Plugin Research](docs/arch/future-scalability-research.md)

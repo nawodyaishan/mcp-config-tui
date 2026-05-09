@@ -4,3 +4,5 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 assets/images/*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
