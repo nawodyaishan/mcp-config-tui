@@ -102,7 +102,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch m.stage {
 	case stageSetup:
-		_, cmd = m.setupForm.form.Update(msg)
+		_, cmd = m.setupForm.update(msg)
 		if m.setupForm.form.State == huh.StateCompleted {
 			m.setupForm.syncToContext()
 			m.ctx.assignments = app.DefaultAssignments(m.ctx.selected, len(m.ctx.profiles))

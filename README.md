@@ -34,7 +34,7 @@ Not for you yet if:
 
 - **Exa provider**: Supported (High-fidelity)
 - **12 Local AI Clients**: Supported on macOS
-- **Provider-neutral TUI**: In progress (Phase 2 complete)
+- **Provider-neutral TUI foundation**: Complete (Phase 2)
 - **Provider-neutral CLI flags**: Planned
 - **Windows config paths**: Planned
 
@@ -59,7 +59,7 @@ Current supported app targets on macOS:
 
 2. **Run a Dry Run** to preview changes:
    ```bash
-   usync --keys-file ./exa_keys.txt --dry-run
+   usync sync --keys-file ./exa_keys.txt --dry-run
    ```
 
 3. **Review Output** (Redacted for safety):
@@ -75,7 +75,7 @@ Current supported app targets on macOS:
 
 4. **Apply** the changes:
    ```bash
-   usync --keys-file ./exa_keys.txt --apply
+   usync sync --keys-file ./exa_keys.txt --apply
    ```
 
 ## What Files Can It Modify?
@@ -140,7 +140,7 @@ func main() {
     if err != nil {
         fmt.Printf("Apply failed: %v\n", err)
     }
-    fmt.Printf("Successfully updated %d targets\n", len(result.UpdatedTarget))
+    fmt.Printf("Successfully updated %d targets\n", len(result.UpdatedTargets))
 }
 ```
 

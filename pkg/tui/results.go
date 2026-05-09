@@ -40,8 +40,8 @@ func renderApplyResults(result app.ApplyResult) string {
 	var builder strings.Builder
 
 	// Summary header
-	if len(result.UpdatedTarget) > 0 {
-		builder.WriteString(successStyle.Render(fmt.Sprintf("✓ Successfully updated %d targets", len(result.UpdatedTarget))))
+	if len(result.UpdatedTargets) > 0 {
+		builder.WriteString(successStyle.Render(fmt.Sprintf("✓ Successfully updated %d targets", len(result.UpdatedTargets))))
 	} else {
 		builder.WriteString(warningStyle.Render("! No changes were applied"))
 	}

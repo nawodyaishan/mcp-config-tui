@@ -52,7 +52,7 @@ type ApplyResult struct {
 	Warnings       []string
 	BackupPaths    []string
 	Verification   []verify.Result
-	UpdatedTarget  []string
+	UpdatedTargets []string
 	RolledBack     []string
 	RollbackFailed []string
 }
@@ -230,7 +230,7 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 		if outcome.BackupPath != "" {
 			result.BackupPaths = append(result.BackupPaths, outcome.BackupPath)
 		}
-		result.UpdatedTarget = append(result.UpdatedTarget, item.op.Path)
+		result.UpdatedTargets = append(result.UpdatedTargets, item.op.Path)
 	}
 
 	for _, op := range cliOps {
@@ -252,7 +252,7 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "gemini", "mcp", "get", "exa"))
 	}
 
-	m.logInfo("apply complete", "updated_targets", len(result.UpdatedTarget))
+	m.logInfo("apply complete", "updated_targets", len(result.UpdatedTargets))
 	return result, nil
 }
 
@@ -265,7 +265,7 @@ func (m *Manager) applyClaudeCode(op Operation, result *ApplyResult) error {
 	if _, err := m.Runner.Run("claude", op.CLIAddArgs...); err != nil {
 		return fmt.Errorf("claude mcp add exa: %s", exa.RedactText(err.Error()))
 	}
-	result.UpdatedTarget = append(result.UpdatedTarget, "claude mcp add exa")
+	result.UpdatedTargets = append(result.UpdatedTargets, "claude mcp add exa")
 	return nil
 }
 
@@ -354,9 +354,9 @@ func FormatApplyResult(result ApplyResult) string {
 		}
 	}
 
-	if len(result.UpdatedTarget) > 0 {
+	if len(result.UpdatedTargets) > 0 {
 		builder.WriteString("Updated\n")
-		for _, target := range result.UpdatedTarget {
+		for _, target := range result.UpdatedTargets {
 			builder.WriteString("- " + target + "\n")
 		}
 	}

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/huh"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
@@ -13,12 +14,14 @@ type setupForm struct {
 	selectedProvider string
 	credentialValues map[string]*string // Maps "ProviderID:Key" to pointer to value
 	selectedSlice    []config.AppID
+	lastProvider     string
 }
 
 func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 	sf := &setupForm{
 		ctx:              ctx,
 		selectedProvider: ctx.providerID,
+		lastProvider:     ctx.providerID,
 		credentialValues: make(map[string]*string),
 	}
 
@@ -29,60 +32,61 @@ func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 		}
 	}
 
-	appOptions := make([]huh.Option[config.AppID], len(ctx.manager.Apps))
-	for i, appConfig := range ctx.manager.Apps {
+	// Pre-allocate credential storage for all providers
+	for _, prov := range ctx.registry.All() {
+		provID := prov.ID()
+		for _, spec := range prov.RequiredCredentials() {
+			val := new(string)
+			sf.credentialValues[provID+":"+spec.Key] = val
+			if provID == "exa" && spec.Key == "EXA_API_KEY" && len(ctx.profiles) == 0 {
+				*val = initialRaw
+			}
+		}
+	}
+
+	sf.rebuildForm()
+	return sf
+}
+
+func (sf *setupForm) rebuildForm() {
+	appOptions := make([]huh.Option[config.AppID], len(sf.ctx.manager.Apps))
+	for i, appConfig := range sf.ctx.manager.Apps {
 		appOptions[i] = huh.NewOption(appConfig.Name, appConfig.ID)
 	}
 
-	allProviders := ctx.registry.All()
+	allProviders := sf.ctx.registry.All()
 	providerOptions := make([]huh.Option[string], len(allProviders))
 	for i, prov := range allProviders {
 		providerOptions[i] = huh.NewOption(prov.Name(), prov.ID())
 	}
 
-	groups := []*huh.Group{
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Provider").
-				Description("Choose the MCP server profile to install").
-				Options(providerOptions...).
-				Value(&sf.selectedProvider),
+	fields := []huh.Field{
+		huh.NewSelect[string]().
+			Title("Provider").
+			Description("Choose the MCP server profile to install").
+			Options(providerOptions...).
+			Value(&sf.selectedProvider),
 
-			huh.NewMultiSelect[config.AppID]().
-				Title("Target Apps").
-				Description("Pick the local AI tools that should receive this MCP config").
-				Options(appOptions...).
-				Value(&sf.selectedSlice),
-		),
+		huh.NewMultiSelect[config.AppID]().
+			Title("Target Apps").
+			Description("Pick the local AI tools that should receive this MCP config").
+			Options(appOptions...).
+			Value(&sf.selectedSlice),
 	}
 
-	// For each provider, add a group of credential fields
-	// We use WithHideFunc to only show the relevant group
-	for _, prov := range allProviders {
-		provID := prov.ID()
-		specs := prov.RequiredCredentials()
-		fields := make([]huh.Field, 0, len(specs))
-
-		for _, spec := range specs {
-			// Allocate storage for this credential value
-			val := new(string)
-			sf.credentialValues[provID+":"+spec.Key] = val
-
-			// Special case for backward compatibility: seed initialRaw into Exa key field if not pre-loaded
-			if provID == "exa" && spec.Key == "EXA_API_KEY" && len(ctx.profiles) == 0 {
-				*val = initialRaw
-			}
-
+	// Add fields for the SELECTED provider only
+	prov, ok := sf.ctx.registry.Get(sf.selectedProvider)
+	if ok && len(sf.ctx.profiles) == 0 {
+		for _, spec := range prov.RequiredCredentials() {
+			val := sf.credentialValues[sf.selectedProvider+":"+spec.Key]
 			var field huh.Field
 			if spec.MultiValue {
-				// Use multiline text area for multivalue credentials (like Exa keys)
 				field = huh.NewText().
 					Title(spec.Label).
 					Description(spec.Description).
 					Value(val).
 					Validate(spec.Validator)
 			} else {
-				// Use single line input, password if secret
 				f := huh.NewInput().
 					Title(spec.Label).
 					Description(spec.Description).
@@ -95,19 +99,23 @@ func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 			}
 			fields = append(fields, field)
 		}
-
-		if len(fields) > 0 {
-			group := huh.NewGroup(fields...).
-				WithHideFunc(func() bool {
-					return sf.selectedProvider != provID || len(ctx.profiles) > 0
-				})
-			groups = append(groups, group)
-		}
 	}
 
-	sf.form = huh.NewForm(groups...).WithTheme(huh.ThemeCatppuccin())
+	sf.form = huh.NewForm(huh.NewGroup(fields...)).WithTheme(huh.ThemeCatppuccin())
+}
 
-	return sf
+func (sf *setupForm) update(msg tea.Msg) (*setupForm, tea.Cmd) {
+	_, cmd := sf.form.Update(msg)
+	
+	// If the provider has changed, we must rebuild the form to show the correct credential fields
+	if sf.selectedProvider != sf.lastProvider {
+		sf.lastProvider = sf.selectedProvider
+		sf.rebuildForm()
+		// After rebuilding, we need to Init the new form
+		return sf, sf.form.Init()
+	}
+	
+	return sf, cmd
 }
 
 func (sf *setupForm) syncToContext() {
