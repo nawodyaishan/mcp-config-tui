@@ -1,4 +1,4 @@
-# Phase 2 Plan: Provider Registry and Dynamic TUI Wizard
+# Phase 2 Implementation Plan: Provider Registry and Dynamic Wizard
 
 ## Objective
 

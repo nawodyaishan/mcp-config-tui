@@ -1,7 +1,7 @@
 # Phase 1 Implementation Plan: Core Interface & Exa Abstraction
 
 ## Objective
-Establish the foundational Provider/Registry architecture by decoupling the `exa-mcp-manager` from its hardcoded Exa implementation. This phase will introduce the generic `provider` package and migrate the existing Exa logic into an `ExaProvider`, ensuring all current functionality remains intact before we scale to new providers.
+Establish the foundational Provider/Registry architecture by decoupling the `usync` from its hardcoded Exa implementation. This phase will introduce the generic `provider` package and migrate the existing Exa logic into an `ExaProvider`, ensuring all current functionality remains intact before we scale to new providers.
 
 ## Task Breakdown
 

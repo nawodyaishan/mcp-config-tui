@@ -1,4 +1,4 @@
-# Future Scalability Research & Architecture
+# Architecture: Future Scalability & Plugin Research
 
 ## Objective
 Research and define the long-term architectural roadmap for the Universal MCP Sync tool to ensure it scales elegantly to support hundreds of MCP servers and community-driven extensions.

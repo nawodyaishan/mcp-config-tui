@@ -1,4 +1,4 @@
-# Architectural Plan: Universal MCP Configuration Manager
+# Architecture: Universal MCP Sync Engine
 
 ## 1. Product Vision & Problem Statement
 
@@ -14,7 +14,7 @@ The Model Context Protocol (MCP) is standardizing how AI agents communicate with
 - Finding the correct execution method for a popular server (e.g., `npx -y @modelcontextprotocol/server-github` vs a Streamable HTTP endpoint) requires digging through READMEs.
 
 ### The Solution
-Transform the `exa-mcp-manager` into a **Universal MCP Sync Engine**. It will serve as the single source of truth for an engineer's local AI environment. A developer selects a capability (e.g., "GitHub Integration"), provides their token once via a guided TUI wizard, and the tool intelligently translates and distributes that configuration across all supported AI clients.
+Transform the `usync` into a **Universal MCP Sync Engine**. It will serve as the single source of truth for an engineer's local AI environment. A developer selects a capability (e.g., "GitHub Integration"), provides their token once via a guided TUI wizard, and the tool intelligently translates and distributes that configuration across all supported AI clients.
 
 ---
 

@@ -1,4 +1,4 @@
-# Go TUI Spec: Exa MCP Config Manager for macOS
+# Project Specification: Universal MCP Sync
 
 ## Summary
 
@@ -154,9 +154,9 @@ https://mcp.exa.ai/mcp?exaApiKey=<KEY>&tools=<comma-separated-tools>
 Use this project layout:
 
 ```text
-exa-mcp-manager/
+usync/
   go.mod
-  cmd/exa-mcp-manager/main.go
+  cmd/usync/main.go
   pkg/app/app.go
   pkg/config/paths.go
   pkg/config/json_update.go
@@ -193,11 +193,11 @@ Core packages:
 Support non-interactive and TUI modes:
 
 ```bash
-exa-mcp-manager
-exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt
-exa-mcp-manager --keys "key1,key2"
-exa-mcp-manager --dry-run --keys-file ~/Downloads/exa_keys.txt
-exa-mcp-manager --apply --keys-file ~/Downloads/exa_keys.txt
+usync
+usync --keys-file ~/Downloads/exa_keys.txt
+usync --keys "key1,key2"
+usync --dry-run --keys-file ~/Downloads/exa_keys.txt
+usync --apply --keys-file ~/Downloads/exa_keys.txt
 ```
 
 Rules:
