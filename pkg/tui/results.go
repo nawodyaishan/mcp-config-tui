@@ -25,7 +25,9 @@ func (m resultsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m resultsModel) View() string {
-	return "Results\n=======\n\n" +
-		trimPreview(app.FormatApplyResult(m.ctx.result), 60) +
-		"\n\nEnter: quit\n"
+	return renderSection(
+		"Results",
+		trimPreview(app.FormatApplyResult(m.ctx.result), 60),
+		renderKeyHelp("enter quit", "q quit"),
+	)
 }

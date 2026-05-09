@@ -43,14 +43,14 @@ func newSetupForm(ctx *wizardContext, initialRaw string) *setupForm {
 	groups := []*huh.Group{
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Title("Select Provider").
-				Description("Choose the MCP provider you want to configure").
+				Title("Provider").
+				Description("Choose the MCP server profile to install").
 				Options(providerOptions...).
 				Value(&sf.selectedProvider),
 
 			huh.NewMultiSelect[config.AppID]().
-				Title("Select Target Apps").
-				Description("Choose which applications to update").
+				Title("Target Apps").
+				Description("Pick the local AI tools that should receive this MCP config").
 				Options(appOptions...).
 				Value(&sf.selectedSlice),
 		),
