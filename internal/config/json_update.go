@@ -4,43 +4,70 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
-func UpdateMCPServersJSON(data []byte, fieldName, exaURL string) ([]byte, error) {
+func buildConfigMap(cfg provider.MCPConfig, urlFieldName string) map[string]any {
+	result := make(map[string]any)
+	if cfg.Type == provider.TransportStdio {
+		result["command"] = cfg.Command
+		if len(cfg.Args) > 0 {
+			result["args"] = cfg.Args
+		}
+		if len(cfg.Env) > 0 {
+			result["env"] = cfg.Env
+		}
+	} else {
+		// HTTP or SSE
+		if urlFieldName != "" {
+			result[urlFieldName] = cfg.URL
+		} else {
+			result["url"] = cfg.URL
+		}
+	}
+	return result
+}
+
+func UpdateMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
 	servers := ensureObject(root, "mcpServers")
-	servers["exa"] = map[string]any{
-		fieldName: exaURL,
-	}
+	servers[providerID] = buildConfigMap(cfg, urlFieldName)
 
 	return marshalJSON(root)
 }
 
-func UpdateBareMCPServersJSON(data []byte, fieldName, exaURL string) ([]byte, error) {
+func UpdateBareMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
-	root["exa"] = map[string]any{
-		fieldName: exaURL,
-	}
+	root[providerID] = buildConfigMap(cfg, urlFieldName)
 
 	return marshalJSON(root)
 }
 
-func UpdateNamedServerJSON(data []byte, serverName, fieldName, exaURL string) ([]byte, error) {
+func UpdateNamedServerJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
-	server := ensureObject(root, serverName)
-	server[fieldName] = exaURL
+	server := ensureObject(root, providerID)
+	// For named server updates (like Antigravity), we typically only update the URL field
+	// and preserve the rest of the object.
+	if cfg.Type != provider.TransportStdio {
+		server[urlFieldName] = cfg.URL
+	} else {
+		// If it switches to stdio, we overwrite with the full stdio map
+		server = buildConfigMap(cfg, urlFieldName)
+		root[providerID] = server
+	}
 
 	return marshalJSON(root)
 }

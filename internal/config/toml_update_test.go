@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 func TestUpdateCodexTOMLReplacesExistingExaBlockOnce(t *testing.T) {
@@ -14,7 +16,8 @@ func TestUpdateCodexTOMLReplacesExistingExaBlockOnce(t *testing.T) {
 	}
 
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
-	updated, err := UpdateCodexTOML(data, exaURL)
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
+	updated, err := UpdateCodexTOML(data, "exa", cfg)
 	if err != nil {
 		t.Fatalf("UpdateCodexTOML returned error: %v", err)
 	}

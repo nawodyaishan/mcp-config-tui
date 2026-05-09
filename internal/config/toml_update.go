@@ -3,35 +3,43 @@ package config
 import (
 	"fmt"
 	"strings"
+
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
-func UpdateCodexTOML(data []byte, exaURL string) ([]byte, error) {
+func UpdateCodexTOML(data []byte, providerID string, cfg provider.MCPConfig) ([]byte, error) {
+	if cfg.Type == provider.TransportStdio {
+		return nil, fmt.Errorf("stdio transport is not supported in Codex TOML")
+	}
+
 	block := []string{
-		"[mcp_servers.exa]",
-		fmt.Sprintf("url = %q", exaURL),
+		fmt.Sprintf("[mcp_servers.%s]", providerID),
+		fmt.Sprintf("url = %q", cfg.URL),
 	}
 
 	text := string(data)
 	lines := strings.Split(text, "\n")
 	output := make([]string, 0, len(lines)+3)
-	inExa := false
+	inProvider := false
 	inserted := false
+
+	targetHeader := fmt.Sprintf("[mcp_servers.%s]", providerID)
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if isSectionHeader(trimmed) {
-			if trimmed == "[mcp_servers.exa]" {
+			if trimmed == targetHeader {
 				if !inserted {
 					output = append(output, block...)
 					inserted = true
 				}
-				inExa = true
+				inProvider = true
 				continue
 			}
-			inExa = false
+			inProvider = false
 		}
 
-		if inExa {
+		if inProvider {
 			continue
 		}
 

@@ -5,13 +5,16 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {
 	data := mustReadFixture(t, "claude_desktop.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateMCPServersJSON(data, "url", exaURL)
+	updated, err := UpdateMCPServersJSON(data, "exa", "url", cfg)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -34,8 +37,9 @@ func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {
 func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	data := mustReadFixture(t, "gemini_settings.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateMCPServersJSON(data, "httpUrl", exaURL)
+	updated, err := UpdateMCPServersJSON(data, "exa", "httpUrl", cfg)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -57,8 +61,9 @@ func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 func TestUpdateBareMCPServersJSON(t *testing.T) {
 	data := []byte("{\n  \"other\": {\n    \"url\": \"https://example.com\"\n  }\n}\n")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateBareMCPServersJSON(data, "httpUrl", exaURL)
+	updated, err := UpdateBareMCPServersJSON(data, "exa", "httpUrl", cfg)
 	if err != nil {
 		t.Fatalf("UpdateBareMCPServersJSON returned error: %v", err)
 	}
@@ -79,8 +84,9 @@ func TestUpdateBareMCPServersJSON(t *testing.T) {
 func TestUpdateNamedServerJSONReplacesMalformedAntigravityURL(t *testing.T) {
 	data := mustReadFixture(t, "antigravity.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateNamedServerJSON(data, "exa", "serverUrl", exaURL)
+	updated, err := UpdateNamedServerJSON(data, "exa", "serverUrl", cfg)
 	if err != nil {
 		t.Fatalf("UpdateNamedServerJSON returned error: %v", err)
 	}
