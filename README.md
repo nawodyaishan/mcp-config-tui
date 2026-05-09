@@ -166,12 +166,12 @@ Current hooks:
 
 ```text
 cmd/exa-mcp-manager/   current CLI entrypoint
-internal/app/          planning, apply flow, rollback, formatting
-internal/config/       path detection and file mutation helpers
-internal/exa/          Exa key parsing, redaction, URL construction
-internal/provider/     provider abstraction and provider implementations
-internal/tui/          Bubble Tea router and TUI screens
-internal/verify/       file and optional CLI verification
+pkg/app/          planning, apply flow, rollback, formatting
+pkg/config/       path detection and file mutation helpers
+pkg/exa/          Exa key parsing, redaction, URL construction
+pkg/provider/     provider abstraction and provider implementations
+pkg/tui/          Bubble Tea router and TUI screens
+pkg/verify/       file and optional CLI verification
 docs/                  product, architecture, and phase plans
 tests/                 repo-level validation scripts
 ```
@@ -182,9 +182,9 @@ The runtime product is still Exa-first, but the internals are moving toward a pr
 
 That direction already shows up in the code:
 
-- `internal/provider` defines `MCPProvider`, `MCPConfig`, and transport types
-- `internal/config` now mutates client config from provider-generated config rather than raw Exa-only strings
-- `internal/app` owns planning, apply, rollback, and verification orchestration
+- `pkg/provider` defines `MCPProvider`, `MCPConfig`, and transport types
+- `pkg/config` now mutates client config from provider-generated config rather than raw Exa-only strings
+- `pkg/app` owns planning, apply, rollback, and verification orchestration
 
 The next major step is a provider registry and dynamic credential-driven TUI setup so Exa can run through the same path future providers will use.
 
