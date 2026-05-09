@@ -4,10 +4,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/exa"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 type stage int

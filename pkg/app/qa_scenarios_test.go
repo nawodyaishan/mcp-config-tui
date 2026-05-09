@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 )
 
 func TestQAExaReadmeScenarios(t *testing.T) {

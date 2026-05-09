@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 func TestVerifyBareMCPServersFile(t *testing.T) {

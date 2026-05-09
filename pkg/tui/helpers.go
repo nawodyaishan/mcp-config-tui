@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 const defaultViewWidth = 88
@@ -77,14 +77,6 @@ func renderError(err error) string {
 		return ""
 	}
 	return "\n" + errorStyle.Render("Error: "+err.Error()) + "\n"
-}
-
-func trimPreview(text string, lines int) string {
-	split := strings.Split(text, "\n")
-	if len(split) <= lines {
-		return text
-	}
-	return strings.Join(split[:lines], "\n")
 }
 
 func renderShell(body string, current stage, width int) string {

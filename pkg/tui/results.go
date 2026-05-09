@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/verify"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/verify"
 )
 
 type resultsModel struct {

@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/exa"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/verify"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/verify"
 )
 
 type fakeRunner struct {

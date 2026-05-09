@@ -3,7 +3,7 @@ package provider
 import (
 	"fmt"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/exa"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 )
 
 type ExaProvider struct{}

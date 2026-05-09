@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {

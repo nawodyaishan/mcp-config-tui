@@ -7,10 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/tui"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/version"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/tui"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/version"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 )
 
 type assignmentModel struct {

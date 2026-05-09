@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 func buildConfigMap(cfg provider.MCPConfig, urlFieldName string, extra map[string]any) map[string]any {

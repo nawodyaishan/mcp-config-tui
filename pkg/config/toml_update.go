@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 func UpdateCodexTOML(data []byte, providerID string, cfg provider.MCPConfig) ([]byte, error) {
