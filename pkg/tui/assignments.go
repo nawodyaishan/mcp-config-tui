@@ -58,8 +58,6 @@ func (m assignmentModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m assignmentModel) View() string {
 	var builder strings.Builder
-	builder.WriteString("Distribute Credentials\n")
-	builder.WriteString("======================\n\n")
 	selectedApps := selectedAppIDs(m.ctx.manager.Apps, m.ctx.selected)
 	for i, appID := range selectedApps {
 		cursor := " "
@@ -68,8 +66,11 @@ func (m assignmentModel) View() string {
 		}
 		fmt.Fprintf(&builder, "%s %s -> %s\n", cursor, config.AppName(appID), assignmentLabel(m.ctx.profiles, m.ctx.assignments[appID]))
 	}
-	builder.WriteString("\nUp/Down: move  Left/Right: change profile  Enter: preview  b: back\n")
-	return builder.String()
+	return renderSection(
+		"Distribute Credentials",
+		builder.String(),
+		renderKeyHelp("up/down move", "left/right change", "enter preview", "b back"),
+	)
 }
 
 func (m *assignmentModel) rotateAssignment(selectedApps []config.AppID, delta int) {

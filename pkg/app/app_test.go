@@ -119,6 +119,18 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 		t.Fatal("expected verification results")
 	}
 
+	claudeDesktopPath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
+	claudeDesktopData, err := os.ReadFile(claudeDesktopPath)
+	if err != nil {
+		t.Fatalf("read Claude Desktop config: %v", err)
+	}
+	if !bytes.Contains(claudeDesktopData, []byte(`"command": "npx"`)) {
+		t.Fatalf("expected Claude Desktop config to use stdio bridge, got:\n%s", string(claudeDesktopData))
+	}
+	if !bytes.Contains(claudeDesktopData, []byte(`"mcp-remote"`)) {
+		t.Fatalf("expected Claude Desktop config to use mcp-remote, got:\n%s", string(claudeDesktopData))
+	}
+
 	for _, item := range result.Verification {
 		// Optional CLIs might be skipped or warning, but files must be OK
 		if strings.HasSuffix(item.Target, ".json") || strings.HasSuffix(item.Target, ".toml") {

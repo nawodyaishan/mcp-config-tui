@@ -154,6 +154,7 @@ func (m *Manager) PrepareProvider(
 		}
 
 		for _, file := range appConfig.Files {
+			fileCfg := configForTarget(appConfig.ID, prov.ID(), cfg)
 			plan.Operations = append(plan.Operations, Operation{
 				AppID:           appConfig.ID,
 				AppName:         appConfig.Name,
@@ -162,7 +163,7 @@ func (m *Manager) PrepareProvider(
 				Kind:            file.Kind,
 				CredentialLabel: profile.Label,
 				ProviderID:      prov.ID(),
-				Config:          cfg,
+				Config:          fileCfg,
 				BackupPath:      backupPathFor(file, m.Now()),
 				WillCreate:      !file.Exists,
 			})
@@ -170,6 +171,17 @@ func (m *Manager) PrepareProvider(
 	}
 
 	return plan, nil
+}
+
+func configForTarget(appID config.AppID, providerID string, cfg provider.MCPConfig) provider.MCPConfig {
+	if providerID == "exa" && appID == config.AppClaudeDesktop && cfg.Type != provider.TransportStdio {
+		return provider.MCPConfig{
+			Type:    provider.TransportStdio,
+			Command: "npx",
+			Args:    []string{"-y", "mcp-remote", cfg.URL},
+		}
+	}
+	return cfg
 }
 
 func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {

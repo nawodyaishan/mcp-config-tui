@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"github.com/charmbracelet/huh"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 
 	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
 	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
@@ -20,8 +20,9 @@ const (
 )
 
 type Model struct {
-	ctx *wizardContext
+	ctx   *wizardContext
 	stage stage
+	width int
 
 	// Sub-models
 	setupForm   *setupForm
@@ -83,6 +84,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
 	case nextMsg:
 		m.stage++
 		return m, nil
@@ -132,7 +135,7 @@ func (m Model) View() string {
 	if m.ctx.err != nil {
 		view += renderError(m.ctx.err)
 	}
-	return view
+	return renderShell(view, m.stage, m.width)
 }
 
 func (m Model) Err() error {
