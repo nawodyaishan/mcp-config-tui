@@ -24,9 +24,25 @@ func (p *ExaProvider) Description() string {
 	return "Web search and retrieval for AI agents."
 }
 
-func (p *ExaProvider) RequiredCredentials() map[string]string {
-	return map[string]string{
-		"EXA_API_KEY": "Exa API Key (UUID format)",
+func (p *ExaProvider) RequiredCredentials() []CredentialSpec {
+	return []CredentialSpec{
+		{
+			Key:         "EXA_API_KEY",
+			Label:       "Exa API Keys",
+			Description: "Paste one or more UUID-style keys (one per line or key = \"...\" format)",
+			Secret:      true,
+			MultiValue:  true,
+			Validator: func(s string) error {
+				keys, err := exa.ParseKeys(s)
+				if err != nil {
+					return fmt.Errorf("invalid keys: %w", err)
+				}
+				if len(keys) == 0 {
+					return fmt.Errorf("at least one valid Exa API key is required")
+				}
+				return nil
+			},
+		},
 	}
 }
 
