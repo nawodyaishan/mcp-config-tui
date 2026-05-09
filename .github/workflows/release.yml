@@ -20,7 +20,7 @@ jobs:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56.2
+          version: v1.64.8
 
   # Gate: run tests before releasing
   test:
