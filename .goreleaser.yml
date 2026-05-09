@@ -45,7 +45,7 @@ changelog:
       - "^chore:"
 
 # Homebrew Tap Formula
-homebrews:
+brews:
   - repository:
       owner: nawodyaishan
       name: homebrew-tap
