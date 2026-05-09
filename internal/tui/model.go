@@ -6,6 +6,8 @@ import (
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/app"
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
+	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 )
 
 type stage int
@@ -34,11 +36,29 @@ func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Mod
 		selected[appConfig.ID] = true
 	}
 
+	registry := provider.DefaultRegistry()
+
 	ctx := &wizardContext{
 		manager:     manager,
-		keys:        initialKeys,
+		registry:    registry,
+		providerID:  "exa", // Default to Exa, will be updated by setup form
 		selected:    selected,
 		assignments: app.DefaultAssignments(selected, len(initialKeys)),
+	}
+
+	// For backward compatibility, if keys were passed in, we seed them as profiles for Exa
+	if len(initialKeys) > 0 {
+		profiles := make([]provider.CredentialProfile, len(initialKeys))
+		for i, key := range initialKeys {
+			profiles[i] = provider.CredentialProfile{
+				ProviderID: "exa",
+				Values: map[string]string{
+					"EXA_API_KEY": key,
+				},
+				Label: exa.RedactKey(key),
+			}
+		}
+		ctx.profiles = profiles
 	}
 
 	model := Model{
@@ -82,7 +102,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		_, cmd = m.setupForm.form.Update(msg)
 		if m.setupForm.form.State == huh.StateCompleted {
 			m.setupForm.syncToContext()
-			m.ctx.assignments = app.DefaultAssignments(m.ctx.selected, len(m.ctx.keys))
+			m.ctx.assignments = app.DefaultAssignments(m.ctx.selected, len(m.ctx.profiles))
 			m.stage = stageAssignments
 		}
 	case stageAssignments:

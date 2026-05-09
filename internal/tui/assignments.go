@@ -42,7 +42,7 @@ func (m assignmentModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ctx.err = fmt.Errorf("select at least one target app")
 			return m, signalBack
 		}
-		plan, err := m.ctx.manager.Prepare(m.ctx.keys, m.ctx.selected, m.ctx.assignments)
+		plan, err := m.ctx.manager.PrepareProvider(m.ctx.provider, m.ctx.profiles, m.ctx.selected, m.ctx.assignments)
 		if err != nil {
 			m.ctx.err = err
 			return m, nil
@@ -58,31 +58,31 @@ func (m assignmentModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m assignmentModel) View() string {
 	var builder strings.Builder
-	builder.WriteString("Distribute Keys\n")
-	builder.WriteString("===============\n\n")
+	builder.WriteString("Distribute Credentials\n")
+	builder.WriteString("======================\n\n")
 	selectedApps := selectedAppIDs(m.ctx.manager.Apps, m.ctx.selected)
 	for i, appID := range selectedApps {
 		cursor := " "
 		if m.cursor == i {
 			cursor = ">"
 		}
-		fmt.Fprintf(&builder, "%s %s -> %s\n", cursor, config.AppName(appID), assignmentLabel(m.ctx.keys, m.ctx.assignments[appID]))
+		fmt.Fprintf(&builder, "%s %s -> %s\n", cursor, config.AppName(appID), assignmentLabel(m.ctx.profiles, m.ctx.assignments[appID]))
 	}
-	builder.WriteString("\nUp/Down: move  Left/Right: change key  Enter: preview  b: back\n")
+	builder.WriteString("\nUp/Down: move  Left/Right: change profile  Enter: preview  b: back\n")
 	return builder.String()
 }
 
 func (m *assignmentModel) rotateAssignment(selectedApps []config.AppID, delta int) {
-	if len(m.ctx.keys) <= 1 || len(selectedApps) == 0 {
+	if len(m.ctx.profiles) <= 1 || len(selectedApps) == 0 {
 		return
 	}
 	appID := selectedApps[m.cursor]
 	current := m.ctx.assignments[appID]
 	next := current + delta
 	if next < 0 {
-		next = len(m.ctx.keys) - 1
+		next = len(m.ctx.profiles) - 1
 	}
-	if next >= len(m.ctx.keys) {
+	if next >= len(m.ctx.profiles) {
 		next = 0
 	}
 	m.ctx.assignments[appID] = next
