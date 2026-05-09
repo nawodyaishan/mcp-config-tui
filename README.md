@@ -40,6 +40,21 @@ Not for you yet if:
 - **Provider-neutral CLI flags**: Planned
 - **Windows config paths**: Planned
 
+## Why a dedicated tool vs. manual AI agent configuration?
+
+You might ask: *"If I have powerful AI agents, why do I need a tool for this?"*
+
+Fair point — AI agents *can* edit these configuration files manually. But the goal of `usync` is not simply "can an agent do it once?" 
+
+The goal is to make MCP configuration **repeatable, testable, reviewable, and safe** across an entire fleet of clients. 
+
+For local configurations touching sensitive API keys, `usync` provides a critical safety layer that a general-purpose agent lacks:
+- **Safety First**: Dry-run previews + automatic secret redaction ensure you know exactly what is changing before a write occurs.
+- **Resilience**: Atomic writes with automatic, timestamped backups and instant rollback capabilities if something goes wrong.
+- **Standardization**: High-fidelity QA verification against "Golden Path" scenarios ensures every config is syntactically correct according to official documentation.
+
+Instead of hoping an agent edits every JSON/TOML file correctly every time, `usync` guarantees the structural integrity of your AI toolchain.
+
 ## What It Does Today
 
 Core value:
