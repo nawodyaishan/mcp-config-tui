@@ -17,4 +17,4 @@ printf "Running release guard: make verify\n"
 bash scripts/verify.sh
 git tag -a "${V}" -m "${MSG}"
 git push origin "${V}"
-printf "Released %s. Monitor: https://github.com/nawodyaishan/mcp-config-tui/actions\n" "${V}"
+printf "Released %s. Monitor: https://github.com/nawodyaishan/usync/actions\n" "${V}"

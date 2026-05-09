@@ -1,14 +1,16 @@
-# Universal MCP Sync (Exa-First)
+# Universal MCP Sync
+
+[![Release](https://img.shields.io/github/v/release/nawodyaishan/universal-mcp-sync?display_name=tag)](https://github.com/nawodyaishan/universal-mcp-sync/releases)
+[![CI](https://github.com/nawodyaishan/universal-mcp-sync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/universal-mcp-sync/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/nawodyaishan/universal-mcp-sync)](./LICENSE)
 
 <p align="center">
   <img src="assets/images/banner.jpeg" width="800" alt="Universal MCP Sync Banner">
 </p>
 
-[![Release](https://img.shields.io/github/v/release/nawodyaishan/mcp-config-tui?display_name=tag)](https://github.com/nawodyaishan/mcp-config-tui/releases)
-[![CI](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/nawodyaishan/mcp-config-tui)](./LICENSE)
+> [!IMPORTANT]
+> **Universal MCP Sync** (`usync`) is an Exa-first MCP configuration sync tool for 12+ local AI clients. Previously shipped as `exa-mcp-manager`.
 
-**`exa-mcp-manager` is an Exa-first MCP configuration sync tool for 12+ local AI clients. Internally, it is evolving into a provider-based Universal MCP Sync engine.**
 
 One source of truth for your local AI toolchain. Sync your Exa MCP configuration across Claude Desktop, Cursor, Gemini CLI, Zed, and more with dry-run previews, secret redaction, and atomic rollbacks.
 
@@ -52,12 +54,12 @@ Current supported app targets on macOS:
 1. **Install** the binary via Homebrew:
    ```bash
    brew tap nawodyaishan/homebrew-tap
-   brew install exa-mcp-manager
+   brew install usync
    ```
 
 2. **Run a Dry Run** to preview changes:
    ```bash
-   exa-mcp-manager --keys-file ./exa_keys.txt --dry-run
+   usync --keys-file ./exa_keys.txt --dry-run
    ```
 
 3. **Review Output** (Redacted for safety):
@@ -73,7 +75,7 @@ Current supported app targets on macOS:
 
 4. **Apply** the changes:
    ```bash
-   exa-mcp-manager --keys-file ./exa_keys.txt --apply
+   usync --keys-file ./exa_keys.txt --apply
    ```
 
 ## What Files Can It Modify?
@@ -105,9 +107,9 @@ The core logic is available under `pkg/`. **Note**: The API is pre-stable; break
 ```go
 import (
     "fmt"
-    "github.com/nawodyaishan/mcp-config-tui/pkg/app"
-    "github.com/nawodyaishan/mcp-config-tui/pkg/provider"
-    "github.com/nawodyaishan/mcp-config-tui/pkg/config"
+    "github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+    "github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+    "github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 )
 
 func main() {
@@ -141,6 +143,28 @@ func main() {
     fmt.Printf("Successfully updated %d targets\n", len(result.UpdatedTarget))
 }
 ```
+
+## Development
+
+### Workflow
+```bash
+make tidy    # Clean up dependencies
+make lint    # Run golangci-lint
+make test    # Run all tests
+make build   # Build the binary
+```
+
+### Git Hooks
+This repo uses [Lefthook](https://github.com/evilmartians/lefthook) to ensure code quality before every commit.
+
+```bash
+brew install lefthook
+lefthook install
+```
+
+Current hooks:
+- **`pre-commit`**: Runs `gofmt`, `make vet`, `make lint`, and `make gitignore-check`.
+- **`pre-push`**: Runs `make test`, `make build`, and `make gitignore-check`.
 
 ## Contributing
 

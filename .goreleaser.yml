@@ -1,15 +1,15 @@
 version: 2
 
-project_name: exa-mcp-manager
+project_name: usync
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: exa-mcp-manager
-    main: ./cmd/exa-mcp-manager
-    binary: exa-mcp-manager
+  - id: usync
+    main: ./cmd/usync
+    binary: usync
     env:
       - CGO_ENABLED=0
     goos:
@@ -21,10 +21,10 @@ builds:
     ldflags:
       - >-
         -s -w
-        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Version={{ .Version }}
-        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Commit={{ .ShortCommit }}
-        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Date={{ .Date }}
-        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.GoVersion={{ .Env.GOVERSION }}
+        -X github.com/nawodyaishan/universal-mcp-sync/pkg/version.Version={{ .Version }}
+        -X github.com/nawodyaishan/universal-mcp-sync/pkg/version.Commit={{ .ShortCommit }}
+        -X github.com/nawodyaishan/universal-mcp-sync/pkg/version.Date={{ .Date }}
+        -X github.com/nawodyaishan/universal-mcp-sync/pkg/version.GoVersion={{ .Env.GOVERSION }}
 
 archives:
   - id: default
@@ -50,21 +50,22 @@ brews:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/nawodyaishan/mcp-config-tui"
-    description: "macOS-first developer utility for wiring Exa MCP into local AI tools"
+    homepage: "https://github.com/nawodyaishan/universal-mcp-sync"
+    description: "macOS-first developer utility for universal MCP configuration sync"
     license: "MIT"
     test: |
-      system "#{bin}/exa-mcp-manager", "--help"
+      system "#{bin}/usync", "--help"
     install: |
-      bin.install "exa-mcp-manager"
+      bin.install "usync"
 
 # nFPM for deb/rpm packages (bonus)
 nfpms:
   - id: packages
-    package_name: exa-mcp-manager
+    package_name: usync
     vendor: nawodyaishan
-    homepage: https://github.com/nawodyaishan/mcp-config-tui
-    description: "macOS-first developer utility for wiring Exa MCP into local AI tools"
+    homepage: https://github.com/nawodyaishan/universal-mcp-sync
+    description: "macOS-first developer utility for universal MCP configuration sync"
+
     license: MIT
     formats:
       - deb

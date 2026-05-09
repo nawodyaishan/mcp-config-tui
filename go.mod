@@ -1,4 +1,4 @@
-module github.com/nawodyaishan/mcp-config-tui
+module github.com/nawodyaishan/universal-mcp-sync
 
 go 1.23.0
 

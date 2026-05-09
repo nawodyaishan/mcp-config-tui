@@ -4,10 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-APP="exa-mcp-manager"
+APP="usync"
 CMD="./cmd/${APP}"
 BIN="./bin/${APP}"
-PKG_VERSION="github.com/nawodyaishan/mcp-config-tui/pkg/version"
+PKG_VERSION="github.com/nawodyaishan/usync/pkg/version"
 
 export GOCACHE="${REPO_ROOT}/.cache/go-build"
 export GOMODCACHE="${REPO_ROOT}/.cache/go-mod"
