@@ -109,4 +109,4 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          go build -o ./bin/exa-mcp-manager ./cmd/exa-mcp-manager
+          go build -o ./bin/usync ./cmd/usync
