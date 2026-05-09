@@ -106,6 +106,18 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 	if !bytes.Contains(data, []byte(`"url":`)) {
 		t.Errorf("Cursor mismatch")
 	}
+
+	// 9. Verify Kiro (Standard url)
+	data, _ = os.ReadFile(kiroPath)
+	if !bytes.Contains(data, []byte(`"url":`)) {
+		t.Errorf("Kiro mismatch")
+	}
+
+	// 10. Verify Codex (TOML url)
+	data, _ = os.ReadFile(codexPath)
+	if !bytes.Contains(data, []byte(`url = "https://mcp.exa.ai/mcp`)) {
+		t.Errorf("Codex mismatch")
+	}
 }
 
 func TestQAIdempotency(t *testing.T) {
