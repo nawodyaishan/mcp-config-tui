@@ -1,23 +1,31 @@
-# Exa MCP Config Manager
+# MCP Config TUI
 
-`exa-mcp-manager` is a macOS-first developer utility for wiring Exa MCP into the AI tools you already use.
+[![Release](https://img.shields.io/github/v/release/nawodyaishan/mcp-config-tui?display_name=tag)](https://github.com/nawodyaishan/mcp-config-tui/releases)
+[![CI](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/nawodyaishan/mcp-config-tui)](./LICENSE)
 
-Instead of updating Claude Desktop, Claude Code, Gemini CLI, Antigravity, and Codex by hand, this project gives you one place to load keys, distribute them across apps, preview changes, apply safely, and verify the result.
+`mcp-config-tui` is a macOS-first utility for developers who use multiple local AI tools and want one safe way to manage MCP configuration across them.
 
-## Why This Exists
+The current shipped CLI is `exa-mcp-manager`. Today it automates Exa MCP rollout. The codebase is already being refactored toward a provider-based MCP sync tool, but the user-facing product is still Exa-first.
 
-If you use multiple local AI tools, MCP setup tends to drift:
+## Who This Is For
 
-- one app points at an old server URL
-- another has a stale tool list
-- one key is getting all the traffic
-- one config is right, but the others are not
+Primary audience:
 
-This project is meant to remove that friction for developers who want a repeatable local setup instead of a pile of one-off edits.
+- developers using Claude Desktop, Claude Code, Gemini CLI, Antigravity, or Codex on the same machine
+- developers who want to stop hand-editing several MCP config files every time a server URL, tool list, or credential changes
+- developers who care about dry-run previews, rollback, redaction, and verification before touching local config
 
-## Current Scope
+Secondary audience:
 
-The current implementation targets these apps on macOS:
+- contributors extending the tool from Exa-only rollout into a broader provider-driven MCP manager
+- internal tooling engineers experimenting with a local MCP sync workflow before generalizing it
+
+This is not yet a generic MCP installer for every server or client. It is a focused tool with a clear next step toward that architecture.
+
+## What It Does Today
+
+Current supported app targets on macOS:
 
 - Claude Desktop
 - Claude Code
@@ -25,52 +33,74 @@ The current implementation targets these apps on macOS:
 - Antigravity
 - Codex CLI
 
-It currently supports:
+Current provider support:
 
-- UUID-style Exa key parsing from flags, files, and TUI input
-- redacted previews instead of full key output
-- multi-app key assignment
-- JSON and TOML config updates for supported apps
-- timestamped backups
-- transactional file updates with rollback on later file-write failure
-- optional CLI verification for `codex` and `claude`
+- Exa
 
-Reference docs:
+Current capabilities:
 
-- [Product Spec](docs/exa-mcp-manager-spec.md)
-- [Next Phase Plan](docs/next-phase-plan.md)
+- parse Exa API keys from flags, files, or TUI input
+- distribute multiple keys across supported apps
+- preview redacted changes before apply
+- update JSON and TOML client configs in client-specific formats
+- back up touched files
+- roll back file updates if a later file write fails
+- verify updated file state and run optional CLI checks when available
 
-## Developer Experience
+## Why Use It
 
-This repo is built for developers who want to work on the tool itself as well as developers who want to use it locally.
+MCP configuration drifts quickly when you use more than one local AI client:
 
-What matters here:
+- each client wants a different config shape
+- one tool may still point at an old MCP endpoint
+- one credential may end up taking all traffic
+- manual edits are easy to get wrong and hard to verify
 
-- Bubble Tea TUI for the interactive flow
-- standard library config mutation and verification
-- repo-local Go cache defaults in the `Makefile`
-- tests that cover rollback, redaction, verification semantics, and config fixtures
+This tool gives you a single flow to detect targets, generate the correct config form for each client, preview changes, apply safely, and verify the result.
 
-## Quick Start
+## Install
 
 Requirements:
 
-- Go `1.22+`
-- macOS target environment
+- Go `1.23+` for local builds
+- macOS for the currently supported config-path workflow
 
-Common flows:
+Release distribution currently includes:
+
+- Homebrew formula via `nawodyaishan/homebrew-tap`
+- release archives for macOS, Linux, and Windows
+- `deb` and `rpm` packages via GoReleaser/nFPM
+
+Homebrew:
 
 ```bash
-make tidy
-make test
+brew tap nawodyaishan/homebrew-tap
+brew install exa-mcp-manager
+```
+
+Build locally:
+
+```bash
 make build
+```
+
+## Use
+
+Interactive TUI:
+
+```bash
 make run
 ```
 
-Non-interactive examples:
+Dry run:
 
 ```bash
 make dry-run KEYS_FILE=~/Downloads/exa_keys.txt
+```
+
+Apply without launching the TUI:
+
+```bash
 make apply KEYS_FILE=~/Downloads/exa_keys.txt
 ```
 
@@ -82,84 +112,100 @@ go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
 go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
 ```
 
+Current non-interactive flags are still Exa-specific:
+
+- `--keys`
+- `--keys-file`
+- `--dry-run`
+- `--apply`
+
+## Safety Model
+
+This tool edits local developer config, so the design favors correctness over speed.
+
+- full API keys should never appear in UI, logs, dry-run output, apply output, or verification output
+- file-backed updates create backups and use rollback-aware writes
+- optional CLI verification should not fail the run only because a CLI is missing
+- Claude Code is handled through CLI commands rather than direct `~/.claude.json` mutation
+
 ## Development
 
-### Verification
-
-Run the full suite:
+Default workflow:
 
 ```bash
-go vet ./...
+make tidy
+make vet
+make lint
 make test
 make build
+make gitignore-check
 ```
+
+The repo uses local caches for Go build, module, and lint artifacts through `make`, which keeps the development loop reproducible and avoids polluting global caches.
 
 ### Git Hooks
 
-This project uses [Lefthook](https://github.com/evilmartians/lefthook) for git hooks.
+This repo uses [Lefthook](https://github.com/evilmartians/lefthook) as a local guard for the same classes of failures CI should catch.
 
-To install Lefthook:
-
-```bash
-brew install lefthook # or your preferred method
-```
-
-To initialize the hooks:
+Install and enable it:
 
 ```bash
+brew install lefthook
 lefthook install
 ```
 
-The hooks will run:
-- **pre-commit**: `go fmt`, `go vet`, and `gitignore-check`
-- **pre-push**: `make test` and `make build`
+Current hooks:
+
+- `pre-commit`: `gofmt` on staged Go files with auto-restaging, `make vet`, and `make gitignore-check`
+- `pre-push`: `make lint`, `make test`, `make build`, and `make gitignore-check`
 
 ## Project Layout
 
 ```text
-cmd/exa-mcp-manager/   CLI entrypoint
-internal/app/          orchestration, apply flow, rollback, formatting
+cmd/exa-mcp-manager/   current CLI entrypoint
+internal/app/          planning, apply flow, rollback, formatting
 internal/config/       path detection and file mutation helpers
-internal/exa/          key parsing, redaction, Exa URL construction
-internal/tui/          Bubble Tea screens and interaction flow
-internal/verify/       config and optional CLI verification
-docs/                  spec and implementation plans
+internal/exa/          Exa key parsing, redaction, URL construction
+internal/provider/     provider abstraction and provider implementations
+internal/tui/          Bubble Tea router and TUI screens
+internal/verify/       file and optional CLI verification
+docs/                  product, architecture, and phase plans
 tests/                 repo-level validation scripts
 ```
 
-## Safety Notes
+## Architecture Direction
 
-The tool is built around local developer configs, so safety matters more than speed.
+The runtime product is still Exa-first, but the internals are moving toward a provider-based MCP manager.
 
-- Full API keys should never be shown in UI, logs, dry-run output, or verification output.
-- File-backed updates use backups and rollback-aware writes.
-- Optional CLI verification should not fail the run just because a CLI is not installed.
-- Claude Code is still handled through CLI commands rather than direct `~/.claude.json` mutation.
+That direction already shows up in the code:
+
+- `internal/provider` defines `MCPProvider`, `MCPConfig`, and transport types
+- `internal/config` now mutates client config from provider-generated config rather than raw Exa-only strings
+- `internal/app` owns planning, apply, rollback, and verification orchestration
+
+The next major step is a provider registry and dynamic credential-driven TUI setup so Exa can run through the same path future providers will use.
+
+## Docs
+
+Primary references:
+
+- [Product Spec](docs/exa-mcp-manager-spec.md)
+- [Next Phase Plan](docs/next-phase-plan.md)
+- [Phase 2 Plan](docs/specs/phase2-plan.md)
+- [Universal MCP Architecture Plan](docs/specs/universal-mcp-manager-plan.md)
 
 ## Roadmap
 
-Short-term roadmap:
+Near term:
 
-- richer apply summaries with rollback diagnostics
-- stronger logging controls for troubleshooting
-- better fixture-driven acceptance coverage across app variations
-- improved TUI affordances around key distribution and warnings
+- complete the provider registry and dynamic credential-driven setup flow
+- remove the remaining Exa-specific wiring from planning and TUI setup
+- keep Exa behavior backward compatible while shifting to provider-neutral internals
+- improve previews, summaries, warnings, and test coverage
 
-Future MCP support beyond Exa:
+After that:
 
-- configurable MCP server templates instead of hard-coded Exa-only wiring
-- Context7 setup management
-- filesystem and local tool MCP presets
-- browser and automation MCP presets
-- multi-server profile management per app
-- pluggable support for additional MCP vendors without changing the core apply engine
-
-Broader platform roadmap:
-
-- Linux path support where the target apps have stable config locations
-- Windows support if config-path behavior is predictable enough to automate safely
-- export/import of reusable MCP rollout profiles
-
-## Contributing
-
-Use the `Makefile` targets as the default workflow. The repository is set up so `go test` and `go build` use repo-local cache directories through `make`, which avoids polluting global caches and keeps the development loop reproducible inside constrained environments.
+- add stdio-capable providers such as GitHub
+- add client capability checks so unsupported transport combinations are skipped safely
+- expand from Exa-only rollout into a reusable MCP sync tool
+- revisit binary and repository branding once the user-facing product is no longer Exa-only

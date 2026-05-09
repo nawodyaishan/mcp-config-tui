@@ -1,21 +1,28 @@
 # Lefthook configuration for exa-mcp-manager
 # See: https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
 
+glob_matcher: doublestar
+
 pre-commit:
   parallel: true
   commands:
     fmt:
-      glob: "*.go"
-      run: go fmt {staged_files}
+      glob: "**/*.go"
+      run: gofmt -w {staged_files}
+      stage_fixed: true
     vet:
-      glob: "*.go"
-      run: go vet ./...
+      glob: "**/*.go"
+      run: make vet
     gitignore-check:
       run: make gitignore-check
 
 pre-push:
   commands:
+    lint:
+      run: make lint
     test:
       run: make test
     build:
       run: make build
+    gitignore-check:
+      run: make gitignore-check

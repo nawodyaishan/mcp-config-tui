@@ -3,15 +3,18 @@ CMD := ./cmd/$(APP)
 BIN := ./bin/$(APP)
 GOCACHE := $(CURDIR)/.cache/go-build
 GOMODCACHE := $(CURDIR)/.cache/go-mod
+GOLANGCI_LINT_CACHE := $(abspath $(CURDIR)/.cache/golangci-lint)
 GOENV := GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE)
 GO := env $(GOENV) go
 
-.PHONY: help tidy fmt test build run dry-run apply clean gitignore-check
+.PHONY: help tidy fmt vet lint test build run dry-run apply clean gitignore-check
 
 help:
 	@printf "Targets:\n"
 	@printf "  make tidy            - sync module dependencies\n"
 	@printf "  make fmt             - format Go sources\n"
+	@printf "  make vet             - run go vet across packages\n"
+	@printf "  make lint            - run golangci-lint\n"
 	@printf "  make test            - run Go tests\n"
 	@printf "  make build           - build the CLI into ./bin\n"
 	@printf "  make run             - launch the TUI\n"
@@ -25,6 +28,13 @@ tidy:
 
 fmt:
 	$(GO) fmt ./...
+
+vet:
+	$(GO) vet ./...
+
+lint:
+	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint is required; install it to run the local lint guard."; exit 1; }
+	env $(GOENV) GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) golangci-lint run ./...
 
 test:
 	$(GO) test ./...
