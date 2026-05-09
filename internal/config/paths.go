@@ -87,7 +87,7 @@ func DetectAppConfigs(home string) ([]AppConfig, error) {
 			ID:   AppAntigravity,
 			Name: "Antigravity",
 			Files: []TargetFile{
-				targetFile("Antigravity MCP config", antigravity, FileKindNamedServer, true),
+				targetFile("Antigravity MCP config", antigravity, FileKindMCPServers, true),
 			},
 		},
 		{

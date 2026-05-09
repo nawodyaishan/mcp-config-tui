@@ -11,7 +11,7 @@ func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {
 	data := mustReadFixture(t, "claude_desktop.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 
-	updated, err := UpdateMCPServersJSON(data, exaURL)
+	updated, err := UpdateMCPServersJSON(data, "url", exaURL)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	data := mustReadFixture(t, "gemini_settings.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 
-	updated, err := UpdateMCPServersJSON(data, exaURL)
+	updated, err := UpdateMCPServersJSON(data, "httpUrl", exaURL)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -47,13 +47,18 @@ func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	if _, ok := root["security"].(map[string]any); !ok {
 		t.Fatal("expected security field to remain")
 	}
+	servers := root["mcpServers"].(map[string]any)
+	exa := servers["exa"].(map[string]any)
+	if exa["httpUrl"] != exaURL {
+		t.Fatalf("expected httpUrl to be set, got %#v", exa["httpUrl"])
+	}
 }
 
 func TestUpdateBareMCPServersJSON(t *testing.T) {
-	data := []byte("{\n  \"other\": {\n    \"type\": \"sse\",\n    \"url\": \"https://example.com\"\n  }\n}\n")
+	data := []byte("{\n  \"other\": {\n    \"url\": \"https://example.com\"\n  }\n}\n")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 
-	updated, err := UpdateBareMCPServersJSON(data, exaURL)
+	updated, err := UpdateBareMCPServersJSON(data, "httpUrl", exaURL)
 	if err != nil {
 		t.Fatalf("UpdateBareMCPServersJSON returned error: %v", err)
 	}
@@ -63,8 +68,8 @@ func TestUpdateBareMCPServersJSON(t *testing.T) {
 		t.Fatal("did not expect mcpServers root key")
 	}
 	exa := root["exa"].(map[string]any)
-	if exa["url"] != exaURL {
-		t.Fatalf("expected Exa URL to be updated, got %#v", exa["url"])
+	if exa["httpUrl"] != exaURL {
+		t.Fatalf("expected Exa URL to be updated, got %#v", exa["httpUrl"])
 	}
 	if _, ok := root["other"].(map[string]any); !ok {
 		t.Fatal("expected unrelated server entries to remain")

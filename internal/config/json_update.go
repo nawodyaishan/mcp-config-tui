@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func UpdateMCPServersJSON(data []byte, exaURL string) ([]byte, error) {
+func UpdateMCPServersJSON(data []byte, fieldName, exaURL string) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
@@ -14,22 +14,20 @@ func UpdateMCPServersJSON(data []byte, exaURL string) ([]byte, error) {
 
 	servers := ensureObject(root, "mcpServers")
 	servers["exa"] = map[string]any{
-		"type": "sse",
-		"url":  exaURL,
+		fieldName: exaURL,
 	}
 
 	return marshalJSON(root)
 }
 
-func UpdateBareMCPServersJSON(data []byte, exaURL string) ([]byte, error) {
+func UpdateBareMCPServersJSON(data []byte, fieldName, exaURL string) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
 	root["exa"] = map[string]any{
-		"type": "sse",
-		"url":  exaURL,
+		fieldName: exaURL,
 	}
 
 	return marshalJSON(root)
@@ -41,9 +39,8 @@ func UpdateNamedServerJSON(data []byte, serverName, fieldName, exaURL string) ([
 		return nil, err
 	}
 
-	root[serverName] = map[string]any{
-		fieldName: exaURL,
-	}
+	server := ensureObject(root, serverName)
+	server[fieldName] = exaURL
 
 	return marshalJSON(root)
 }
