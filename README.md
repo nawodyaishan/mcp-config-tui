@@ -1,15 +1,15 @@
-# MCP Config TUI (Exa MCP Manager)
+# MCP Config
 
 [![Release](https://img.shields.io/github/v/release/nawodyaishan/mcp-config-tui?display_name=tag)](https://github.com/nawodyaishan/mcp-config-tui/releases)
 [![CI](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/nawodyaishan/mcp-config-tui)](./LICENSE)
 
 > [!NOTE]
-> **Project Status:** Exa MCP manager today, designed to become a generic MCP config manager.
+> **Project Status:** Universal MCP manager direction, with Exa as the launch provider today.
 
-`mcp-config-tui` is a macOS-first utility for developers who use multiple local AI tools and want one safe way to manage MCP configuration across them.
+One source of truth for your local AI toolchain. Sync MCP server configuration across Claude Desktop, Claude Code, Gemini CLI, Antigravity, and Codex with dry-run previews, redaction, backups, and rollback.
 
-The current shipped CLI is `exa-mcp-manager`. It serves as the first implementation of our universal sync engine, currently focused on automating Exa MCP rollout. The codebase is already architected for a provider-based workflow, and we are transitioning toward a generic MCP manager that supports any `stdio` or `http` server.
+`mcp-config-tui` is a macOS-first MCP sync utility for developers who run multiple local AI tools on the same machine. The current shipped binary is `exa-mcp-manager`, which provides first-class Exa support on top of a provider-based architecture that is being generalized into a broader MCP manager.
 
 ## Who This Is For
 
@@ -28,6 +28,10 @@ This is not yet a generic MCP installer for every server or client. It is a focu
 
 ## What It Does Today
 
+Core value:
+
+- unified, safe MCP configuration for a multi-client local AI setup
+
 Current supported app targets on macOS:
 
 - Claude Desktop
@@ -40,15 +44,21 @@ Current provider support:
 
 - Exa
 
+Client-specific notes:
+
+- Claude Desktop file-based setup uses a `stdio` bridge for Exa instead of a raw remote URL entry
+- Claude Desktop also supports Exa as a native connector outside this tool's file-mutation path
+
 Current capabilities:
 
-- parse Exa API keys from flags, files, or TUI input
-- distribute multiple keys across supported apps
-- preview redacted changes before apply
-- update JSON and TOML client configs in client-specific formats
-- back up touched files
-- roll back file updates if a later file write fails
+- select an MCP provider from the provider registry
+- collect provider-defined credentials through the TUI
+- preview redacted config changes before apply
+- back up touched files and roll back failed write sequences
 - verify updated file state and run optional CLI checks when available
+- distribute multiple keys across supported apps
+- update JSON and TOML client configs in client-specific formats
+- parse Exa API keys from flags, files, or TUI input
 
 ## Why Use It
 
@@ -61,6 +71,8 @@ MCP configuration drifts quickly when you use more than one local AI client:
 
 This tool gives you a single flow to detect targets, generate the correct config form for each client, preview changes, apply safely, and verify the result.
 
+Today that flow is Exa-first. The engine underneath is already provider-shaped, so new MCP servers can plug into the same setup, planning, and apply path instead of introducing one-off config mutations for each client.
+
 ## Install
 
 Requirements:
@@ -71,7 +83,7 @@ Requirements:
 Release distribution currently includes:
 
 - Homebrew formula via `nawodyaishan/homebrew-tap`
-- release archives for macOS, Linux, and Windows
+- release archives for macOS and Linux
 - `deb` and `rpm` packages via GoReleaser/nFPM
 
 Homebrew:
@@ -85,6 +97,13 @@ Build locally:
 
 ```bash
 make build
+```
+
+Run the compiled binary:
+
+```bash
+./bin/exa-mcp-manager --version
+./bin/exa-mcp-manager
 ```
 
 ## Use
@@ -110,6 +129,9 @@ make apply KEYS_FILE=~/Downloads/exa_keys.txt
 Direct CLI usage:
 
 ```bash
+./bin/exa-mcp-manager --version
+./bin/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
+./bin/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
 go run ./cmd/exa-mcp-manager
 go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --dry-run
 go run ./cmd/exa-mcp-manager --keys-file ~/Downloads/exa_keys.txt --apply
@@ -162,6 +184,27 @@ Current hooks:
 - `pre-commit`: `gofmt` on staged Go files with auto-restaging, `make vet`, and `make gitignore-check`
 - `pre-push`: `make lint`, `make test`, `make build`, and `make gitignore-check`
 
+### Adding New MCP Servers
+
+This tool is designed to grow into a universal MCP manager. New MCP servers should be added through the provider abstraction rather than by adding server-specific branches to the app or TUI flow.
+
+Implementation path:
+
+1. Add a provider in `pkg/provider/`, for example `github.go`.
+2. Implement `MCPProvider`:
+   - `ID()` returns the stable config key, such as `"github"`.
+   - `Name()` and `Description()` provide TUI display text.
+   - `RequiredCredentials()` describes the credential fields the TUI should collect.
+   - `GenerateConfig()` converts credential values into `MCPConfig` using `http`, `sse`, or `stdio`.
+3. Register the provider in `DefaultRegistry()` in `pkg/provider/registry.go`.
+4. Verify target compatibility. The existing config writers can persist provider-generated `MCPConfig`, but each local client may support a different transport shape.
+5. Add focused tests for credential validation, generated config, registry inclusion, redaction, and any target-specific behavior.
+6. Update docs when the provider changes user-facing setup, flags, or supported transports.
+
+Once registered, the TUI can list the provider and build credential inputs from `RequiredCredentials()`. Non-interactive CLI flags are still Exa-specific today; provider-neutral CLI arguments are part of the next product step.
+
+For the deeper technical direction, see the [Universal MCP Architecture Plan](docs/arch/universal-mcp-manager-plan.md). For long-term plugin and registry research, see [Future Scalability Research](docs/arch/future-scalability-research.md).
+
 ## Project Layout
 
 ```text
@@ -178,31 +221,33 @@ tests/                 repo-level validation scripts
 
 ## Architecture Direction
 
-The runtime product is still Exa-first, but the internals are moving toward a provider-based MCP manager.
+The runtime product is still Exa-first, but the internals now use a provider-based MCP manager shape.
 
-That direction already shows up in the code:
+That direction shows up in the code:
 
 - `pkg/provider` defines `MCPProvider`, `MCPConfig`, and transport types
+- `pkg/provider.DefaultRegistry()` controls which MCP providers the TUI can offer
 - `pkg/config` now mutates client config from provider-generated config rather than raw Exa-only strings
-- `pkg/app` owns planning, apply, rollback, and verification orchestration
+- `pkg/app.PrepareProvider` owns provider-aware planning before apply, rollback, and verification
+- `pkg/tui` builds provider and credential setup screens from registry metadata
 
-The next major step is a provider registry and dynamic credential-driven TUI setup so Exa can run through the same path future providers will use.
+The next major step is removing the remaining Exa-specific CLI path so interactive and non-interactive usage both run through the same provider-neutral workflow.
 
 ## Docs
 
 Primary references:
 
-- [Product Spec](docs/exa-mcp-manager-spec.md)
-- [Next Phase Plan](docs/next-phase-plan.md)
-- [Phase 2 Plan](docs/specs/phase2-plan.md)
-- [Universal MCP Architecture Plan](docs/specs/universal-mcp-manager-plan.md)
+- [Product Spec](docs/main-spec.md)
+- [Next Phase Plan](docs/plans/next-phase.md)
+- [Phase 2 Plan](docs/plans/phase2.md)
+- [Universal MCP Architecture Plan](docs/arch/universal-mcp-manager-plan.md)
+- [Future Scalability Research](docs/arch/future-scalability-research.md)
 
 ## Roadmap
 
 Near term:
 
-- complete the provider registry and dynamic credential-driven setup flow
-- remove the remaining Exa-specific wiring from planning and TUI setup
+- remove the remaining Exa-specific non-interactive CLI wiring
 - keep Exa behavior backward compatible while shifting to provider-neutral internals
 - improve previews, summaries, warnings, and test coverage
 

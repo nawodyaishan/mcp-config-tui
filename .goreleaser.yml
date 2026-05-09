@@ -15,32 +15,33 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
     ldflags:
-      - -s -w
+      - >-
+        -s -w
+        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Version={{ .Version }}
+        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Commit={{ .ShortCommit }}
+        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.Date={{ .Date }}
+        -X github.com/nawodyaishan/mcp-config-tui/pkg/version.GoVersion={{ .Env.GOVERSION }}
 
 archives:
   - id: default
     format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^ci:'
-      - '^chore:'
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
 
 # Homebrew Tap Formula
 brews:
