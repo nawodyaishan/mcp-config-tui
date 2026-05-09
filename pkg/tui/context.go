@@ -12,6 +12,7 @@ type wizardContext struct {
 	providerID  string
 	provider    provider.MCPProvider
 	profiles    []provider.CredentialProfile
+	isPreloaded bool
 	selected    map[config.AppID]bool
 	assignments map[config.AppID]int
 	plan        app.ExecutionPlan

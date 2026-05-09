@@ -76,7 +76,7 @@ func (sf *setupForm) rebuildForm() {
 
 	// Add fields for the SELECTED provider only
 	prov, ok := sf.ctx.registry.Get(sf.selectedProvider)
-	if ok && len(sf.ctx.profiles) == 0 {
+	if ok && !sf.ctx.isPreloaded {
 		for _, spec := range prov.RequiredCredentials() {
 			val := sf.credentialValues[sf.selectedProvider+":"+spec.Key]
 			var field huh.Field

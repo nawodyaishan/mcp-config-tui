@@ -34,7 +34,9 @@ type Model struct {
 func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Model {
 	selected := make(map[config.AppID]bool, len(manager.Apps))
 	for _, appConfig := range manager.Apps {
-		selected[appConfig.ID] = true
+		if appConfig.ID == config.AppClaudeCode {
+			selected[appConfig.ID] = true
+		}
 	}
 
 	registry := provider.DefaultRegistry()
@@ -43,12 +45,13 @@ func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Mod
 		manager:     manager,
 		registry:    registry,
 		providerID:  "exa", // Default to Exa, will be updated by setup form
+		isPreloaded: len(initialKeys) > 0,
 		selected:    selected,
 		assignments: app.DefaultAssignments(selected, len(initialKeys)),
 	}
 
 	// For backward compatibility, if keys were passed in, we seed them as profiles for Exa
-	if len(initialKeys) > 0 {
+	if ctx.isPreloaded {
 		profiles := make([]provider.CredentialProfile, len(initialKeys))
 		for i, key := range initialKeys {
 			profiles[i] = provider.CredentialProfile{
@@ -93,7 +96,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.stage > 0 {
 			m.stage--
 			if m.stage == stageSetup {
+				if !m.ctx.isPreloaded {
+					m.ctx.profiles = nil
+				}
 				m.setupForm.form.State = huh.StateNormal
+				m.setupForm.rebuildForm() // Ensure fields are fresh
+				return m, m.setupForm.form.Init()
 			}
 		}
 		return m, nil
