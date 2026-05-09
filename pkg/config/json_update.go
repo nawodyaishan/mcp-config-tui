@@ -8,7 +8,7 @@ import (
 	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
 )
 
-func buildConfigMap(cfg provider.MCPConfig, urlFieldName string) map[string]any {
+func buildConfigMap(cfg provider.MCPConfig, urlFieldName string, extra map[string]any) map[string]any {
 	result := make(map[string]any)
 	if cfg.Type == provider.TransportStdio {
 		result["command"] = cfg.Command
@@ -26,47 +26,69 @@ func buildConfigMap(cfg provider.MCPConfig, urlFieldName string) map[string]any 
 			result["url"] = cfg.URL
 		}
 	}
+
+	for k, v := range extra {
+		result[k] = v
+	}
 	return result
 }
 
-func UpdateMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
+func UpdateMCPServersJSON(data []byte, providerID, rootKey, urlFieldName string, cfg provider.MCPConfig, extra map[string]any) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
-	servers := ensureObject(root, "mcpServers")
-	servers[providerID] = buildConfigMap(cfg, urlFieldName)
+	if rootKey == "" {
+		rootKey = "mcpServers"
+	}
+
+	servers := ensureObject(root, rootKey)
+	servers[providerID] = buildConfigMap(cfg, urlFieldName, extra)
 
 	return marshalJSON(root)
 }
 
-func UpdateBareMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
+func UpdateBareMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig, extra map[string]any) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
-	root[providerID] = buildConfigMap(cfg, urlFieldName)
+	root[providerID] = buildConfigMap(cfg, urlFieldName, extra)
 
 	return marshalJSON(root)
 }
 
-func UpdateNamedServerJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig) ([]byte, error) {
+func UpdateNamedServerJSON(data []byte, providerID, rootKey, urlFieldName string, cfg provider.MCPConfig, extra map[string]any) ([]byte, error) {
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
 	}
 
-	server := ensureObject(root, providerID)
+	var parent map[string]any
+	if rootKey != "" {
+		parent = ensureObject(root, rootKey)
+	} else {
+		parent = root
+	}
+
+	server := ensureObject(parent, providerID)
 	// For named server updates (like Antigravity), we typically only update the URL field
 	// and preserve the rest of the object.
 	if cfg.Type != provider.TransportStdio {
+		if urlFieldName == "" {
+			urlFieldName = "url"
+		}
 		server[urlFieldName] = cfg.URL
 	} else {
 		// If it switches to stdio, we overwrite with the full stdio map
-		server = buildConfigMap(cfg, urlFieldName)
-		root[providerID] = server
+		server = buildConfigMap(cfg, urlFieldName, extra)
+		parent[providerID] = server
+	}
+
+	for k, v := range extra {
+		server[k] = v
 	}
 
 	return marshalJSON(root)

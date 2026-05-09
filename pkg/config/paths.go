@@ -14,6 +14,13 @@ const (
 	AppGeminiCLI     AppID = "gemini-cli"
 	AppAntigravity   AppID = "antigravity"
 	AppCodexCLI      AppID = "codex-cli"
+	AppCursor        AppID = "cursor"
+	AppVSCode        AppID = "vscode"
+	AppWindsurf      AppID = "windsurf"
+	AppZed           AppID = "zed"
+	AppRooCode       AppID = "roocode"
+	AppOpenCode      AppID = "opencode"
+	AppKiro          AppID = "kiro"
 )
 
 type FileKind string
@@ -43,6 +50,13 @@ type AppConfig struct {
 var AppOrder = []AppID{
 	AppClaudeDesktop,
 	AppClaudeCode,
+	AppCursor,
+	AppVSCode,
+	AppWindsurf,
+	AppZed,
+	AppRooCode,
+	AppOpenCode,
+	AppKiro,
 	AppGeminiCLI,
 	AppAntigravity,
 	AppCodexCLI,
@@ -55,6 +69,13 @@ func DetectAppConfigs(home string) ([]AppConfig, error) {
 
 	claudeDesktop := filepath.Join(home, "Library", "Application Support", "Claude", "claude_desktop_config.json")
 	claudeCode := filepath.Join(home, ".claude.json")
+	cursor := filepath.Join(home, ".cursor", "mcp.json")
+	vscode := filepath.Join(home, ".vscode", "mcp.json")
+	windsurf := filepath.Join(home, ".codeium", "windsurf", "mcp_config.json")
+	zed := filepath.Join(home, ".config", "zed", "settings.json")
+	roocode := filepath.Join(home, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json")
+	opencode := filepath.Join(home, ".opencode.json")
+	kiro := filepath.Join(home, ".kiro", "settings", "mcp.json")
 	geminiSettings := filepath.Join(home, ".gemini", "settings.json")
 	geminiMCP := filepath.Join(home, ".gemini", "mcp_config.json")
 	antigravity := filepath.Join(home, ".gemini", "antigravity", "mcp_config.json")
@@ -73,6 +94,55 @@ func DetectAppConfigs(home string) ([]AppConfig, error) {
 			Name: "Claude Code",
 			Files: []TargetFile{
 				targetFile("Claude Code user config", claudeCode, FileKindClaudeCodeCLI, false),
+			},
+		},
+		{
+			ID:   AppCursor,
+			Name: "Cursor",
+			Files: []TargetFile{
+				targetFile("Cursor MCP config", cursor, FileKindMCPServers, true),
+			},
+		},
+		{
+			ID:   AppVSCode,
+			Name: "VS Code",
+			Files: []TargetFile{
+				targetFile("VS Code MCP config", vscode, FileKindNamedServer, true), // Uses "servers" root
+			},
+		},
+		{
+			ID:   AppWindsurf,
+			Name: "Windsurf",
+			Files: []TargetFile{
+				targetFile("Windsurf MCP config", windsurf, FileKindMCPServers, true),
+			},
+		},
+		{
+			ID:   AppZed,
+			Name: "Zed",
+			Files: []TargetFile{
+				targetFile("Zed settings", zed, FileKindNamedServer, true), // Uses "context_servers" root
+			},
+		},
+		{
+			ID:   AppRooCode,
+			Name: "Roo Code",
+			Files: []TargetFile{
+				targetFile("Roo Code settings", roocode, FileKindMCPServers, true),
+			},
+		},
+		{
+			ID:   AppOpenCode,
+			Name: "OpenCode",
+			Files: []TargetFile{
+				targetFile("OpenCode config", opencode, FileKindNamedServer, true), // Uses "mcp" root
+			},
+		},
+		{
+			ID:   AppKiro,
+			Name: "Kiro",
+			Files: []TargetFile{
+				targetFile("Kiro settings", kiro, FileKindMCPServers, true),
 			},
 		},
 		{

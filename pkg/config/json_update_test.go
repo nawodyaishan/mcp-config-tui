@@ -14,7 +14,7 @@ func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateMCPServersJSON(data, "exa", "url", cfg)
+	updated, err := UpdateMCPServersJSON(data, "exa", "mcpServers", "url", cfg, nil)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestUpdateMCPServersJSONSupportsStdioServers(t *testing.T) {
 		Args:    []string{"-y", "mcp-remote", "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"},
 	}
 
-	updated, err := UpdateMCPServersJSON(data, "exa", "url", cfg)
+	updated, err := UpdateMCPServersJSON(data, "exa", "mcpServers", "url", cfg, nil)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateMCPServersJSON(data, "exa", "httpUrl", cfg)
+	updated, err := UpdateMCPServersJSON(data, "exa", "mcpServers", "httpUrl", cfg, nil)
 	if err != nil {
 		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestUpdateBareMCPServersJSON(t *testing.T) {
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateBareMCPServersJSON(data, "exa", "httpUrl", cfg)
+	updated, err := UpdateBareMCPServersJSON(data, "exa", "httpUrl", cfg, nil)
 	if err != nil {
 		t.Fatalf("UpdateBareMCPServersJSON returned error: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestUpdateNamedServerJSONReplacesMalformedAntigravityURL(t *testing.T) {
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
 	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
 
-	updated, err := UpdateNamedServerJSON(data, "exa", "serverUrl", cfg)
+	updated, err := UpdateNamedServerJSON(data, "exa", "", "serverUrl", cfg, nil)
 	if err != nil {
 		t.Fatalf("UpdateNamedServerJSON returned error: %v", err)
 	}
@@ -126,6 +126,23 @@ func TestUpdateNamedServerJSONReplacesMalformedAntigravityURL(t *testing.T) {
 	}
 	if _, ok := root["other"].(map[string]any); !ok {
 		t.Fatal("expected unrelated server entries to remain")
+	}
+}
+
+func TestUpdateMCPServersJSONWithExtraFields(t *testing.T) {
+	exaURL := "https://mcp.exa.ai/mcp"
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: exaURL}
+	extra := map[string]any{"type": "streamable-http"}
+
+	updated, err := UpdateMCPServersJSON(nil, "exa", "mcpServers", "url", cfg, extra)
+	if err != nil {
+		t.Fatalf("UpdateMCPServersJSON: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	exa := root["mcpServers"].(map[string]any)["exa"].(map[string]any)
+	if exa["type"] != "streamable-http" {
+		t.Errorf("expected extra field 'type', got %#v", exa["type"])
 	}
 }
 
