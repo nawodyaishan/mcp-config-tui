@@ -72,7 +72,7 @@ func main() {
 	}
 
 	if dryRun {
-		fmt.Fprintln(os.Stdout, app.FormatPlan(plan))
+		_, _ = fmt.Fprintln(os.Stdout, app.FormatPlan(plan))
 		return
 	}
 
@@ -82,7 +82,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Fprintln(os.Stdout, app.FormatApplyResult(result))
+	_, _ = fmt.Fprintln(os.Stdout, app.FormatApplyResult(result))
 }
 
 func mapAllSelected(apps []config.AppConfig) map[config.AppID]bool {
