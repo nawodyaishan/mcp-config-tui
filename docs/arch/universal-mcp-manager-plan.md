@@ -33,7 +33,7 @@ Based on community usage data (Smithery.ai, official MCP GitHub org), the archit
 
 To support multiple MCP types without creating a tangled monolith, we must transition to a **Provider/Registry Architecture**.
 
-### A. The Provider Interface (`internal/provider`)
+### A. The Provider Interface (`pkg/provider`)
 We decoupled the hardcoded Exa logic by introducing a standard `MCPProvider` interface. To support dynamic TUI generation, the provider exposes structured credential metadata.
 
 ```go
@@ -78,7 +78,7 @@ type MCPProvider interface {
 An explicit, static registry holds all supported providers, making discovery easy to test and render without complex plugin loading overhead during early phases.
 
 ```go
-// internal/provider/registry.go
+// pkg/provider/registry.go
 type Registry struct {
     providers map[string]MCPProvider
     order     []string
@@ -89,7 +89,7 @@ func DefaultRegistry() Registry {
 }
 ```
 
-### C. Provider-Aware Planning (`internal/app`)
+### C. Provider-Aware Planning (`pkg/app`)
 Operations no longer store raw secret material. We introduce `CredentialProfile` to separate user inputs from the generated config payload. `app.Manager` is updated to plan across providers.
 
 ```go
@@ -108,7 +108,7 @@ func (m *Manager) PrepareProvider(
 ```
 
 ### D. TUI Wizard Evolution
-The TUI Wizard (`internal/tui`) will act as a Bubble Tea router with a 6-stage flow using `huh` for structured inputs:
+The TUI Wizard (`pkg/tui`) will act as a Bubble Tea router with a 6-stage flow using `huh` for structured inputs:
 
 1. **Provider Setup**: A searchable `huh.Select` displaying the list of servers from the Provider Registry.
 2. **Credential Collection**: Dynamically generated fields (`huh.Text`, `huh.Password`) based on the selected provider's `RequiredCredentials()`. Exa multi-value fields fall back to text areas.
@@ -122,9 +122,9 @@ The TUI Wizard (`internal/tui`) will act as a Bubble Tea router with a 6-stage f
 ## 4. Phased Implementation Strategy
 
 ### Phase 1: Core Interface & Exa Abstraction (Completed)
-- [x] Define `MCPProvider`, `MCPConfig`, and `TransportType` in `internal/provider`.
+- [x] Define `MCPProvider`, `MCPConfig`, and `TransportType` in `pkg/provider`.
 - [x] Abstract existing Exa logic into `ExaProvider`.
-- [x] Overhaul `internal/config` mutators to accept the generic `MCPConfig` struct instead of hardcoded strings.
+- [x] Overhaul `pkg/config` mutators to accept the generic `MCPConfig` struct instead of hardcoded strings.
 - [x] Refactor core orchestration to generate configs via providers.
 - [x] Verify total backward compatibility for existing Exa usage.
 
@@ -141,7 +141,7 @@ The TUI Wizard (`internal/tui`) will act as a Bubble Tea router with a 6-stage f
 
 ### Phase 4: Capability Mapping & Safety Fallbacks
 - **The Protocol Matrix**: Some clients (like Antigravity) currently only support remote HTTP endpoints, not local `stdio` processes.
-- Update `internal/app/app.go` to maintain a capability matrix. If a user attempts to install a `stdio`-only provider (like GitHub) into a client that only supports `http`, the manager must gracefully warn and skip that target rather than writing a broken configuration.
+- Update `pkg/app/app.go` to maintain a capability matrix. If a user attempts to install a `stdio`-only provider (like GitHub) into a client that only supports `http`, the manager must gracefully warn and skip that target rather than writing a broken configuration.
 
 ### Phase 5: Infinite Scale (Hybrid Dynamic Registry + RPC Plugins)
 *Based on the scalability research, this phase transitions the tool from a statically compiled registry to a dynamically extensible engine.*

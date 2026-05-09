@@ -8,7 +8,7 @@ The current Exa MCP Config Manager is functionally scaffolded, but the next phas
 - Medium: missing optional CLIs are reported as failed verification.
 - Medium: the TUI can display full API keys loaded from `--keys` or `--keys-file`.
 
-This plan hardens apply behavior, error handling, logging, and key redaction while keeping the existing package boundaries: `internal/app` orchestrates, `internal/config` mutates files, `internal/verify` verifies, and `internal/tui` renders the user flow.
+This plan hardens apply behavior, error handling, logging, and key redaction while keeping the existing package boundaries: `pkg/app` orchestrates, `pkg/config` mutates files, `pkg/verify` verifies, and `pkg/tui` renders the user flow.
 
 ## Review Findings
 

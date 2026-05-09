@@ -157,34 +157,34 @@ Use this project layout:
 exa-mcp-manager/
   go.mod
   cmd/exa-mcp-manager/main.go
-  internal/app/app.go
-  internal/config/paths.go
-  internal/config/json_update.go
-  internal/config/toml_update.go
-  internal/exa/keys.go
-  internal/exa/tools.go
-  internal/exa/url.go
-  internal/tui/model.go
-  internal/tui/views.go
-  internal/verify/verify.go
+  pkg/app/app.go
+  pkg/config/paths.go
+  pkg/config/json_update.go
+  pkg/config/toml_update.go
+  pkg/exa/keys.go
+  pkg/exa/tools.go
+  pkg/exa/url.go
+  pkg/tui/model.go
+  pkg/tui/views.go
+  pkg/verify/verify.go
 ```
 
 Core packages:
 
-- `internal/exa`
+- `pkg/exa`
   - parse keys
   - redact keys
   - build Exa MCP URLs
   - define default tool set
-- `internal/config`
+- `pkg/config`
   - detect app config paths
   - read/write JSON safely
   - update Codex TOML block
   - create timestamped backups
-- `internal/tui`
+- `pkg/tui`
   - Bubble Tea state machine
   - app selection, key entry, preview, apply, verification views
-- `internal/verify`
+- `pkg/verify`
   - inspect updated config state
   - optionally run app CLI checks
 

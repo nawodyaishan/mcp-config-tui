@@ -2,7 +2,7 @@
 
 ## Objective
 
-Phase 2 turns the Phase 1 provider abstraction into a usable product surface. Phase 1 introduced `internal/provider.MCPProvider`, `provider.MCPConfig`, and provider-aware config mutators, but Exa is still hardwired through `app.Manager.Prepare`, CLI key flags, and the TUI setup form. This phase introduces a provider registry, provider selection, dynamic credential collection, and provider-aware planning while preserving the existing Exa behavior.
+Phase 2 turns the Phase 1 provider abstraction into a usable product surface. Phase 1 introduced `pkg/provider.MCPProvider`, `provider.MCPConfig`, and provider-aware config mutators, but Exa is still hardwired through `app.Manager.Prepare`, CLI key flags, and the TUI setup form. This phase introduces a provider registry, provider selection, dynamic credential collection, and provider-aware planning while preserving the existing Exa behavior.
 
 The goal is not to add many new MCP providers yet. The goal is to make Exa run through the same path future providers will use, with tests proving the current Exa output stays compatible.
 
@@ -10,7 +10,7 @@ The goal is not to add many new MCP providers yet. The goal is to make Exa run t
 
 - Exa's current MCP docs list `https://mcp.exa.ai/mcp` as the remote server URL, `claude mcp add --transport http`, Gemini `httpUrl`, Antigravity `serverUrl`, and the active tool set `web_search_exa`, `web_fetch_exa`, and optional `web_search_advanced_exa`.
 - Charmbracelet `huh` forms are Bubble Tea models, so the existing router/sub-model approach can continue to delegate `Init`, `Update`, and `View` to a nested form instead of introducing a separate interaction framework.
-- Bubble Tea's model contract still favors explicit state routing through `Init`, `Update`, `View`, and batched commands, matching the current `internal/tui.Model` shape.
+- Bubble Tea's model contract still favors explicit state routing through `Init`, `Update`, `View`, and batched commands, matching the current `pkg/tui.Model` shape.
 - Gemini CLI docs define `mcpServers.<name>` entries with `command`, `args`, `env`, `url`, and `httpUrl`, with `httpUrl` taking precedence for streamable HTTP.
 - Claude MCP docs distinguish stdio servers from HTTP/SSE servers and show HTTP configs as `type: "http"` with a `url` field.
 
@@ -26,8 +26,8 @@ Sources:
 
 Implemented:
 
-- `internal/provider/types.go` defines `TransportType`, `MCPConfig`, and `MCPProvider`.
-- `internal/provider/exa.go` implements `ExaProvider`.
+- `pkg/provider/types.go` defines `TransportType`, `MCPConfig`, and `MCPProvider`.
+- `pkg/provider/exa.go` implements `ExaProvider`.
 - JSON config writers accept `providerID` and `provider.MCPConfig`.
 - Codex TOML writer accepts `providerID` and `provider.MCPConfig` for HTTP configs.
 - `app.Operation` carries `ProviderID` and `Config`.
@@ -66,7 +66,7 @@ Out of scope:
 
 ### 1. Registry Is Explicit and Static
 
-Add `internal/provider/registry.go` with a small `Registry` type:
+Add `pkg/provider/registry.go` with a small `Registry` type:
 
 ```go
 type Registry struct {

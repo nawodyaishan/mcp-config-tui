@@ -5,8 +5,8 @@ Establish the foundational Provider/Registry architecture by decoupling the `exa
 
 ## Task Breakdown
 
-### Task 1: Establish `internal/provider` Package
-1. **Create Directory**: Create the `internal/provider` directory.
+### Task 1: Establish `pkg/provider` Package
+1. **Create Directory**: Create the `pkg/provider` directory.
 2. **Define Types (`types.go`)**:
    - Define `TransportType` (`http`, `stdio`, `sse`).
    - Define `MCPConfig` struct to hold `Type`, `URL`, `Command`, `Args`, and `Env`.
@@ -15,7 +15,7 @@ Establish the foundational Provider/Registry architecture by decoupling the `exa
    - Create `ExaProvider` struct implementing `MCPProvider`.
    - Implement `GenerateConfig` to use `exa.BuildURL` and return an `MCPConfig` with `Type: TransportHTTP` and the generated URL.
 
-### Task 2: Refactor Configuration Mutators (`internal/config`)
+### Task 2: Refactor Configuration Mutators (`pkg/config`)
 1. **JSON Mutators (`json_update.go`)**:
    - Create a helper function `buildConfigMap(cfg provider.MCPConfig, urlFieldName string) map[string]any` to dynamically build the JSON object based on the transport type (e.g., `command`/`args`/`env` for `stdio`, vs `url`/`httpUrl` for `http`).
    - Update `UpdateMCPServersJSON`, `UpdateBareMCPServersJSON`, and `UpdateNamedServerJSON` to accept `providerID string` and `cfg provider.MCPConfig` instead of just an `exaURL string`.
@@ -24,7 +24,7 @@ Establish the foundational Provider/Registry architecture by decoupling the `exa
 3. **Update Tests (`json_update_test.go`, `toml_update_test.go`)**:
    - Fix all test cases to pass dummy `MCPConfig` objects and provider IDs instead of raw strings.
 
-### Task 3: Refactor Orchestration (`internal/app`)
+### Task 3: Refactor Orchestration (`pkg/app`)
 1. **Update `Operation` Struct (`app.go`)**:
    - Replace the `URL string` field with `ProviderID string` and `Config provider.MCPConfig`.
 2. **Update CLI Generation Logic**:
@@ -40,7 +40,7 @@ Establish the foundational Provider/Registry architecture by decoupling the `exa
 
 ### Task 4: TUI & Verification
 1. **Update TUI (Minor)**:
-   - Ensure that any references in `internal/tui` to the old `app.Operation.URL` (if any, like in previews) are updated to print the `Config.URL` or a summarized config block.
+   - Ensure that any references in `pkg/tui` to the old `app.Operation.URL` (if any, like in previews) are updated to print the `Config.URL` or a summarized config block.
 2. **Run Verification**:
    - `make test`: Ensure 100% test pass rate.
    - `golangci-lint run ./...`: Ensure no new linting errors.

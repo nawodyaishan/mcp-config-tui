@@ -8,10 +8,10 @@ Based on the latest Exa documentation and sync reports, the current codebase har
 
 **Identified Issues & Solutions:**
 1. **Tool Set Optimization**: 
-   - **Issue**: `internal/exa/tools.go` includes deprecated tools (`get_code_context_exa`, `company_research_exa`, etc.).
+   - **Issue**: `pkg/exa/tools.go` includes deprecated tools (`get_code_context_exa`, `company_research_exa`, etc.).
    - **Solution**: Reduce `DefaultTools` to the core trio: `web_search_exa`, `web_search_advanced_exa`, and `web_fetch_exa`.
 2. **Claude Code Transport Modernization**:
-   - **Issue**: `internal/app/app.go` hardcodes `--transport sse` for Claude Code CLI ops.
+   - **Issue**: `pkg/app/app.go` hardcodes `--transport sse` for Claude Code CLI ops.
    - **Solution**: Change `CLIAddArgs` to use `--transport http` according to modern remote execution standards.
 3. **Claude Desktop Configuration**:
    - **Issue**: `UpdateMCPServersJSON` writes `"type": "sse"` and generic `"url"`.
@@ -35,7 +35,7 @@ To ensure high code quality, we will move away from a single, monolithic `Model`
 ### Phase 1: Context & Core Refactor
 - Define `wizardContext` and refactor `Model` into the Router pattern.
 - Move existing preview and results logic into `previewModel` and `resultsModel`.
-- **Config Fixes**: Apply fixes to `internal/exa/tools.go` to remove deprecated tools. Overhaul `internal/config/json_update.go` and `internal/app/app.go` to remove legacy `sse` transport markers, using the proper keys (`httpUrl`, `serverUrl`, or `npx` commands) depending on the target app.
+- **Config Fixes**: Apply fixes to `pkg/exa/tools.go` to remove deprecated tools. Overhaul `pkg/config/json_update.go` and `pkg/app/app.go` to remove legacy `sse` transport markers, using the proper keys (`httpUrl`, `serverUrl`, or `npx` commands) depending on the target app.
 
 ### Phase 2: Huh Integration
 - Add the `huh` dependency (`go get github.com/charmbracelet/huh`).
@@ -49,5 +49,5 @@ To ensure high code quality, we will move away from a single, monolithic `Model`
 
 ### Phase 4: Testing & Polish
 - Ensure the non-interactive CLI logic remains unchanged.
-- Run `make test` to ensure `wizardContext` integration didn't break core flows. Fix test suites in `internal/verify` and `internal/config` that relied on old tool counts and JSON structures.
+- Run `make test` to ensure `wizardContext` integration didn't break core flows. Fix test suites in `pkg/verify` and `pkg/config` that relied on old tool counts and JSON structures.
 - Verify layout responsiveness and keyboard navigation across the boundaries of the `Huh` form and the custom sub-models.
