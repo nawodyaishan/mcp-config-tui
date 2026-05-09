@@ -1,4 +1,4 @@
-# Lefthook configuration for exa-mcp-manager
+# Lefthook configuration for usync
 # See: https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
 
 glob_matcher: doublestar
@@ -13,13 +13,13 @@ pre-commit:
     vet:
       glob: "**/*.go"
       run: make vet
+    lint:
+      run: make lint
     gitignore-check:
       run: make gitignore-check
 
 pre-push:
   commands:
-    lint:
-      run: make lint
     test:
       run: make test
     build:
