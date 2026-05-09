@@ -10,6 +10,7 @@ import (
 	"github.com/nawodyaishan/mcp-config-tui/pkg/app"
 	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
 	"github.com/nawodyaishan/mcp-config-tui/pkg/tui"
+	"github.com/nawodyaishan/mcp-config-tui/pkg/version"
 )
 
 func main() {
@@ -18,13 +19,20 @@ func main() {
 	var homeDir string
 	var dryRun bool
 	var apply bool
+	var showVersion bool
 
 	flag.StringVar(&keysFile, "keys-file", "", "path to a file containing Exa API keys")
 	flag.StringVar(&keysCSV, "keys", "", "comma-separated Exa API keys")
 	flag.StringVar(&homeDir, "home-dir", "", "override the target home directory for testing")
 	flag.BoolVar(&dryRun, "dry-run", false, "print the redacted plan without writing files")
 	flag.BoolVar(&apply, "apply", false, "apply updates without launching the TUI")
+	flag.BoolVar(&showVersion, "version", false, "print version information and exit")
 	flag.Parse()
+
+	if showVersion {
+		_, _ = fmt.Fprintln(os.Stdout, version.String())
+		return
+	}
 
 	if dryRun && apply {
 		fmt.Fprintln(os.Stderr, "--dry-run and --apply cannot be used together")
