@@ -133,12 +133,15 @@ jobs:
       - name: Capture Go version
         run: echo "GOVERSION=$(go version | awk '{print $3}')" >> "$GITHUB_ENV"
 
+      - name: Reset git state
+        run: git checkout -- .
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean --allow-dirty
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
