@@ -28,7 +28,8 @@ builds:
 
 archives:
   - id: default
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
@@ -44,7 +45,7 @@ changelog:
       - "^chore:"
 
 # Homebrew Tap Formula
-brews:
+homebrews:
   - repository:
       owner: nawodyaishan
       name: homebrew-tap
@@ -62,6 +63,7 @@ brews:
 nfpms:
   - id: packages
     package_name: usync
+    maintainer: nawodyaishan <nawodya.dev@gmail.com>
     vendor: nawodyaishan
     homepage: https://github.com/nawodyaishan/universal-mcp-sync
     description: "macOS-first developer utility for universal MCP configuration sync"
