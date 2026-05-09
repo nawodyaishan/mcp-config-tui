@@ -50,9 +50,24 @@ func VerifyFile(path string, kind config.FileKind, expectedTools int) Result {
 
 func VerifyProviderFile(path string, kind config.FileKind, providerID string, cfg provider.MCPConfig) Result {
 	if providerID == "exa" {
-		return VerifyFile(path, kind, len(exa.DefaultTools))
+		return verifyExaProviderFile(path, kind, cfg)
 	}
 	return failure(path, fmt.Sprintf("verification not implemented for provider %s", providerID))
+}
+
+func verifyExaProviderFile(path string, kind config.FileKind, cfg provider.MCPConfig) Result {
+	switch kind {
+	case config.FileKindMCPServers:
+		return verifyExaMCPServersFile(path, cfg)
+	case config.FileKindBareMCPServers:
+		return verifyExaBareMCPServersFile(path, cfg)
+	case config.FileKindNamedServer:
+		return verifyExaNamedServerFile(path, cfg)
+	case config.FileKindCodexTOML:
+		return verifyCodexFile(path, len(exa.DefaultTools))
+	default:
+		return failure(path, "unsupported verification target")
+	}
 }
 
 func VerifyOptionalCLI(runner Runner, binary string, args ...string) Result {
@@ -106,6 +121,14 @@ func verifyMCPServersFile(path string, expectedTools int) Result {
 	return inspectFileURL(path, urlValue, expectedTools)
 }
 
+func verifyExaMCPServersFile(path string, cfg provider.MCPConfig) Result {
+	server, err := readNestedServerEntry(path, "mcpServers", "exa")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectExaServer(path, server, cfg)
+}
+
 func verifyBareMCPServersFile(path string, expectedTools int) Result {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -126,6 +149,14 @@ func verifyBareMCPServersFile(path string, expectedTools int) Result {
 	return inspectFileURL(path, urlValue, expectedTools)
 }
 
+func verifyExaBareMCPServersFile(path string, cfg provider.MCPConfig) Result {
+	server, err := readRootServerEntry(path, "exa")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectExaServer(path, server, cfg)
+}
+
 func verifyNamedServerFile(path string, expectedTools int) Result {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -144,6 +175,101 @@ func verifyNamedServerFile(path string, expectedTools int) Result {
 
 	urlValue := getURLField(exaValue)
 	return inspectFileURL(path, urlValue, expectedTools)
+}
+
+func verifyExaNamedServerFile(path string, cfg provider.MCPConfig) Result {
+	server, err := readRootServerEntry(path, "exa")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectExaServer(path, server, cfg)
+}
+
+func readNestedServerEntry(path, rootKey, providerID string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	root := make(map[string]any)
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("parse JSON: %v", err)
+	}
+
+	servers, ok := root[rootKey].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("missing %s object", rootKey)
+	}
+
+	server, ok := servers[providerID].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("missing %s.%s entry", rootKey, providerID)
+	}
+	return server, nil
+}
+
+func readRootServerEntry(path, providerID string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	root := make(map[string]any)
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("parse JSON: %v", err)
+	}
+
+	server, ok := root[providerID].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("missing %s entry", providerID)
+	}
+	return server, nil
+}
+
+func inspectExaServer(path string, server map[string]any, cfg provider.MCPConfig) Result {
+	if cfg.Type == provider.TransportStdio {
+		details, ok := inspectStdioServer(server)
+		if !ok {
+			return Result{Target: path, Status: StatusFailed, Details: details}
+		}
+		return Result{Target: path, Status: StatusOK, Details: details}
+	}
+
+	urlValue := getURLField(server)
+	return inspectFileURL(path, urlValue, len(exa.DefaultTools))
+}
+
+func inspectStdioServer(server map[string]any) ([]string, bool) {
+	command, _ := server["command"].(string)
+	if command == "" {
+		return []string{"missing stdio command"}, false
+	}
+
+	rawArgs, _ := server["args"].([]any)
+	args := make([]string, 0, len(rawArgs))
+	for _, raw := range rawArgs {
+		if value, ok := raw.(string); ok && value != "" {
+			args = append(args, value)
+		}
+	}
+
+	details := []string{
+		fmt.Sprintf("command=%s", command),
+		fmt.Sprintf("arg count=%d", len(args)),
+	}
+
+	if command != "npx" {
+		return append(details, "unexpected stdio command"), false
+	}
+	if len(args) < 3 {
+		return append(details, "missing mcp-remote bridge args"), false
+	}
+	if args[0] != "-y" || args[1] != "mcp-remote" {
+		return append(details, "unexpected stdio bridge invocation"), false
+	}
+
+	urlDetails, ok := inspectURL(args[2], len(exa.DefaultTools))
+	return append(details, urlDetails...), ok
 }
 
 func getURLField(obj map[string]any) string {

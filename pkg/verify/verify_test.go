@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nawodyaishan/mcp-config-tui/pkg/config"
+	"github.com/nawodyaishan/mcp-config-tui/pkg/provider"
 )
 
 func TestVerifyBareMCPServersFile(t *testing.T) {
@@ -41,6 +42,31 @@ func TestVerifyMCPServersFile(t *testing.T) {
 	}
 
 	result := VerifyFile(path, config.FileKindMCPServers, 3)
+	if result.Status != StatusOK {
+		t.Fatalf("expected status OK, got %s: %v", result.Status, result.Details)
+	}
+}
+
+func TestVerifyProviderFileSupportsClaudeDesktopStdioBridge(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "claude_desktop_config.json")
+	content := `{
+  "mcpServers": {
+    "exa": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"]
+    }
+  }
+}`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	result := VerifyProviderFile(path, config.FileKindMCPServers, "exa", provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"-y", "mcp-remote", "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"},
+	})
 	if result.Status != StatusOK {
 		t.Fatalf("expected status OK, got %s: %v", result.Status, result.Details)
 	}

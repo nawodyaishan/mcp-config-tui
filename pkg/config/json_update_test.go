@@ -34,6 +34,34 @@ func TestUpdateMCPServersJSONPreservesUnrelatedFields(t *testing.T) {
 	}
 }
 
+func TestUpdateMCPServersJSONSupportsStdioServers(t *testing.T) {
+	data := mustReadFixture(t, "claude_desktop.json")
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"-y", "mcp-remote", "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"},
+	}
+
+	updated, err := UpdateMCPServersJSON(data, "exa", "url", cfg)
+	if err != nil {
+		t.Fatalf("UpdateMCPServersJSON returned error: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	servers := root["mcpServers"].(map[string]any)
+	exa := servers["exa"].(map[string]any)
+	if exa["command"] != "npx" {
+		t.Fatalf("expected stdio command to be set, got %#v", exa["command"])
+	}
+	args := exa["args"].([]any)
+	if len(args) != 3 || args[1] != "mcp-remote" {
+		t.Fatalf("expected mcp-remote args, got %#v", args)
+	}
+	if _, ok := exa["url"]; ok {
+		t.Fatalf("did not expect url field for stdio config, got %#v", exa["url"])
+	}
+}
+
 func TestUpdateGeminiSettingsPreservesUISecurity(t *testing.T) {
 	data := mustReadFixture(t, "gemini_settings.json")
 	exaURL := "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
