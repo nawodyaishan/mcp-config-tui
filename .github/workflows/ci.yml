@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   merge_group:
   workflow_dispatch:
 
@@ -90,11 +90,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            ext: ""
           - os: macos-latest
-            ext: ""
-          - os: windows-latest
-            ext: ".exe"
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -113,4 +109,4 @@ jobs:
         shell: bash
         run: |
           mkdir -p bin
-          go build -o "./bin/exa-mcp-manager${{ matrix.ext }}" ./cmd/exa-mcp-manager
+          go build -o ./bin/exa-mcp-manager ./cmd/exa-mcp-manager
