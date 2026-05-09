@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 APP="usync"
 CMD="./cmd/${APP}"
 BIN="./bin/${APP}"
-PKG_VERSION="github.com/nawodyaishan/usync/pkg/version"
+PKG_VERSION="github.com/nawodyaishan/universal-mcp-sync/pkg/version"
 
 export GOCACHE="${REPO_ROOT}/.cache/go-build"
 export GOMODCACHE="${REPO_ROOT}/.cache/go-mod"
