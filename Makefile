@@ -7,11 +7,13 @@ GOLANGCI_LINT_CACHE := $(abspath $(CURDIR)/.cache/golangci-lint)
 GOENV := GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE)
 GO := env $(GOENV) go
 
-.PHONY: help tidy fmt vet lint test build run dry-run apply clean gitignore-check
+.PHONY: help tidy tidy-check mod-verify fmt vet lint test build run dry-run apply verify clean gitignore-check
 
 help:
 	@printf "Targets:\n"
 	@printf "  make tidy            - sync module dependencies\n"
+	@printf "  make tidy-check      - verify module files are tidy\n"
+	@printf "  make mod-verify      - verify downloaded module checksums\n"
 	@printf "  make fmt             - format Go sources\n"
 	@printf "  make vet             - run go vet across packages\n"
 	@printf "  make lint            - run golangci-lint\n"
@@ -25,6 +27,13 @@ help:
 
 tidy:
 	$(GO) mod tidy
+
+tidy-check:
+	$(GO) mod tidy
+	git diff --exit-code -- go.mod go.sum
+
+mod-verify:
+	$(GO) mod verify
 
 fmt:
 	$(GO) fmt ./...
@@ -57,6 +66,8 @@ ifndef KEYS_FILE
 	$(error KEYS_FILE is required, example: make apply KEYS_FILE=~/Downloads/exa_keys.txt)
 endif
 	$(GO) run $(CMD) --keys-file $(KEYS_FILE) --apply
+
+verify: mod-verify tidy-check vet lint test build gitignore-check
 
 gitignore-check:
 	bash tests/gitignore_test.sh

@@ -1,12 +1,15 @@
-# MCP Config TUI
+# MCP Config TUI (Exa MCP Manager)
 
 [![Release](https://img.shields.io/github/v/release/nawodyaishan/mcp-config-tui?display_name=tag)](https://github.com/nawodyaishan/mcp-config-tui/releases)
 [![CI](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nawodyaishan/mcp-config-tui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/nawodyaishan/mcp-config-tui)](./LICENSE)
 
+> [!NOTE]
+> **Project Status:** Exa MCP manager today, designed to become a generic MCP config manager.
+
 `mcp-config-tui` is a macOS-first utility for developers who use multiple local AI tools and want one safe way to manage MCP configuration across them.
 
-The current shipped CLI is `exa-mcp-manager`. Today it automates Exa MCP rollout. The codebase is already being refactored toward a provider-based MCP sync tool, but the user-facing product is still Exa-first.
+The current shipped CLI is `exa-mcp-manager`. It serves as the first implementation of our universal sync engine, currently focused on automating Exa MCP rollout. The codebase is already architected for a provider-based workflow, and we are transitioning toward a generic MCP manager that supports any `stdio` or `http` server.
 
 ## Who This Is For
 

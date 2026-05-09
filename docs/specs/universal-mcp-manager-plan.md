@@ -128,13 +128,12 @@ The TUI Wizard (`internal/tui`) will act as a Bubble Tea router with a 6-stage f
 - [x] Refactor core orchestration to generate configs via providers.
 - [x] Verify total backward compatibility for existing Exa usage.
 
-### Phase 2: Provider Registry and Dynamic TUI Wizard (Next)
-*This phase introduces the UX required to consume multiple providers, while strictly keeping Exa as the only registered provider to validate the generic abstraction.*
-- **Task 1: Registry & Credential Specs**: Implement the `Registry` and `CredentialSpec` types. Update `ExaProvider` to return ordered credential metadata.
-- **Task 2: Provider-Aware Planning**: Implement `PrepareProvider` using `CredentialProfile`. Remove raw `Operation.Key` storage in favor of `CredentialLabel`.
-- **Task 3: Dynamic Setup Form**: Update the `huh` wizard to include a Provider Selection step and dynamically generate credential input fields based on registry data.
-- **Task 4: Assignment & Preview Refactor**: Move assignment logic to operate on `CredentialProfile` slices. Update the preview screens to be provider-neutral.
-- **Task 5: Compatibility & Tests**: Ensure existing Exa `--keys` flags continue to work seamlessly via backward-compatibility wrappers. Ensure robust secret redaction.
+### Phase 2: Provider Registry and Dynamic TUI Wizard (Completed)
+- [x] **Task 1: Registry & Credential Specs**: Implement the `Registry` and `CredentialSpec` types. Update `ExaProvider` to return ordered credential metadata.
+- [x] **Task 2: Provider-Aware Planning**: Implement `PrepareProvider` using `CredentialProfile`. Remove raw `Operation.Key` storage in favor of `CredentialLabel`.
+- [x] **Task 3: Dynamic Setup Form**: Update the `huh` wizard to include a Provider Selection step and dynamically generate credential input fields based on registry data.
+- [x] **Task 4: Assignment & Preview Refactor**: Move assignment logic to operate on `CredentialProfile` slices. Update the preview screens to be provider-neutral.
+- [x] **Task 5: Compatibility & Tests**: Ensure existing Exa `--keys` flags continue to work seamlessly via backward-compatibility wrappers. Ensure robust secret redaction.
 
 ### Phase 3: The `stdio` Engine & High-Value Providers
 - **GitHub Provider**: Implement `NewGitHubProvider()`. This will be the flagship `stdio` provider, requiring a `GITHUB_PERSONAL_ACCESS_TOKEN` and generating an `npx -y @modelcontextprotocol/server-github` configuration.
