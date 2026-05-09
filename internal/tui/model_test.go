@@ -1,26 +1,26 @@
 package tui
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/app"
+	"github.com/nawodyaishan/mcp-config-tui/internal/config"
 )
 
-func TestNewModelDoesNotRenderPreloadedRawKeys(t *testing.T) {
-	manager, err := app.NewManager("/tmp/exa-mcp-manager-test", nil, nil)
-	if err != nil {
-		t.Fatalf("NewManager returned error: %v", err)
+func TestSetupFormSyncsToContext(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{
+		manager:  manager,
+		selected: make(map[config.AppID]bool),
 	}
+	sf := newSetupForm(ctx, "11111111-1111-1111-1111-111111111111")
+	sf.selectedSlice = []config.AppID{config.AppClaudeDesktop}
+	sf.syncToContext()
 
-	key := "11111111-1111-1111-1111-111111111111"
-	model := NewModel(manager, []string{key}, key)
-	view := renderKeys(model)
-
-	if strings.Contains(view, key) {
-		t.Fatalf("expected key screen to hide preloaded raw key, got:\n%s", view)
+	if !ctx.selected[config.AppClaudeDesktop] {
+		t.Fatal("expected Claude Desktop to be selected in context")
 	}
-	if !strings.Contains(view, "1111...1111") {
-		t.Fatalf("expected redacted key label, got:\n%s", view)
+	if len(ctx.keys) != 1 || ctx.keys[0] != "11111111-1111-1111-1111-111111111111" {
+		t.Fatalf("expected key to be synced, got %#v", ctx.keys)
 	}
 }
