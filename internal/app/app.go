@@ -15,6 +15,7 @@ import (
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
 	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 	"github.com/nawodyaishan/mcp-config-tui/internal/verify"
 )
 
@@ -37,7 +38,8 @@ type Operation struct {
 	Path          string
 	Kind          config.FileKind
 	Key           string
-	URL           string
+	ProviderID    string
+	Config        provider.MCPConfig
 	BackupPath    string
 	WillCreate    bool
 	SkipReason    string
@@ -120,9 +122,13 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 			return ExecutionPlan{}, fmt.Errorf("invalid key assignment for %s", appConfig.Name)
 		}
 
-		exaURL, err := exa.BuildURL(keys[index], exa.DefaultTools)
+		prov := provider.NewExaProvider()
+		credentials := map[string]string{
+			"EXA_API_KEY": keys[index],
+		}
+		cfg, err := prov.GenerateConfig(credentials)
 		if err != nil {
-			return ExecutionPlan{}, err
+			return ExecutionPlan{}, fmt.Errorf("generate config for %s: %w", prov.ID(), err)
 		}
 
 		if appConfig.ID == config.AppClaudeCode {
@@ -132,9 +138,10 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 				FileLabel:     "Claude Code CLI",
 				Kind:          config.FileKindClaudeCodeCLI,
 				Key:           keys[index],
-				URL:           exaURL,
-				CLIRemoveArgs: []string{"mcp", "remove", "exa", "-s", "user"},
-				CLIAddArgs:    []string{"mcp", "add", "--transport", "http", "-s", "user", "exa", exaURL},
+				ProviderID:    prov.ID(),
+				Config:        cfg,
+				CLIRemoveArgs: []string{"mcp", "remove", prov.ID(), "-s", "user"},
+				CLIAddArgs:    []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", prov.ID(), cfg.URL},
 			}
 			if _, err := m.Runner.LookPath("claude"); err != nil {
 				op.SkipReason = "claude CLI not found; skipping direct mutation of ~/.claude.json"
@@ -152,7 +159,8 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 				Path:       file.Path,
 				Kind:       file.Kind,
 				Key:        keys[index],
-				URL:        exaURL,
+				ProviderID: prov.ID(),
+				Config:     cfg,
 				BackupPath: backupPathFor(file, m.Now()),
 				WillCreate: !file.Exists,
 			})
@@ -435,21 +443,21 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		case config.AppAntigravity:
 			fieldName = "serverUrl"
 		}
-		updated, err = config.UpdateMCPServersJSON(data, fieldName, op.URL)
+		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, fieldName, op.Config)
 	case config.FileKindBareMCPServers:
 		fieldName := "url"
 		if op.AppID == config.AppGeminiCLI {
 			fieldName = "httpUrl"
 		}
-		updated, err = config.UpdateBareMCPServersJSON(data, fieldName, op.URL)
+		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, fieldName, op.Config)
 	case config.FileKindNamedServer:
 		fieldName := "url"
 		if op.AppID == config.AppAntigravity {
 			fieldName = "serverUrl"
 		}
-		updated, err = config.UpdateNamedServerJSON(data, "exa", fieldName, op.URL)
+		updated, err = config.UpdateNamedServerJSON(data, op.ProviderID, fieldName, op.Config)
 	case config.FileKindCodexTOML:
-		updated, err = config.UpdateCodexTOML(data, op.URL)
+		updated, err = config.UpdateCodexTOML(data, op.ProviderID, op.Config)
 	default:
 		err = fmt.Errorf("unsupported file operation kind %q", op.Kind)
 	}

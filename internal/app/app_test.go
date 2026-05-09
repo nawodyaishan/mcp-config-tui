@@ -12,6 +12,7 @@ import (
 
 	"github.com/nawodyaishan/mcp-config-tui/internal/config"
 	"github.com/nawodyaishan/mcp-config-tui/internal/exa"
+	"github.com/nawodyaishan/mcp-config-tui/internal/provider"
 	"github.com/nawodyaishan/mcp-config-tui/internal/verify"
 )
 
@@ -170,11 +171,12 @@ func TestManagerApplyRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildURL returned error: %v", err)
 	}
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: urlValue}
 
 	plan := ExecutionPlan{
 		Operations: []Operation{
-			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: firstPath, Kind: config.FileKindMCPServers, Key: key, URL: urlValue},
-			{AppName: "Gemini CLI", FileLabel: "Gemini MCP config", Path: secondPath, Kind: config.FileKindMCPServers, Key: key, URL: urlValue},
+			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: firstPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
+			{AppName: "Gemini CLI", FileLabel: "Gemini MCP config", Path: secondPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
 		},
 	}
 
@@ -217,10 +219,11 @@ func TestManagerLoggerRedactsKeysAndURLs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildURL returned error: %v", err)
 	}
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: urlValue}
 
 	_, err = manager.Apply(ExecutionPlan{
 		Operations: []Operation{
-			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: targetPath, Kind: config.FileKindMCPServers, Key: key, URL: urlValue},
+			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: targetPath, Kind: config.FileKindMCPServers, Key: key, ProviderID: "exa", Config: cfg},
 		},
 	})
 	if err == nil {
