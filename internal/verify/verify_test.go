@@ -13,15 +13,14 @@ func TestVerifyBareMCPServersFile(t *testing.T) {
 	path := filepath.Join(dir, "mcp_config.json")
 	content := `{
   "exa": {
-    "type": "sse",
-    "url": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+    "httpUrl": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"
   }
 }`
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	result := VerifyFile(path, config.FileKindBareMCPServers, 1)
+	result := VerifyFile(path, config.FileKindBareMCPServers, 3)
 	if result.Status != StatusOK {
 		t.Fatalf("expected status OK, got %s: %v", result.Status, result.Details)
 	}
@@ -33,8 +32,7 @@ func TestVerifyMCPServersFile(t *testing.T) {
 	content := `{
   "mcpServers": {
     "exa": {
-      "type": "sse",
-      "url": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa"
+      "url": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111&tools=web_search_exa,web_search_advanced_exa,web_fetch_exa"
     }
   }
 }`
@@ -42,7 +40,7 @@ func TestVerifyMCPServersFile(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	result := VerifyFile(path, config.FileKindMCPServers, 1)
+	result := VerifyFile(path, config.FileKindMCPServers, 3)
 	if result.Status != StatusOK {
 		t.Fatalf("expected status OK, got %s: %v", result.Status, result.Details)
 	}

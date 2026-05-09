@@ -94,7 +94,7 @@ func verifyMCPServersFile(path string, expectedTools int) Result {
 		return failure(path, "missing mcpServers.exa entry")
 	}
 
-	urlValue, _ := exaValue["url"].(string)
+	urlValue := getURLField(exaValue)
 	return inspectFileURL(path, urlValue, expectedTools)
 }
 
@@ -114,7 +114,7 @@ func verifyBareMCPServersFile(path string, expectedTools int) Result {
 		return failure(path, "missing exa entry")
 	}
 
-	urlValue, _ := exaValue["url"].(string)
+	urlValue := getURLField(exaValue)
 	return inspectFileURL(path, urlValue, expectedTools)
 }
 
@@ -134,8 +134,18 @@ func verifyNamedServerFile(path string, expectedTools int) Result {
 		return failure(path, "missing exa entry")
 	}
 
-	urlValue, _ := exaValue["serverUrl"].(string)
+	urlValue := getURLField(exaValue)
 	return inspectFileURL(path, urlValue, expectedTools)
+}
+
+func getURLField(obj map[string]any) string {
+	fields := []string{"url", "httpUrl", "serverUrl"}
+	for _, f := range fields {
+		if val, ok := obj[f].(string); ok && val != "" {
+			return val
+		}
+	}
+	return ""
 }
 
 func verifyCodexFile(path string, expectedTools int) Result {
