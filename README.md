@@ -16,7 +16,9 @@ One source of truth for your local AI toolchain. Sync your Exa MCP configuration
 
 ## Demo
 
-Coming soon: TUI walkthrough and dry-run preview.
+<p align="center">
+  <img src="assets/gif/demo.gif" width="800" alt="Universal MCP Sync TUI Demo">
+</p>
 
 ## Who This Is For
 
