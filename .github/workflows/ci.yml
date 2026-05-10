@@ -85,6 +85,9 @@ jobs:
       - name: Test
         run: make test
 
+      - name: Coverage gate
+        run: make coverage-check
+
       - name: Build
         run: make build
 
