@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -163,4 +164,30 @@ func decodeJSONForTest(t *testing.T, data []byte) map[string]any {
 		t.Fatalf("parse JSON: %v", err)
 	}
 	return root
+}
+
+func TestBuildConfigMap_EmitsHeadersWhenPresent(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStreamableHTTP,
+		URL:     "https://mcp.context7.com/mcp",
+		Headers: map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"},
+	}
+	result, _ := UpdateMCPServersJSON([]byte("{}"), "context7", "mcpServers", "url", cfg, nil)
+	if !bytes.Contains(result, []byte(`"headers"`)) {
+		t.Errorf("expected headers in output:\n%s", result)
+	}
+	if !bytes.Contains(result, []byte(`"CONTEXT7_API_KEY"`)) {
+		t.Errorf("expected header key in output:\n%s", result)
+	}
+}
+
+func TestBuildConfigMap_NoHeadersForExa(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type: provider.TransportHTTP,
+		URL:  "https://mcp.exa.ai/mcp?exaApiKey=test",
+	}
+	result, _ := UpdateMCPServersJSON([]byte("{}"), "exa", "mcpServers", "url", cfg, nil)
+	if bytes.Contains(result, []byte(`"headers"`)) {
+		t.Errorf("Exa output must not contain headers:\n%s", result)
+	}
 }

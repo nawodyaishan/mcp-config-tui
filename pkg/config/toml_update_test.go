@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,5 +32,23 @@ func TestUpdateCodexTOMLReplacesExistingExaBlockOnce(t *testing.T) {
 	}
 	if !strings.Contains(text, "[mcp_servers.context7]") {
 		t.Fatalf("expected unrelated TOML sections to remain, got:\n%s", text)
+	}
+}
+
+func TestUpdateCodexTOML_WritesHttpHeaders(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStreamableHTTP,
+		URL:     "https://mcp.context7.com/mcp",
+		Headers: map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"},
+	}
+	result, err := UpdateCodexTOML([]byte(""), "context7", cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(result, []byte(`http_headers`)) {
+		t.Errorf("expected http_headers in TOML:\n%s", result)
+	}
+	if !bytes.Contains(result, []byte(`"CONTEXT7_API_KEY"`)) {
+		t.Errorf("expected header key:\n%s", result)
 	}
 }

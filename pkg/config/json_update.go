@@ -25,6 +25,13 @@ func buildConfigMap(cfg provider.MCPConfig, urlFieldName string, extra map[strin
 		} else {
 			result["url"] = cfg.URL
 		}
+		if len(cfg.Headers) > 0 {
+			headers := make(map[string]string, len(cfg.Headers))
+			for k, v := range cfg.Headers {
+				headers[k] = v
+			}
+			result["headers"] = headers
+		}
 	}
 
 	for k, v := range extra {
@@ -81,6 +88,13 @@ func UpdateNamedServerJSON(data []byte, providerID, rootKey, urlFieldName string
 			urlFieldName = "url"
 		}
 		server[urlFieldName] = cfg.URL
+		if len(cfg.Headers) > 0 {
+			headers := make(map[string]string, len(cfg.Headers))
+			for k, v := range cfg.Headers {
+				headers[k] = v
+			}
+			server["headers"] = headers
+		}
 	} else {
 		// If it switches to stdio, we overwrite with the full stdio map
 		server = buildConfigMap(cfg, urlFieldName, extra)

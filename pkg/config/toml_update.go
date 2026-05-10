@@ -2,10 +2,20 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
+
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
 
 func UpdateCodexTOML(data []byte, providerID string, cfg provider.MCPConfig) ([]byte, error) {
 	if cfg.Type == provider.TransportStdio {
@@ -15,6 +25,13 @@ func UpdateCodexTOML(data []byte, providerID string, cfg provider.MCPConfig) ([]
 	block := []string{
 		fmt.Sprintf("[mcp_servers.%s]", providerID),
 		fmt.Sprintf("url = %q", cfg.URL),
+	}
+	if len(cfg.Headers) > 0 {
+		pairs := make([]string, 0, len(cfg.Headers))
+		for _, k := range sortedKeys(cfg.Headers) {
+			pairs = append(pairs, fmt.Sprintf("%q = %q", k, cfg.Headers[k]))
+		}
+		block = append(block, fmt.Sprintf("http_headers = { %s }", strings.Join(pairs, ", ")))
 	}
 
 	text := string(data)
