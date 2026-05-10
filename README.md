@@ -30,7 +30,7 @@ The provider system is intentionally generic. New MCP servers are added through 
 ## Demo
 
 <p align="center">
-  <img src="assets/gif/demo.gif" width="800" alt="Universal MCP Sync TUI Demo">
+  <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExdG45dDI1bHRuems3YWY3YWxwbWRjZjJ2dnMxaWUxZG41ZW5wbDdlbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kGUO0ukfaZgZxdZE0k/giphy.gif" width="800" alt="Universal MCP Sync TUI Demo">
 </p>
 
 ## Why This Exists
