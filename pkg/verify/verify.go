@@ -49,10 +49,127 @@ func VerifyFile(path string, kind config.FileKind, expectedTools int) Result {
 }
 
 func VerifyProviderFile(path string, kind config.FileKind, providerID string, cfg provider.MCPConfig) Result {
-	if providerID == "exa" {
+	switch providerID {
+	case "exa":
 		return verifyExaProviderFile(path, kind, cfg)
+	case "context7":
+		return verifyContext7ProviderFile(path, kind, cfg)
+	default:
+		return verifyGenericProviderFile(path, kind, providerID, cfg)
 	}
-	return verifyGenericProviderFile(path, kind, providerID, cfg)
+}
+
+func verifyContext7ProviderFile(path string, kind config.FileKind, cfg provider.MCPConfig) Result {
+	switch kind {
+	case config.FileKindMCPServers:
+		return verifyContext7MCPServersFile(path, cfg)
+	case config.FileKindBareMCPServers:
+		return verifyContext7BareMCPServersFile(path, cfg)
+	case config.FileKindNamedServer:
+		return verifyContext7NamedServerFile(path, cfg)
+	case config.FileKindCodexTOML:
+		return verifyContext7CodexFile(path)
+	default:
+		return failure(path, "unsupported verification target for context7")
+	}
+}
+
+func verifyContext7MCPServersFile(path string, cfg provider.MCPConfig) Result {
+	if cfg.Type == provider.TransportStdio {
+		server, err := readNestedServerEntry(path, "mcpServers", "context7")
+		if err != nil {
+			return failure(path, err.Error())
+		}
+		details, ok := inspectStdioServer(server)
+		return resultFrom(path, details, ok)
+	}
+	server, err := readNestedServerEntry(path, "mcpServers", "context7")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectContext7Server(path, server)
+}
+
+func verifyContext7BareMCPServersFile(path string, cfg provider.MCPConfig) Result {
+	if cfg.Type == provider.TransportStdio {
+		server, err := readRootServerEntry(path, "context7")
+		if err != nil {
+			return failure(path, err.Error())
+		}
+		details, ok := inspectStdioServer(server)
+		return resultFrom(path, details, ok)
+	}
+	server, err := readRootServerEntry(path, "context7")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectContext7Server(path, server)
+}
+
+func verifyContext7NamedServerFile(path string, cfg provider.MCPConfig) Result {
+	if cfg.Type == provider.TransportStdio {
+		server, err := readRootServerEntry(path, "context7")
+		if err != nil {
+			return failure(path, err.Error())
+		}
+		details, ok := inspectStdioServer(server)
+		return resultFrom(path, details, ok)
+	}
+	server, err := readRootServerEntry(path, "context7")
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	return inspectContext7Server(path, server)
+}
+
+func inspectContext7Server(path string, server map[string]any) Result {
+	urlValue := getURLField(server)
+	if urlValue == "" {
+		return failure(path, "missing context7 URL field")
+	}
+	if !strings.Contains(urlValue, "mcp.context7.com") {
+		return Result{
+			Target:  path,
+			Status:  StatusWarning,
+			Details: []string{fmt.Sprintf("unexpected Context7 endpoint: %s", urlValue)},
+		}
+	}
+	headers, _ := server["headers"].(map[string]any)
+	if _, ok := headers["CONTEXT7_API_KEY"]; !ok {
+		return failure(path, "missing CONTEXT7_API_KEY in headers")
+	}
+	return Result{
+		Target:  path,
+		Status:  StatusOK,
+		Details: []string{"url present", "headers present: CONTEXT7_API_KEY"},
+	}
+}
+
+func verifyContext7CodexFile(path string) Result {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	text := string(data)
+	if !strings.Contains(text, "[mcp_servers.context7]") {
+		return failure(path, "missing [mcp_servers.context7] block")
+	}
+	if !strings.Contains(text, "http_headers") {
+		return failure(path, "missing http_headers in context7 TOML block")
+	}
+	return Result{
+		Target:  path,
+		Status:  StatusOK,
+		Details: []string{"block present", "http_headers present"},
+	}
+}
+
+func resultFrom(path string, details []string, ok bool) Result {
+	status := StatusOK
+	if !ok {
+		status = StatusFailed
+	}
+	return Result{Target: path, Status: status, Details: details}
 }
 
 func verifyExaProviderFile(path string, kind config.FileKind, cfg provider.MCPConfig) Result {

@@ -106,6 +106,38 @@ func TestVerifyProviderFile_GenericMissingEntry(t *testing.T) {
     cfg := provider.MCPConfig{Type: provider.TransportStdio, Command: "npx"}
     result := VerifyProviderFile(path, config.FileKindMCPServers, "github", cfg)
     if result.Status != StatusFailed {
-        t.Errorf("expected Failed for missing entry, got %s", result.Status)
+    	t.Errorf("expected Failed for missing entry, got %s", result.Status)
     }
-}
+    }
+
+    func TestVerifyContext7File_HeadersPresent(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.json")
+    _ = os.WriteFile(path, []byte(`{"mcpServers":{"context7":{"url":"https://mcp.context7.com/mcp","headers":{"CONTEXT7_API_KEY":"ctx7sk_123"}}}}`), 0o600)
+    cfg := provider.MCPConfig{Type: provider.TransportStreamableHTTP}
+    result := VerifyProviderFile(path, config.FileKindMCPServers, "context7", cfg)
+    if result.Status != StatusOK {
+    	t.Errorf("expected OK, got %s", result.Status)
+    }
+    }
+
+    func TestVerifyContext7File_HeadersMissing(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.json")
+    _ = os.WriteFile(path, []byte(`{"mcpServers":{"context7":{"url":"https://mcp.context7.com/mcp"}}}`), 0o600)
+    cfg := provider.MCPConfig{Type: provider.TransportStreamableHTTP}
+    result := VerifyProviderFile(path, config.FileKindMCPServers, "context7", cfg)
+    if result.Status != StatusFailed {
+    	t.Errorf("expected Failed, got %s", result.Status)
+    }
+    }
+
+    func TestVerifyContext7CodexFile_HttpHeadersPresent(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.toml")
+    _ = os.WriteFile(path, []byte("[mcp_servers.context7]\nurl = \"https://mcp.context7.com/mcp\"\nhttp_headers = { \"CONTEXT7_API_KEY\" = \"ctx7sk_123\" }"), 0o600)
+    result := verifyContext7CodexFile(path)
+    if result.Status != StatusOK {
+    	t.Errorf("expected OK, got %s", result.Status)
+    }
+    }
