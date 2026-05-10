@@ -1,14 +1,24 @@
 package redact
 
-import "regexp"
+import (
+	"regexp"
+
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/context7"
+)
 
 var uuidRE = regexp.MustCompile(
     `(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`,
 )
 
+var ctx7RE = regexp.MustCompile(`ctx7sk_[A-Za-z0-9_\-]{8,}`)
+
 // Text replaces every UUID-shaped substring in s with a truncated token.
 func Text(s string) string {
-    return uuidRE.ReplaceAllStringFunc(s, Key)
+    s = uuidRE.ReplaceAllStringFunc(s, Key)
+    s = ctx7RE.ReplaceAllStringFunc(s, func(key string) string {
+        return context7.RedactKey(key)
+    })
+    return s
 }
 
 // Key returns the first 4 and last 4 characters of key separated by "...".

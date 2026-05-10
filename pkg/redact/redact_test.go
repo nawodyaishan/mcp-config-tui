@@ -1,7 +1,9 @@
 package redact_test
 
 import (
+    "strings"
     "testing"
+
     "github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 )
 
@@ -16,9 +18,16 @@ func TestKey(t *testing.T) {
         if got := redact.Key(tt.in); got != tt.want {
             t.Errorf("Key(%q) = %q, want %q", tt.in, got, tt.want)
         }
-    }
-}
+        }
+        }
 
+        func TestText_RedactsContext7Key(t *testing.T) {
+        key := "ctx7sk_abcdef1234567890wxyz"
+        got := redact.Text("config key: " + key)
+        if strings.Contains(got, key) {
+        t.Errorf("full key must not appear in output: %s", got)
+        }
+        }
 func TestText(t *testing.T) {
     uuid := "11111111-1111-1111-1111-111111111111"
     input := "error: key " + uuid + " rejected"
