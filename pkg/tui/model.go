@@ -6,8 +6,8 @@ import (
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
-	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 )
 
 type stage int
@@ -59,7 +59,7 @@ func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Mod
 				Values: map[string]string{
 					"EXA_API_KEY": key,
 				},
-				Label: exa.RedactKey(key),
+				Label: redact.Key(key),
 			}
 		}
 		ctx.profiles = profiles
