@@ -13,20 +13,13 @@ type TransportSupport struct {
     HTTP           bool // legacy; VS Code uses "type":"http"
 }
 
-// BridgeConfig describes a stdio wrapper that proxies a remote transport.
-// {url} in Args is replaced with the actual server URL at adapt time.
-type BridgeConfig struct {
-    Command string
-    Args    []string
-}
-
 // Capability is the full capability profile of one AI client.
 type Capability struct {
     Supports TransportSupport
     // Bridge maps a transport type the client cannot handle natively to a
     // stdio bridge that wraps it. If no bridge is declared and the client
     // does not support the transport, CanHandle returns false.
-    Bridge map[provider.TransportType]*BridgeConfig
+    Bridge map[provider.TransportType]*provider.BridgeConfig
 }
 
 // Matrix is the authoritative source of what each AI client supports.
@@ -37,7 +30,7 @@ var Matrix = map[config.AppID]Capability{
         // Claude Desktop only speaks stdio natively.
         // Remote HTTP/StreamableHTTP servers are bridged via mcp-remote.
         Supports: TransportSupport{Stdio: true},
-        Bridge: map[provider.TransportType]*BridgeConfig{
+        Bridge: map[provider.TransportType]*provider.BridgeConfig{
             provider.TransportStreamableHTTP: {
                 Command: "npx",
                 Args:    []string{"-y", "mcp-remote", "{url}"},

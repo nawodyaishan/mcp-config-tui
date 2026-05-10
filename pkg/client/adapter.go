@@ -14,17 +14,25 @@ import (
 // If neither, cfg is returned unchanged — callers must check CanHandle first
 // and set a SkipReason if it returns false.
 func Adapt(appID config.AppID, cfg provider.MCPConfig) provider.MCPConfig {
-    cap, ok := Matrix[appID]
-    if !ok {
-        return cfg
-    }
-    if supportsTransport(cap.Supports, cfg.Type) {
-        return cfg
-    }
-    if bridge, ok := cap.Bridge[cfg.Type]; ok {
-        return applyBridge(bridge, cfg)
-    }
-    return cfg
+	// Provider-specified override takes priority over matrix bridge
+	if cfg.BridgeOverride != nil {
+		cap, ok := Matrix[appID]
+		if ok && !supportsTransport(cap.Supports, cfg.Type) {
+			return applyBridge(cfg.BridgeOverride, cfg)
+		}
+	}
+
+	cap, ok := Matrix[appID]
+	if !ok {
+		return cfg
+	}
+	if supportsTransport(cap.Supports, cfg.Type) {
+		return cfg
+	}
+	if bridge, ok := cap.Bridge[cfg.Type]; ok {
+		return applyBridge(bridge, cfg)
+	}
+	return cfg
 }
 
 // CanHandle reports whether appID can handle transport, either natively or via a bridge.
@@ -55,14 +63,37 @@ func supportsTransport(s TransportSupport, t provider.TransportType) bool {
     return false
 }
 
-func applyBridge(bridge *BridgeConfig, cfg provider.MCPConfig) provider.MCPConfig {
-    args := make([]string, len(bridge.Args))
-    for i, arg := range bridge.Args {
-        args[i] = strings.ReplaceAll(arg, "{url}", cfg.URL)
+func applyBridge(bridge *provider.BridgeConfig, cfg provider.MCPConfig) provider.MCPConfig {
+	args := make([]string, len(bridge.Args))
+	for i, arg := range bridge.Args {
+		// Substitute {url}
+		arg = strings.ReplaceAll(arg, "{url}", cfg.URL)
+		// Substitute {header:KEY} with the header value
+		for k, v := range cfg.Headers {
+			arg = strings.ReplaceAll(arg, "{header:"+k+"}", v)
+		}
+		args[i] = arg
+	}
+	return provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: bridge.Command,
+		Args:    args,
+	}
+}
+
+// HeadersFor returns the headers map to write for appID.
+// Gemini CLI requires an extra Accept header for SSE streaming.
+// Returns nil when base is empty (prevents serializing "headers": {}).
+func HeadersFor(appID config.AppID, base map[string]string) map[string]string {
+    if len(base) == 0 {
+        return nil
     }
-    return provider.MCPConfig{
-        Type:    provider.TransportStdio,
-        Command: bridge.Command,
-        Args:    args,
+    out := make(map[string]string, len(base)+1)
+    for k, v := range base {
+        out[k] = v
     }
+    if appID == config.AppGeminiCLI {
+        out["Accept"] = "application/json, text/event-stream"
+    }
+    return out
 }

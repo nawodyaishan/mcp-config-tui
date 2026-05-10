@@ -135,3 +135,25 @@ func TestCanHandle(t *testing.T) {
         }
     }
 }
+
+func TestHeadersFor_GeminiAddsAccept(t *testing.T) {
+    base := map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"}
+    got := client.HeadersFor(config.AppGeminiCLI, base)
+    if got["Accept"] == "" {
+        t.Error("expected Accept header for Gemini CLI")
+    }
+}
+
+func TestHeadersFor_NilBaseReturnsNil(t *testing.T) {
+    if client.HeadersFor(config.AppCursor, nil) != nil {
+        t.Error("nil base must return nil (no empty headers map)")
+    }
+}
+
+func TestHeadersFor_CursorUnchanged(t *testing.T) {
+    base := map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"}
+    got := client.HeadersFor(config.AppCursor, base)
+    if _, ok := got["Accept"]; ok {
+        t.Error("Cursor must not gain Accept header")
+    }
+}
