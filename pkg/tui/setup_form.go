@@ -4,8 +4,8 @@ import (
 	"github.com/charmbracelet/huh"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
-	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 )
 
 type setupForm struct {
@@ -140,27 +140,33 @@ func (sf *setupForm) syncToContext() {
 		// For Exa, the "EXA_API_KEY" multivalue field is parsed into multiple profiles.
 		// For future single-value providers, it results in one profile.
 
-		// Let's handle Exa's multi-value parsing specifically for now, while allowing generic fallback.
-		if sf.ctx.providerID == "exa" {
-			rawKeys := *sf.credentialValues["exa:EXA_API_KEY"]
-			keys, _ := exa.ParseKeys(rawKeys)
-			for _, key := range keys {
-				profiles = append(profiles, provider.CredentialProfile{
-					ProviderID: "exa",
-					Values:     map[string]string{"EXA_API_KEY": key},
-					Label:      exa.RedactKey(key),
-				})
+		mv, isMultiValue := sf.ctx.provider.(provider.MultiValueParser)
+		for _, spec := range specs {
+			raw := *sf.credentialValues[sf.ctx.providerID+":"+spec.Key]
+			if spec.MultiValue && isMultiValue {
+				parsed, err := mv.ParseMultiValue(spec.Key, raw)
+				if err == nil {
+					profiles = append(profiles, parsed...)
+				}
+				continue
 			}
-		} else {
-			// Generic fallback: one profile with all gathered values for this provider
+			// Single-value credential: one profile with all creds gathered
+		}
+		// Build single-profile for non-multi-value providers
+		if !isMultiValue || len(profiles) == 0 {
 			values := make(map[string]string)
+			label := "Default"
 			for _, spec := range specs {
-				values[spec.Key] = *sf.credentialValues[sf.ctx.providerID+":"+spec.Key]
+				val := *sf.credentialValues[sf.ctx.providerID+":"+spec.Key]
+				values[spec.Key] = val
+				if spec.Secret && label == "Default" && len(val) > 0 {
+					label = redact.Key(val)
+				}
 			}
 			profiles = append(profiles, provider.CredentialProfile{
 				ProviderID: sf.ctx.providerID,
 				Values:     values,
-				Label:      "Default", // TODO: Better generic labelling
+				Label:      label,
 			})
 		}
 		sf.ctx.profiles = profiles
