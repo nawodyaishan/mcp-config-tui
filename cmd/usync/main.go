@@ -9,9 +9,29 @@ import (
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/tui"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/version"
 )
+
+func loadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
+    if keysCSV != "" {
+        keys, err := exa.ParseKeysCSV(keysCSV)
+        return keys, keysCSV, err
+    }
+    if keysFile != "" {
+        keys, err := exa.ParseKeysFile(keysFile)
+        if err != nil {
+            return nil, "", err
+        }
+        data, err := os.ReadFile(keysFile)
+        if err != nil {
+            return nil, "", err
+        }
+        return keys, string(data), nil
+    }
+    return nil, "", nil
+}
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "sync" {
@@ -50,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	initialKeys, initialRaw, err := app.LoadInitialKeys(keysCSV, keysFile)
+	initialKeys, initialRaw, err := loadInitialKeys(keysCSV, keysFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

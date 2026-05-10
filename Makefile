@@ -24,6 +24,14 @@ lint:
 test:
 	@bash scripts/test.sh
 
+.PHONY: coverage-check
+coverage-check:
+	go test -coverprofile=coverage.out ./...
+	@go tool cover -func=coverage.out | awk \
+	  '/total:/ { gsub(/%/,"",$$3); if ($$3+0 < 65.0) \
+	    { print "FAIL: total coverage " $$3 "% is below 65% gate"; exit 1 } \
+	    else { print "PASS: total coverage " $$3 "%" } }'
+
 build:
 	@bash scripts/build.sh
 
