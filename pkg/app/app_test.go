@@ -274,3 +274,15 @@ func fixedNow() func() time.Time {
 		return time.Date(2026, time.May, 8, 21, 30, 45, 0, time.UTC)
 	}
 }
+
+func TestFormatApplyResult(t *testing.T) {
+	result := ApplyResult{
+		UpdatedTargets: []string{"file1", "file2"},
+		BackupPaths:    []string{"backup1"},
+		Warnings:       []string{"warn1"},
+	}
+	formatted := FormatApplyResult(result)
+	if !strings.Contains(formatted, "Updated") || !strings.Contains(formatted, "Backups") || !strings.Contains(formatted, "warn1") {
+		t.Errorf("FormatApplyResult output missing details: %s", formatted)
+	}
+}

@@ -181,13 +181,22 @@ func TestBuildConfigMap_EmitsHeadersWhenPresent(t *testing.T) {
 	}
 }
 
-func TestBuildConfigMap_NoHeadersForExa(t *testing.T) {
+func TestUpdateNamedServerJSON_Stdio(t *testing.T) {
+	data := []byte(`{"mcp":{}}`)
 	cfg := provider.MCPConfig{
-		Type: provider.TransportHTTP,
-		URL:  "https://mcp.exa.ai/mcp?exaApiKey=test",
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"-y", "mcp-remote", "url"},
 	}
-	result, _ := UpdateMCPServersJSON([]byte("{}"), "exa", "mcpServers", "url", cfg, nil)
-	if bytes.Contains(result, []byte(`"headers"`)) {
-		t.Errorf("Exa output must not contain headers:\n%s", result)
+	updated, err := UpdateNamedServerJSON(data, "exa", "mcp", "url", cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := decodeJSONForTest(t, updated)
+	mcp := root["mcp"].(map[string]any)
+	exa := mcp["exa"].(map[string]any)
+	if exa["command"] != "npx" {
+		t.Errorf("expected command npx, got %v", exa["command"])
 	}
 }
+

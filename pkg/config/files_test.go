@@ -57,6 +57,46 @@ func TestWriteWithBackupUsesPrivatePermissionsAndRollbackRestoresOriginal(t *tes
 		t.Fatalf("read restored file: %v", err)
 	}
 	if string(data) != string(original) {
-		t.Fatalf("expected original content after rollback, got %s", string(data))
+	        t.Fatalf("expected original content after rollback, got %s", string(data))
 	}
-}
+	}
+
+	func TestReadFileOrEmpty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "exists.txt")
+	_ = os.WriteFile(path, []byte("content"), 0600)
+
+	data, exists, err := ReadFileOrEmpty(path)
+	if err != nil {
+	t.Fatal(err)
+	}
+	if !exists || string(data) != "content" {
+	t.Errorf("expected content, got %v, %s", exists, string(data))
+	}
+
+	dataEmpty, existsEmpty, err := ReadFileOrEmpty(filepath.Join(dir, "missing.txt"))
+	if err != nil {
+	t.Fatal(err)
+	}
+	if existsEmpty || len(dataEmpty) != 0 {
+	t.Errorf("expected empty, got %v, %s", existsEmpty, string(dataEmpty))
+	}
+	}
+
+	func TestRollbackWrite_NoBackup(t *testing.T) {
+	if err := RollbackWrite(WriteOutcome{}); err != nil {
+	t.Errorf("RollbackWrite should succeed even if no backup is present, got %v", err)
+	}
+	}
+
+	func TestEnsureParentDir(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "a", "b", "c.txt")
+	if err := EnsureParentDir(path); err != nil {
+	t.Fatalf("EnsureParentDir failed: %v", err)
+	}
+	fi, err := os.Stat(filepath.Join(dir, "a", "b"))
+	if err != nil || !fi.IsDir() {
+	t.Fatal("parent directory not created")
+	}
+	}

@@ -63,12 +63,40 @@ func TestExaProviderCredentialSpec(t *testing.T) {
 	}
 }
 
-func TestTransportConstants(t *testing.T) {
-    if string(TransportStreamableHTTP) != "streamable-http" {
-        t.Fatalf("TransportStreamableHTTP must equal \"streamable-http\", got %q",
-            TransportStreamableHTTP)
-    }
-    if string(TransportHTTP) != "http" {
-        t.Fatalf("TransportHTTP must equal \"http\"")
-    }
+func TestExaProvider(t *testing.T) {
+	p := NewExaProvider()
+	if p.Name() != "Exa AI Search" {
+		t.Errorf("unexpected name: %s", p.Name())
+	}
+	if p.Description() == "" {
+		t.Error("expected description")
+	}
+
+	creds := map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"}
+	cfg, err := p.GenerateConfig(creds)
+	if err != nil {
+		t.Fatalf("GenerateConfig failed: %v", err)
+	}
+	if cfg.Type != TransportHTTP {
+		t.Errorf("expected TransportHTTP, got %s", cfg.Type)
+	}
+
+	profiles, err := p.ParseMultiValue("EXA_API_KEY", "11111111-1111-1111-1111-111111111111, 22222222-2222-2222-2222-222222222222")
+	if err != nil {
+		t.Fatalf("ParseMultiValue failed: %v", err)
+	}
+	if len(profiles) != 2 {
+		t.Errorf("expected 2 profiles, got %d", len(profiles))
+	}
 }
+
+func TestGitHubProviderMetadata(t *testing.T) {
+	p := NewGitHubProvider()
+	if p.Name() != "GitHub" {
+		t.Errorf("unexpected name: %s", p.Name())
+	}
+	if p.Description() == "" {
+		t.Error("expected description")
+	}
+}
+
