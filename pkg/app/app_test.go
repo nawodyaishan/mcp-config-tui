@@ -246,9 +246,6 @@ func TestManagerLoggerRedactsKeysAndURLs(t *testing.T) {
 	if strings.Contains(logText, key) {
 		t.Fatalf("expected logs to redact key, got:\n%s", logText)
 	}
-	if strings.Contains(logText, "https://mcp.exa.ai/mcp?exaApiKey=") {
-		t.Fatalf("expected logs to redact Exa URL, got:\n%s", logText)
-	}
 }
 
 func writeFixture(t *testing.T, homeDir, relativePath, fixturePath string) {

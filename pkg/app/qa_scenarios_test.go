@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 func TestQAExaReadmeScenarios(t *testing.T) {
@@ -147,4 +149,180 @@ func TestQAIdempotency(t *testing.T) {
 	if !bytes.Equal(data1, data2) {
 		t.Errorf("Idempotency failure: second run changed file content")
 	}
+}
+
+func TestQAGitHubStdioSupportedClients(t *testing.T) {
+    homeDir := t.TempDir()
+
+    // Write empty config files for all clients that support stdio
+    paths := map[config.AppID]string{
+        config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+        config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+        config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+        config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+        config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+        config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+        config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+        config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+    }
+    for _, p := range paths {
+        mustWriteFile(t, p, []byte("{}"))
+    }
+
+    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+    if err != nil {
+        t.Fatalf("NewManager: %v", err)
+    }
+
+    prov := provider.NewGitHubProvider()
+    pat := "ghp_" + strings.Repeat("a", 36)
+    profiles := []provider.CredentialProfile{{
+        ProviderID: "github",
+        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+        Label:      "ghp_...aaaa",
+    }}
+
+    selected := make(map[config.AppID]bool)
+    for id := range paths {
+        selected[id] = true
+    }
+    assignments := DefaultAssignments(selected, 1)
+
+    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+    if err != nil {
+        t.Fatalf("PrepareProvider: %v", err)
+    }
+
+    // No operations should have SkipReason for stdio-capable clients
+    for _, op := range plan.Operations {
+        if op.SkipReason != "" {
+            t.Errorf("unexpected skip for %s: %s", op.AppName, op.SkipReason)
+        }
+    }
+
+    _, err = manager.Apply(plan)
+    if err != nil {
+        t.Fatalf("Apply: %v", err)
+    }
+
+    // Verify Claude Desktop got stdio command written (no bridge needed for stdio provider)
+    data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
+    if !bytes.Contains(data, []byte(`"command": "npx"`)) {
+        t.Errorf("Claude Desktop: expected stdio command\n%s", data)
+    }
+    if !bytes.Contains(data, []byte(`"@modelcontextprotocol/server-github"`)) {
+        t.Errorf("Claude Desktop: expected GitHub server arg\n%s", data)
+    }
+    // PAT must appear in env block
+    if !bytes.Contains(data, []byte(`"GITHUB_PERSONAL_ACCESS_TOKEN"`)) {
+        t.Errorf("Claude Desktop: expected env key in config\n%s", data)
+    }
+
+    // Verify Cursor got stdio command written
+    data, _ = os.ReadFile(paths[config.AppCursor])
+    if !bytes.Contains(data, []byte(`"command": "npx"`)) {
+        t.Errorf("Cursor: expected stdio command\n%s", data)
+    }
+}
+
+func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
+    homeDir := t.TempDir()
+
+    geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
+    antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+    mustWriteFile(t, geminiPath, []byte("{}"))
+    mustWriteFile(t, antigravityPath, []byte("{}"))
+
+    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+    if err != nil {
+        t.Fatalf("NewManager: %v", err)
+    }
+
+    prov := provider.NewGitHubProvider()
+    pat := "ghp_" + strings.Repeat("a", 36)
+    profiles := []provider.CredentialProfile{{
+        ProviderID: "github",
+        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+        Label:      "ghp_...aaaa",
+    }}
+    selected := map[config.AppID]bool{
+        config.AppGeminiCLI:  true,
+        config.AppAntigravity: true,
+    }
+    assignments := DefaultAssignments(selected, 1)
+
+    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+    if err != nil {
+        t.Fatalf("PrepareProvider: %v", err)
+    }
+
+    // All operations should be skipped for HTTP-only clients with a stdio provider
+    skipped := 0
+    for _, op := range plan.Operations {
+        if op.SkipReason != "" {
+            skipped++
+        }
+    }
+    if skipped == 0 && len(plan.Warnings) == 0 {
+        t.Error("expected GeminiCLI and Antigravity to be skipped for stdio-only provider")
+    }
+
+    // Files should not be modified
+    _, err = manager.Apply(plan)
+    if err != nil {
+        t.Fatalf("Apply: %v", err)
+    }
+
+    data, _ := os.ReadFile(geminiPath)
+    if !bytes.Equal(data, []byte("{}")) {
+        t.Errorf("Gemini settings should not be modified for GitHub stdio provider\n%s", data)
+    }
+}
+
+func TestQAExaAndGitHubCoexist(t *testing.T) {
+    homeDir := t.TempDir()
+    cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+    mustWriteFile(t, cursorPath, []byte("{}"))
+
+    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+    if err != nil {
+        t.Fatalf("NewManager: %v", err)
+    }
+    selected := map[config.AppID]bool{config.AppCursor: true}
+    assignments := DefaultAssignments(selected, 1)
+
+    // Apply Exa first
+    exaKey := "11111111-1111-1111-1111-111111111111"
+    exaPlan, err := manager.Prepare([]string{exaKey}, selected, assignments)
+    if err != nil {
+        t.Fatalf("Prepare Exa: %v", err)
+    }
+    if _, err := manager.Apply(exaPlan); err != nil {
+        t.Fatalf("Apply Exa: %v", err)
+    }
+
+    // Apply GitHub second
+    pat := "ghp_" + strings.Repeat("a", 36)
+    githubProv := provider.NewGitHubProvider()
+    githubProfiles := []provider.CredentialProfile{{
+        ProviderID: "github",
+        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+        Label:      "ghp_...aaaa",
+    }}
+    githubPlan, err := manager.PrepareProvider(githubProv, githubProfiles, selected, assignments)
+    if err != nil {
+        t.Fatalf("PrepareProvider GitHub: %v", err)
+    }
+    if _, err := manager.Apply(githubPlan); err != nil {
+        t.Fatalf("Apply GitHub: %v", err)
+    }
+
+    data, _ := os.ReadFile(cursorPath)
+    // Both providers must be present
+    if !bytes.Contains(data, []byte(`"exa"`)) {
+        t.Errorf("Cursor: Exa entry should survive GitHub sync\n%s", data)
+    }
+    if !bytes.Contains(data, []byte(`"github"`)) {
+        t.Errorf("Cursor: GitHub entry should be present\n%s", data)
+    }
 }

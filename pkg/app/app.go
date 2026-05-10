@@ -13,9 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/client"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
-	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/verify"
 )
 
@@ -153,8 +154,15 @@ func (m *Manager) PrepareProvider(
 			continue
 		}
 
+		if !client.CanHandle(appConfig.ID, cfg.Type) {
+			plan.Warnings = append(plan.Warnings, fmt.Sprintf(
+				"%s does not support %s transport — skipping %s",
+				appConfig.Name, cfg.Type, prov.ID(),
+			))
+			continue
+		}
 		for _, file := range appConfig.Files {
-			fileCfg := configForTarget(appConfig.ID, prov.ID(), cfg)
+			fileCfg := client.Adapt(appConfig.ID, cfg)
 			plan.Operations = append(plan.Operations, Operation{
 				AppID:           appConfig.ID,
 				AppName:         appConfig.Name,
@@ -173,20 +181,9 @@ func (m *Manager) PrepareProvider(
 	return plan, nil
 }
 
-func configForTarget(appID config.AppID, providerID string, cfg provider.MCPConfig) provider.MCPConfig {
-	if providerID == "exa" && appID == config.AppClaudeDesktop && cfg.Type != provider.TransportStdio {
-		return provider.MCPConfig{
-			Type:    provider.TransportStdio,
-			Command: "npx",
-			Args:    []string{"-y", "mcp-remote", cfg.URL},
-		}
-	}
-	return cfg
-}
-
 func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {
 	if len(keys) == 0 {
-		return ExecutionPlan{}, fmt.Errorf("at least one Exa API key is required")
+		return ExecutionPlan{}, fmt.Errorf("at least one API key is required")
 	}
 
 	prov := provider.NewExaProvider()
@@ -197,7 +194,7 @@ func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignm
 			Values: map[string]string{
 				"EXA_API_KEY": key,
 			},
-			Label: exa.RedactKey(key),
+			Label: redact.Key(key),
 		}
 	}
 
@@ -242,14 +239,41 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 	}
 
 	result.Verification = append(result.Verification, verifyFiles(prepared)...)
-	if seenApps[config.AppCodexCLI] {
-		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "codex", "mcp", "get", "exa"))
+
+	type cliVerifyKey struct{ appID config.AppID; providerID string }
+	seen := make(map[cliVerifyKey]bool)
+	for _, op := range cliOps {
+		key := cliVerifyKey{op.AppID, op.ProviderID}
+		if seen[key] { continue }
+		seen[key] = true
+		switch op.AppID {
+		case config.AppClaudeCode:
+			result.Verification = append(result.Verification,
+				verify.VerifyOptionalCLI(m.Runner, "claude", "mcp", "get", op.ProviderID))
+		}
 	}
-	if seenApps[config.AppClaudeCode] {
-		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "claude", "mcp", "get", "exa"))
-	}
-	if seenApps[config.AppGeminiCLI] {
-		result.Verification = append(result.Verification, verify.VerifyOptionalCLI(m.Runner, "gemini", "mcp", "get", "exa"))
+	// Non-CLI app verifications from seenApps
+	for appID := range seenApps {
+		// Find the provider ID from any operation for this app
+		provID := ""
+		for _, op := range plan.Operations {
+			if op.AppID == appID && op.SkipReason == "" {
+				provID = op.ProviderID
+				break
+			}
+		}
+		if provID == "" { continue }
+		key := cliVerifyKey{appID, provID}
+		if seen[key] { continue }
+		seen[key] = true
+		switch appID {
+		case config.AppCodexCLI:
+			result.Verification = append(result.Verification,
+				verify.VerifyOptionalCLI(m.Runner, "codex", "mcp", "get", provID))
+		case config.AppGeminiCLI:
+			result.Verification = append(result.Verification,
+				verify.VerifyOptionalCLI(m.Runner, "gemini", "mcp", "get", provID))
+		}
 	}
 
 	m.logInfo("apply complete", "updated_targets", len(result.UpdatedTargets))
@@ -258,14 +282,14 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 
 func (m *Manager) applyClaudeCode(op Operation, result *ApplyResult) error {
 	if _, err := m.Runner.Run("claude", op.CLIRemoveArgs...); err != nil {
-		warning := fmt.Sprintf("claude mcp remove exa: %s", exa.RedactText(err.Error()))
+		warning := fmt.Sprintf("claude mcp remove %s: %s", op.ProviderID, redact.Text(err.Error()))
 		result.Warnings = append(result.Warnings, warning)
 		m.logWarn("claude remove failed before add", "error", warning)
 	}
 	if _, err := m.Runner.Run("claude", op.CLIAddArgs...); err != nil {
-		return fmt.Errorf("claude mcp add exa: %s", exa.RedactText(err.Error()))
+		return fmt.Errorf("claude mcp add %s: %s", op.ProviderID, redact.Text(err.Error()))
 	}
-	result.UpdatedTargets = append(result.UpdatedTargets, "claude mcp add exa")
+	result.UpdatedTargets = append(result.UpdatedTargets, "claude mcp add "+op.ProviderID)
 	return nil
 }
 
@@ -313,8 +337,8 @@ func DefaultAssignments(selected map[config.AppID]bool, keyCount int) map[config
 
 func FormatPlan(plan ExecutionPlan) string {
 	var builder strings.Builder
-	builder.WriteString("Exa MCP update plan\n")
-	builder.WriteString("===================\n")
+	builder.WriteString("MCP sync plan\n")
+	builder.WriteString("=============\n")
 	for _, warning := range plan.Warnings {
 		builder.WriteString("warning: " + warning + "\n")
 	}
@@ -333,15 +357,14 @@ func FormatPlan(plan ExecutionPlan) string {
 		} else if op.BackupPath != "" {
 			fmt.Fprintf(&builder, "  backup: %s\n", op.BackupPath)
 		}
-		fmt.Fprintf(&builder, "  tools: %d\n", len(exa.DefaultTools))
 	}
 	return strings.TrimRight(builder.String(), "\n")
 }
 
 func FormatApplyResult(result ApplyResult) string {
 	var builder strings.Builder
-	builder.WriteString("Exa MCP apply result\n")
-	builder.WriteString("====================\n")
+	builder.WriteString("MCP sync result\n")
+	builder.WriteString("===============\n")
 
 	for _, warning := range result.Warnings {
 		builder.WriteString("warning: " + warning + "\n")
@@ -389,25 +412,6 @@ func FormatApplyResult(result ApplyResult) string {
 	return strings.TrimRight(builder.String(), "\n")
 }
 
-func LoadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
-	if keysCSV != "" {
-		keys, err := exa.ParseKeysCSV(keysCSV)
-		return keys, keysCSV, err
-	}
-	if keysFile != "" {
-		keys, err := exa.ParseKeysFile(keysFile)
-		if err != nil {
-			return nil, "", err
-		}
-		data, err := os.ReadFile(keysFile)
-		if err != nil {
-			return nil, "", err
-		}
-		return keys, string(data), nil
-	}
-	return nil, "", nil
-}
-
 func backupPathFor(file config.TargetFile, now time.Time) string {
 	if !file.Exists {
 		return ""
@@ -423,9 +427,9 @@ func (osRunner) Run(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return exa.RedactText(string(output)), errors.New(exa.RedactText(strings.TrimSpace(string(output))))
+		return redact.Text(string(output)), errors.New(redact.Text(strings.TrimSpace(string(output))))
 	}
-	return exa.RedactText(string(output)), nil
+	return redact.Text(string(output)), nil
 }
 
 func (m *Manager) prepareOperations(plan ExecutionPlan, result *ApplyResult) ([]preparedWrite, []Operation, map[config.AppID]bool, error) {
@@ -527,7 +531,7 @@ func (m *Manager) rollback(outcomes []config.WriteOutcome, result *ApplyResult) 
 	for index := len(outcomes) - 1; index >= 0; index-- {
 		outcome := outcomes[index]
 		if err := config.RollbackWrite(outcome); err != nil {
-			message := fmt.Sprintf("%s: %s", outcome.Path, exa.RedactText(err.Error()))
+			message := fmt.Sprintf("%s: %s", outcome.Path, redact.Text(err.Error()))
 			result.RollbackFailed = append(result.RollbackFailed, message)
 			warnings = append(warnings, "rollback failed for "+message)
 			m.logError("rollback failed", "path", outcome.Path, "error", err.Error())
@@ -596,14 +600,14 @@ func (m *Manager) log(level slog.Level, msg string, attrs ...any) {
 	if m.Logger == nil {
 		return
 	}
-	m.Logger.Log(context.Background(), level, exa.RedactText(msg), redactAttrs(attrs)...)
+	m.Logger.Log(context.Background(), level, redact.Text(msg), redactAttrs(attrs)...)
 }
 
 func redactAttrs(attrs []any) []any {
 	redacted := make([]any, 0, len(attrs))
 	for _, attr := range attrs {
 		if value, ok := attr.(string); ok {
-			redacted = append(redacted, exa.RedactText(value))
+			redacted = append(redacted, redact.Text(value))
 			continue
 		}
 		redacted = append(redacted, attr)
