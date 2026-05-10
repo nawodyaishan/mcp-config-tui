@@ -152,312 +152,326 @@ func TestQAIdempotency(t *testing.T) {
 }
 
 func TestQAGitHubStdioSupportedClients(t *testing.T) {
-    homeDir := t.TempDir()
+	homeDir := t.TempDir()
 
-    // Write empty config files for all clients that support stdio
-    paths := map[config.AppID]string{
-        config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-        config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-        config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-        config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-        config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-        config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-        config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-        config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-    }
-    for _, p := range paths {
-        mustWriteFile(t, p, []byte("{}"))
-    }
+	// Write empty config files for all clients that support stdio
+	paths := map[config.AppID]string{
+		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+	}
+	for _, p := range paths {
+		mustWriteFile(t, p, []byte("{}"))
+	}
 
-    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
-    if err != nil {
-        t.Fatalf("NewManager: %v", err)
-    }
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
 
-    prov := provider.NewGitHubProvider()
-    pat := "ghp_" + strings.Repeat("a", 36)
-    profiles := []provider.CredentialProfile{{
-        ProviderID: "github",
-        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
-        Label:      "ghp_...aaaa",
-    }}
+	prov := provider.NewGitHubProvider()
+	pat := "ghp_" + strings.Repeat("a", 36)
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "github",
+		Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+		Label:      "ghp_...aaaa",
+	}}
 
-    selected := make(map[config.AppID]bool)
-    for id := range paths {
-        selected[id] = true
-    }
-    assignments := DefaultAssignments(selected, 1)
+	selected := make(map[config.AppID]bool)
+	for id := range paths {
+		selected[id] = true
+	}
+	assignments := DefaultAssignments(selected, 1)
 
-    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
-    if err != nil {
-        t.Fatalf("PrepareProvider: %v", err)
-    }
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
 
-    // No operations should have SkipReason for stdio-capable clients
-    for _, op := range plan.Operations {
-        if op.SkipReason != "" {
-            t.Errorf("unexpected skip for %s: %s", op.AppName, op.SkipReason)
-        }
-    }
+	// No operations should have SkipReason for stdio-capable clients
+	for _, op := range plan.Operations {
+		if op.SkipReason != "" {
+			t.Errorf("unexpected skip for %s: %s", op.AppName, op.SkipReason)
+		}
+	}
 
-    _, err = manager.Apply(plan)
-    if err != nil {
-        t.Fatalf("Apply: %v", err)
-    }
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
 
-    // Verify Claude Desktop got stdio command written (no bridge needed for stdio provider)
-    data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
-    if !bytes.Contains(data, []byte(`"command": "npx"`)) {
-        t.Errorf("Claude Desktop: expected stdio command\n%s", data)
-    }
-    if !bytes.Contains(data, []byte(`"@modelcontextprotocol/server-github"`)) {
-        t.Errorf("Claude Desktop: expected GitHub server arg\n%s", data)
-    }
-    // PAT must appear in env block
-    if !bytes.Contains(data, []byte(`"GITHUB_PERSONAL_ACCESS_TOKEN"`)) {
-        t.Errorf("Claude Desktop: expected env key in config\n%s", data)
-    }
+	// Verify Claude Desktop got stdio command written (no bridge needed for stdio provider)
+	data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
+	if !bytes.Contains(data, []byte(`"command": "npx"`)) {
+		t.Errorf("Claude Desktop: expected stdio command\n%s", data)
+	}
+	if !bytes.Contains(data, []byte(`"@modelcontextprotocol/server-github"`)) {
+		t.Errorf("Claude Desktop: expected GitHub server arg\n%s", data)
+	}
+	// PAT must appear in env block
+	if !bytes.Contains(data, []byte(`"GITHUB_PERSONAL_ACCESS_TOKEN"`)) {
+		t.Errorf("Claude Desktop: expected env key in config\n%s", data)
+	}
 
-    // Verify Cursor got stdio command written
-    data, _ = os.ReadFile(paths[config.AppCursor])
-    if !bytes.Contains(data, []byte(`"command": "npx"`)) {
-        t.Errorf("Cursor: expected stdio command\n%s", data)
-    }
+	// Verify Cursor got stdio command written
+	data, _ = os.ReadFile(paths[config.AppCursor])
+	if !bytes.Contains(data, []byte(`"command": "npx"`)) {
+		t.Errorf("Cursor: expected stdio command\n%s", data)
+	}
 }
 
 func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
-    homeDir := t.TempDir()
+	homeDir := t.TempDir()
 
-    geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
-    antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
-    mustWriteFile(t, geminiPath, []byte("{}"))
-    mustWriteFile(t, antigravityPath, []byte("{}"))
+	geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
+	antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+	mustWriteFile(t, geminiPath, []byte("{}"))
+	mustWriteFile(t, antigravityPath, []byte("{}"))
 
-    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-    if err != nil {
-        t.Fatalf("NewManager: %v", err)
-    }
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
 
-    prov := provider.NewGitHubProvider()
-    pat := "ghp_" + strings.Repeat("a", 36)
-    profiles := []provider.CredentialProfile{{
-        ProviderID: "github",
-        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
-        Label:      "ghp_...aaaa",
-    }}
-    selected := map[config.AppID]bool{
-        config.AppGeminiCLI:  true,
-        config.AppAntigravity: true,
-    }
-    assignments := DefaultAssignments(selected, 1)
+	prov := provider.NewGitHubProvider()
+	pat := "ghp_" + strings.Repeat("a", 36)
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "github",
+		Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+		Label:      "ghp_...aaaa",
+	}}
+	selected := map[config.AppID]bool{
+		config.AppGeminiCLI:   true,
+		config.AppAntigravity: true,
+	}
+	assignments := DefaultAssignments(selected, 1)
 
-    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
-    if err != nil {
-        t.Fatalf("PrepareProvider: %v", err)
-    }
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
 
-    // All operations should be skipped for HTTP-only clients with a stdio provider
-    skipped := 0
-    for _, op := range plan.Operations {
-        if op.SkipReason != "" {
-            skipped++
-        }
-    }
-    if skipped == 0 && len(plan.Warnings) == 0 {
-        t.Error("expected GeminiCLI and Antigravity to be skipped for stdio-only provider")
-    }
+	// All operations should be skipped for HTTP-only clients with a stdio provider
+	skipped := 0
+	for _, op := range plan.Operations {
+		if op.SkipReason != "" {
+			skipped++
+		}
+	}
+	if skipped == 0 && len(plan.Warnings) == 0 {
+		t.Error("expected GeminiCLI and Antigravity to be skipped for stdio-only provider")
+	}
 
-    // Files should not be modified
-    _, err = manager.Apply(plan)
-    if err != nil {
-        t.Fatalf("Apply: %v", err)
-    }
+	// Files should not be modified
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
 
-    data, _ := os.ReadFile(geminiPath)
-    if !bytes.Equal(data, []byte("{}")) {
-        t.Errorf("Gemini settings should not be modified for GitHub stdio provider\n%s", data)
-    }
+	data, _ := os.ReadFile(geminiPath)
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Gemini settings should not be modified for GitHub stdio provider\n%s", data)
+	}
 }
 
 func TestQAExaAndGitHubCoexist(t *testing.T) {
-    homeDir := t.TempDir()
-    cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
-    mustWriteFile(t, cursorPath, []byte("{}"))
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
 
-    manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-    if err != nil {
-        t.Fatalf("NewManager: %v", err)
-    }
-    selected := map[config.AppID]bool{config.AppCursor: true}
-    assignments := DefaultAssignments(selected, 1)
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	assignments := DefaultAssignments(selected, 1)
 
-    // Apply Exa first
-    exaKey := "11111111-1111-1111-1111-111111111111"
-    exaPlan, err := manager.Prepare([]string{exaKey}, selected, assignments)
-    if err != nil {
-        t.Fatalf("Prepare Exa: %v", err)
-    }
-    if _, err := manager.Apply(exaPlan); err != nil {
-        t.Fatalf("Apply Exa: %v", err)
-    }
+	// Apply Exa first
+	exaKey := "11111111-1111-1111-1111-111111111111"
+	exaPlan, err := manager.Prepare([]string{exaKey}, selected, assignments)
+	if err != nil {
+		t.Fatalf("Prepare Exa: %v", err)
+	}
+	if _, err := manager.Apply(exaPlan); err != nil {
+		t.Fatalf("Apply Exa: %v", err)
+	}
 
-    // Apply GitHub second
-    pat := "ghp_" + strings.Repeat("a", 36)
-    githubProv := provider.NewGitHubProvider()
-    githubProfiles := []provider.CredentialProfile{{
-        ProviderID: "github",
-        Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
-        Label:      "ghp_...aaaa",
-    }}
-    githubPlan, err := manager.PrepareProvider(githubProv, githubProfiles, selected, assignments)
-    if err != nil {
-        t.Fatalf("PrepareProvider GitHub: %v", err)
-    }
-    if _, err := manager.Apply(githubPlan); err != nil {
-        t.Fatalf("Apply GitHub: %v", err)
-    }
+	// Apply GitHub second
+	pat := "ghp_" + strings.Repeat("a", 36)
+	githubProv := provider.NewGitHubProvider()
+	githubProfiles := []provider.CredentialProfile{{
+		ProviderID: "github",
+		Values:     map[string]string{"GITHUB_PERSONAL_ACCESS_TOKEN": pat},
+		Label:      "ghp_...aaaa",
+	}}
+	githubPlan, err := manager.PrepareProvider(githubProv, githubProfiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider GitHub: %v", err)
+	}
+	if _, err := manager.Apply(githubPlan); err != nil {
+		t.Fatalf("Apply GitHub: %v", err)
+	}
 
-    data, _ := os.ReadFile(cursorPath)
-    // Both providers must be present
-    if !bytes.Contains(data, []byte(`"exa"`)) {
-        t.Errorf("Cursor: Exa entry should survive GitHub sync\n%s", data)
-    }
-    if !bytes.Contains(data, []byte(`"github"`)) {
-        t.Errorf("Cursor: GitHub entry should be present\n%s", data)
-    }
+	data, _ := os.ReadFile(cursorPath)
+	// Both providers must be present
+	if !bytes.Contains(data, []byte(`"exa"`)) {
+		t.Errorf("Cursor: Exa entry should survive GitHub sync\n%s", data)
+	}
+	if !bytes.Contains(data, []byte(`"github"`)) {
+		t.Errorf("Cursor: GitHub entry should be present\n%s", data)
+	}
 }
 
 func TestQAContext7AllClients(t *testing.T) {
-    homeDir := t.TempDir()
+	homeDir := t.TempDir()
 
-    // Write empty config files for all clients
-    paths := map[config.AppID]string{
-        config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-        config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-        config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-        config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-        config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-        config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-        config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-        config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-        config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
-        config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
-        config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
-    }
-    for _, p := range paths {
-        mustWriteFile(t, p, []byte("{}"))
-    }
-    mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
+	// Write empty config files for all clients
+	paths := map[config.AppID]string{
+		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+	}
+	for _, p := range paths {
+		mustWriteFile(t, p, []byte("{}"))
+	}
+	mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
 
-    manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
 
-    prov := provider.NewContext7Provider()
-    key := "ctx7sk_" + strings.Repeat("a", 20)
-    profiles := []provider.CredentialProfile{{
-        ProviderID: "context7",
-        Values:     map[string]string{"CONTEXT7_API_KEY": key},
-        Label:      "ctx7sk_aaaa...aaaa",
-    }}
-    selected := make(map[config.AppID]bool)
-    for id := range paths {
-        selected[id] = true
-    }
-    assignments := DefaultAssignments(selected, 1)
+	prov := provider.NewContext7Provider()
+	key := "ctx7sk-" + strings.Repeat("a", 20)
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "context7",
+		Values:     map[string]string{"CONTEXT7_API_KEY": key},
+		Label:      "ctx7sk-aaaa...aaaa",
+	}}
+	selected := make(map[config.AppID]bool)
+	for id := range paths {
+		selected[id] = true
+	}
+	assignments := DefaultAssignments(selected, 1)
 
-    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
-    if err != nil { t.Fatalf("PrepareProvider: %v", err) }
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
 
-    // Raw key must never appear in plan
-    planText := FormatPlan(plan)
-    if strings.Contains(planText, key) {
-        t.Errorf("plan output must not contain raw API key")
-    }
+	// Raw key must never appear in plan
+	planText := FormatPlan(plan)
+	if strings.Contains(planText, key) {
+		t.Errorf("plan output must not contain raw API key")
+	}
 
-    _, err = manager.Apply(plan)
-    if err != nil { t.Fatalf("Apply: %v", err) }
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
 
-    // Claude Desktop: stdio shape
-    data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
-    if !bytes.Contains(data, []byte(`"@upstash/context7-mcp"`)) {
-        t.Errorf("Claude Desktop: expected direct npx invocation\n%s", data)
-    }
+	// Claude Desktop: stdio shape
+	data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
+	if !bytes.Contains(data, []byte(`"@upstash/context7-mcp"`)) {
+		t.Errorf("Claude Desktop: expected direct npx invocation\n%s", data)
+	}
 
-    // Cursor: url + headers
-    data, _ = os.ReadFile(paths[config.AppCursor])
-    if !bytes.Contains(data, []byte(`"https://mcp.context7.com/mcp"`)) {
-        t.Errorf("Cursor: expected Context7 endpoint\n%s", data)
-    }
-    if !bytes.Contains(data, []byte(`"CONTEXT7_API_KEY"`)) {
-        t.Errorf("Cursor: expected headers field\n%s", data)
-    }
+	// Cursor: url + headers
+	data, _ = os.ReadFile(paths[config.AppCursor])
+	if !bytes.Contains(data, []byte(`"https://mcp.context7.com/mcp"`)) {
+		t.Errorf("Cursor: expected Context7 endpoint\n%s", data)
+	}
+	if !bytes.Contains(data, []byte(`"CONTEXT7_API_KEY"`)) {
+		t.Errorf("Cursor: expected headers field\n%s", data)
+	}
 
-    // Gemini: also has Accept header
-    data, _ = os.ReadFile(paths[config.AppGeminiCLI])
-    if !bytes.Contains(data, []byte(`"Accept"`)) {
-        t.Errorf("Gemini CLI: expected Accept header\n%s", data)
-    }
+	// Gemini: also has Accept header
+	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
+	if !bytes.Contains(data, []byte(`"Accept"`)) {
+		t.Errorf("Gemini CLI: expected Accept header\n%s", data)
+	}
 
-    // Codex: http_headers in TOML
-    data, _ = os.ReadFile(paths[config.AppCodexCLI])
-    if !bytes.Contains(data, []byte(`http_headers`)) {
-        t.Errorf("Codex: expected http_headers in TOML\n%s", data)
-    }
-    
-    // Idempotency check (T-D3)
-    cursorData1, _ := os.ReadFile(paths[config.AppCursor])
-    _, err = manager.Apply(plan)
-    if err != nil { t.Fatalf("Apply 2: %v", err) }
-    
-    data2, _ := os.ReadFile(paths[config.AppCursor])
-    if !bytes.Equal(cursorData1, data2) {
-        t.Errorf("Cursor file changed on second apply\nRun 1: %s\nRun 2: %s", string(cursorData1), string(data2))
-    }
+	// Codex: http_headers in TOML
+	data, _ = os.ReadFile(paths[config.AppCodexCLI])
+	if !bytes.Contains(data, []byte(`http_headers`)) {
+		t.Errorf("Codex: expected http_headers in TOML\n%s", data)
+	}
+
+	// Idempotency check (T-D3)
+	cursorData1, _ := os.ReadFile(paths[config.AppCursor])
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply 2: %v", err)
+	}
+
+	data2, _ := os.ReadFile(paths[config.AppCursor])
+	if !bytes.Equal(cursorData1, data2) {
+		t.Errorf("Cursor file changed on second apply\nRun 1: %s\nRun 2: %s", string(cursorData1), string(data2))
+	}
 }
 
 func TestQAExaAndContext7Coexist(t *testing.T) {
-    homeDir := t.TempDir()
-    cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
-    mustWriteFile(t, cursorPath, []byte("{}"))
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
 
-    manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{})
-    selected := map[config.AppID]bool{config.AppCursor: true}
-    assignments := DefaultAssignments(selected, 1)
+	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{})
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	assignments := DefaultAssignments(selected, 1)
 
-    // 1. Sync Exa
-    exaProv := provider.NewExaProvider()
-    exaProfiles := []provider.CredentialProfile{{
-        ProviderID: "exa",
-        Values:     map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"},
-        Label:      "1111...1111",
-    }}
-    plan1, err := manager.PrepareProvider(exaProv, exaProfiles, selected, assignments)
-    if err != nil { t.Fatalf("PrepareProvider Exa: %v", err) }
-    _, err = manager.Apply(plan1)
-    if err != nil { t.Fatalf("Apply Exa: %v", err) }
-    
-    exaData1, _ := os.ReadFile(cursorPath)
+	// 1. Sync Exa
+	exaProv := provider.NewExaProvider()
+	exaProfiles := []provider.CredentialProfile{{
+		ProviderID: "exa",
+		Values:     map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"},
+		Label:      "1111...1111",
+	}}
+	plan1, err := manager.PrepareProvider(exaProv, exaProfiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider Exa: %v", err)
+	}
+	_, err = manager.Apply(plan1)
+	if err != nil {
+		t.Fatalf("Apply Exa: %v", err)
+	}
 
-    // 2. Sync Context7
-    ctx7Prov := provider.NewContext7Provider()
-    ctx7Profiles := []provider.CredentialProfile{{
-        ProviderID: "context7",
-        Values:     map[string]string{"CONTEXT7_API_KEY": "ctx7sk_abcdef1234567890wxyz"},
-        Label:      "ctx7sk_abcd...wxyz",
-    }}
-    plan2, err := manager.PrepareProvider(ctx7Prov, ctx7Profiles, selected, assignments)
-    if err != nil { t.Fatalf("PrepareProvider Context7: %v", err) }
-    _, err = manager.Apply(plan2)
-    if err != nil { t.Fatalf("Apply Context7: %v", err) }
+	exaData1, _ := os.ReadFile(cursorPath)
 
-    data, _ := os.ReadFile(cursorPath)
-    // Both providers must be present
-    if !bytes.Contains(data, []byte(`"exa"`)) {
-        t.Errorf("Cursor: Exa entry should survive Context7 sync\n%s", data)
-    }
-    if !bytes.Contains(data, []byte(`"context7"`)) {
-        t.Errorf("Cursor: Context7 entry should be present\n%s", data)
-    }
-    if bytes.Contains(exaData1, []byte(`"headers"`)) {
-        t.Errorf("Exa should not have headers")
-    }
+	// 2. Sync Context7
+	ctx7Prov := provider.NewContext7Provider()
+	ctx7Profiles := []provider.CredentialProfile{{
+		ProviderID: "context7",
+		Values:     map[string]string{"CONTEXT7_API_KEY": "ctx7sk-abcdef1234567890wxyz"},
+		Label:      "ctx7sk-abcd...wxyz",
+	}}
+	plan2, err := manager.PrepareProvider(ctx7Prov, ctx7Profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider Context7: %v", err)
+	}
+	_, err = manager.Apply(plan2)
+	if err != nil {
+		t.Fatalf("Apply Context7: %v", err)
+	}
+
+	data, _ := os.ReadFile(cursorPath)
+	// Both providers must be present
+	if !bytes.Contains(data, []byte(`"exa"`)) {
+		t.Errorf("Cursor: Exa entry should survive Context7 sync\n%s", data)
+	}
+	if !bytes.Contains(data, []byte(`"context7"`)) {
+		t.Errorf("Cursor: Context7 entry should be present\n%s", data)
+	}
+	if bytes.Contains(exaData1, []byte(`"headers"`)) {
+		t.Errorf("Exa should not have headers")
+	}
 }

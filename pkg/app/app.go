@@ -240,11 +240,16 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 
 	result.Verification = append(result.Verification, verifyFiles(prepared)...)
 
-	type cliVerifyKey struct{ appID config.AppID; providerID string }
+	type cliVerifyKey struct {
+		appID      config.AppID
+		providerID string
+	}
 	seen := make(map[cliVerifyKey]bool)
 	for _, op := range cliOps {
 		key := cliVerifyKey{op.AppID, op.ProviderID}
-		if seen[key] { continue }
+		if seen[key] {
+			continue
+		}
 		seen[key] = true
 		switch op.AppID {
 		case config.AppClaudeCode:
@@ -262,9 +267,13 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 				break
 			}
 		}
-		if provID == "" { continue }
+		if provID == "" {
+			continue
+		}
 		key := cliVerifyKey{appID, provID}
-		if seen[key] { continue }
+		if seen[key] {
+			continue
+		}
 		seen[key] = true
 		switch appID {
 		case config.AppCodexCLI:
