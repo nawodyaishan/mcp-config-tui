@@ -8,7 +8,7 @@ import (
 
 func TestDetectAppConfigs(t *testing.T) {
 	home := t.TempDir()
-	
+
 	// Test missing home
 	if _, err := DetectAppConfigs(""); err == nil {
 		t.Error("expected error for empty home")

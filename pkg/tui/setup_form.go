@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"github.com/charmbracelet/huh"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
@@ -106,7 +106,7 @@ func (sf *setupForm) rebuildForm() {
 
 func (sf *setupForm) update(msg tea.Msg) (*setupForm, tea.Cmd) {
 	_, cmd := sf.form.Update(msg)
-	
+
 	// If the provider has changed, we must rebuild the form to show the correct credential fields
 	if sf.selectedProvider != sf.lastProvider {
 		sf.lastProvider = sf.selectedProvider
@@ -114,7 +114,7 @@ func (sf *setupForm) update(msg tea.Msg) (*setupForm, tea.Cmd) {
 		// After rebuilding, we need to Init the new form
 		return sf, sf.form.Init()
 	}
-	
+
 	return sf, cmd
 }
 

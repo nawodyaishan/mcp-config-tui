@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 )
+
 func TestParseKeysAcceptsRawAndLabelledInput(t *testing.T) {
 	input := strings.Join([]string{
 		"11111111-1111-1111-1111-111111111111",

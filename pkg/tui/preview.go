@@ -85,14 +85,14 @@ func renderPreviewPlan(plan app.ExecutionPlan, homeDir string) string {
 	for index, op := range plan.Operations {
 		fmt.Fprintf(&builder, "\n%s %s\n", accentStyle.Render(fmt.Sprintf("%d.", index+1)), op.AppName)
 		fmt.Fprintf(&builder, "   Config   %s\n", op.FileLabel)
-		
+
 		if op.Config.Type == provider.TransportStdio {
 			fmt.Fprintf(&builder, "   Transport stdio (%s %s)\n",
 				op.Config.Command, strings.Join(op.Config.Args, " "))
 		} else {
 			fmt.Fprintf(&builder, "   Transport %s\n", op.Config.Type)
 		}
-		
+
 		fmt.Fprintf(&builder, "   Key      %s\n", op.CredentialLabel)
 
 		if op.SkipReason != "" {

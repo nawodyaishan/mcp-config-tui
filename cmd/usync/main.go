@@ -15,22 +15,22 @@ import (
 )
 
 func loadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
-    if keysCSV != "" {
-        keys, err := exa.ParseKeysCSV(keysCSV)
-        return keys, keysCSV, err
-    }
-    if keysFile != "" {
-        keys, err := exa.ParseKeysFile(keysFile)
-        if err != nil {
-            return nil, "", err
-        }
-        data, err := os.ReadFile(keysFile)
-        if err != nil {
-            return nil, "", err
-        }
-        return keys, string(data), nil
-    }
-    return nil, "", nil
+	if keysCSV != "" {
+		keys, err := exa.ParseKeysCSV(keysCSV)
+		return keys, keysCSV, err
+	}
+	if keysFile != "" {
+		keys, err := exa.ParseKeysFile(keysFile)
+		if err != nil {
+			return nil, "", err
+		}
+		data, err := os.ReadFile(keysFile)
+		if err != nil {
+			return nil, "", err
+		}
+		return keys, string(data), nil
+	}
+	return nil, "", nil
 }
 
 func main() {

@@ -199,4 +199,3 @@ func TestUpdateNamedServerJSON_Stdio(t *testing.T) {
 		t.Errorf("expected command npx, got %v", exa["command"])
 	}
 }
-

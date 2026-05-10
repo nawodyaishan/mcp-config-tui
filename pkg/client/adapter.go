@@ -1,10 +1,10 @@
 package client
 
 import (
-    "strings"
+	"strings"
 
-    "github.com/nawodyaishan/universal-mcp-sync/pkg/config"
-    "github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 // Adapt returns a transport config suitable for appID.
@@ -38,29 +38,29 @@ func Adapt(appID config.AppID, cfg provider.MCPConfig) provider.MCPConfig {
 // CanHandle reports whether appID can handle transport, either natively or via a bridge.
 // Returns false if the client has no support and no bridge for the given transport.
 func CanHandle(appID config.AppID, transport provider.TransportType) bool {
-    cap, ok := Matrix[appID]
-    if !ok {
-        return false
-    }
-    if supportsTransport(cap.Supports, transport) {
-        return true
-    }
-    _, hasBridge := cap.Bridge[transport]
-    return hasBridge
+	cap, ok := Matrix[appID]
+	if !ok {
+		return false
+	}
+	if supportsTransport(cap.Supports, transport) {
+		return true
+	}
+	_, hasBridge := cap.Bridge[transport]
+	return hasBridge
 }
 
 func supportsTransport(s TransportSupport, t provider.TransportType) bool {
-    switch t {
-    case provider.TransportStdio:
-        return s.Stdio
-    case provider.TransportStreamableHTTP:
-        return s.StreamableHTTP
-    case provider.TransportSSE:
-        return s.SSE
-    case provider.TransportHTTP:
-        return s.HTTP
-    }
-    return false
+	switch t {
+	case provider.TransportStdio:
+		return s.Stdio
+	case provider.TransportStreamableHTTP:
+		return s.StreamableHTTP
+	case provider.TransportSSE:
+		return s.SSE
+	case provider.TransportHTTP:
+		return s.HTTP
+	}
+	return false
 }
 
 func applyBridge(bridge *provider.BridgeConfig, cfg provider.MCPConfig) provider.MCPConfig {
@@ -85,15 +85,15 @@ func applyBridge(bridge *provider.BridgeConfig, cfg provider.MCPConfig) provider
 // Gemini CLI requires an extra Accept header for SSE streaming.
 // Returns nil when base is empty (prevents serializing "headers": {}).
 func HeadersFor(appID config.AppID, base map[string]string) map[string]string {
-    if len(base) == 0 {
-        return nil
-    }
-    out := make(map[string]string, len(base)+1)
-    for k, v := range base {
-        out[k] = v
-    }
-    if appID == config.AppGeminiCLI {
-        out["Accept"] = "application/json, text/event-stream"
-    }
-    return out
+	if len(base) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(base)+1)
+	for k, v := range base {
+		out[k] = v
+	}
+	if appID == config.AppGeminiCLI {
+		out["Accept"] = "application/json, text/event-stream"
+	}
+	return out
 }

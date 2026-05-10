@@ -33,19 +33,19 @@ func TestSetupFormSyncsToContext(t *testing.T) {
 func TestModel(t *testing.T) {
 	manager, _ := app.NewManager("/tmp/test", nil, nil)
 	m := NewModel(manager, nil, "")
-	
+
 	// Init
 	m.Init()
-	
+
 	// Update WindowSize
 	m2, _ := m.Update(tea.WindowSizeMsg{Width: 100})
 	if m2.(Model).width != 100 {
 		t.Errorf("expected width 100, got %d", m2.(Model).width)
 	}
-	
+
 	// View
 	m2.View()
-	
+
 	// Err
 	if m2.(Model).Err() != nil {
 		t.Errorf("expected nil error")

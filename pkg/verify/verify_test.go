@@ -271,4 +271,3 @@ func TestResultFrom(t *testing.T) {
 		t.Errorf("expected Failed, got %s", res2.Status)
 	}
 }
-
