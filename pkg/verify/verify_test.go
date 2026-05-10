@@ -71,3 +71,41 @@ func TestVerifyProviderFileSupportsClaudeDesktopStdioBridge(t *testing.T) {
 		t.Fatalf("expected status OK, got %s: %v", result.Status, result.Details)
 	}
 }
+
+func TestVerifyProviderFile_GenericStdio(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.json")
+    content := `{"mcpServers":{"github":{"command":"npx","args":["-y","@modelcontextprotocol/server-github"]}}}`
+    _ = os.WriteFile(path, []byte(content), 0o600)
+
+    cfg := provider.MCPConfig{Type: provider.TransportStdio, Command: "npx"}
+    result := VerifyProviderFile(path, config.FileKindMCPServers, "github", cfg)
+    if result.Status != StatusOK {
+        t.Errorf("expected OK, got %s: %v", result.Status, result.Details)
+    }
+}
+
+func TestVerifyProviderFile_GenericHTTP(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.json")
+    content := `{"mcpServers":{"brave":{"url":"https://api.brave.com/mcp"}}}`
+    _ = os.WriteFile(path, []byte(content), 0o600)
+
+    cfg := provider.MCPConfig{Type: provider.TransportStreamableHTTP, URL: "https://api.brave.com/mcp"}
+    result := VerifyProviderFile(path, config.FileKindMCPServers, "brave", cfg)
+    if result.Status != StatusOK {
+        t.Errorf("expected OK, got %s: %v", result.Status, result.Details)
+    }
+}
+
+func TestVerifyProviderFile_GenericMissingEntry(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.json")
+    _ = os.WriteFile(path, []byte(`{"mcpServers":{}}`), 0o600)
+
+    cfg := provider.MCPConfig{Type: provider.TransportStdio, Command: "npx"}
+    result := VerifyProviderFile(path, config.FileKindMCPServers, "github", cfg)
+    if result.Status != StatusFailed {
+        t.Errorf("expected Failed for missing entry, got %s", result.Status)
+    }
+}

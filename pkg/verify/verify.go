@@ -52,7 +52,7 @@ func VerifyProviderFile(path string, kind config.FileKind, providerID string, cf
 	if providerID == "exa" {
 		return verifyExaProviderFile(path, kind, cfg)
 	}
-	return failure(path, fmt.Sprintf("verification not implemented for provider %s", providerID))
+	return verifyGenericProviderFile(path, kind, providerID, cfg)
 }
 
 func verifyExaProviderFile(path string, kind config.FileKind, cfg provider.MCPConfig) Result {
@@ -67,6 +67,72 @@ func verifyExaProviderFile(path string, kind config.FileKind, cfg provider.MCPCo
 		return verifyCodexFile(path, len(exa.DefaultTools))
 	default:
 		return failure(path, "unsupported verification target")
+	}
+}
+
+func verifyGenericProviderFile(path string, kind config.FileKind, providerID string, cfg provider.MCPConfig) Result {
+	server, err := readServerEntryByKind(path, kind, providerID)
+	if err != nil {
+		return failure(path, err.Error())
+	}
+	if cfg.Type == provider.TransportStdio {
+		return verifyGenericStdioServer(path, server, cfg)
+	}
+	return verifyGenericHTTPServer(path, server)
+}
+
+func verifyGenericStdioServer(path string, server map[string]any, cfg provider.MCPConfig) Result {
+	command, _ := server["command"].(string)
+	if command == "" {
+		return failure(path, "missing stdio command field")
+	}
+	if command != cfg.Command {
+		return Result{
+			Target:  path,
+			Status:  StatusWarning,
+			Details: []string{fmt.Sprintf("command=%s (expected %s)", command, cfg.Command)},
+		}
+	}
+	return Result{
+		Target:  path,
+		Status:  StatusOK,
+		Details: []string{fmt.Sprintf("command=%s", command)},
+	}
+}
+
+func verifyGenericHTTPServer(path string, server map[string]any) Result {
+	urlValue := getURLField(server)
+	if urlValue == "" {
+		return failure(path, "missing URL field (checked: url, httpUrl, serverUrl)")
+	}
+	if _, err := url.Parse(urlValue); err != nil {
+		return failure(path, fmt.Sprintf("invalid URL: %v", err))
+	}
+	return Result{
+		Target:  path,
+		Status:  StatusOK,
+		Details: []string{"url present and valid"},
+	}
+}
+
+// readServerEntryByKind dispatches to the correct reader based on FileKind.
+func readServerEntryByKind(path string, kind config.FileKind, providerID string) (map[string]any, error) {
+	switch kind {
+	case config.FileKindMCPServers:
+		return readNestedServerEntry(path, "mcpServers", providerID)
+	case config.FileKindBareMCPServers:
+		return readRootServerEntry(path, providerID)
+	case config.FileKindNamedServer:
+		// Try common root keys; fall back to root-level entry
+		for _, rootKey := range []string{"servers", "context_servers", "mcp"} {
+			s, err := readNestedServerEntry(path, rootKey, providerID)
+			if err == nil {
+				return s, nil
+			}
+		}
+		return readRootServerEntry(path, providerID)
+	default:
+		return nil, fmt.Errorf("verification not supported for kind %q", kind)
 	}
 }
 
