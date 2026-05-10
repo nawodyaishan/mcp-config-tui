@@ -8,8 +8,8 @@ func TestDefaultRegistryContainsExa(t *testing.T) {
 	r := DefaultRegistry()
 	all := r.All()
 
-	if len(all) != 1 {
-		t.Fatalf("expected 1 provider, got %d", len(all))
+	if len(all) != 2 {
+		t.Fatalf("expected 2 providers, got %d", len(all))
 	}
 
 	if all[0].ID() != "exa" {
@@ -55,4 +55,14 @@ func TestExaProviderCredentialSpec(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected invalid key to fail validation")
 	}
+}
+
+func TestTransportConstants(t *testing.T) {
+    if string(TransportStreamableHTTP) != "streamable-http" {
+        t.Fatalf("TransportStreamableHTTP must equal \"streamable-http\", got %q",
+            TransportStreamableHTTP)
+    }
+    if string(TransportHTTP) != "http" {
+        t.Fatalf("TransportHTTP must equal \"http\"")
+    }
 }

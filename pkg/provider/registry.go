@@ -11,6 +11,7 @@ func DefaultRegistry() Registry {
 		order:     []string{},
 	}
 	r.register(NewExaProvider())
+	r.register(NewGitHubProvider())
 	return r
 }
 

@@ -3,47 +3,64 @@ package provider
 type TransportType string
 
 const (
-	TransportHTTP  TransportType = "http"
-	TransportStdio TransportType = "stdio"
-	TransportSSE   TransportType = "sse"
+    TransportStdio          TransportType = "stdio"
+    TransportStreamableHTTP TransportType = "streamable-http"
+    TransportSSE            TransportType = "sse"
+    TransportHTTP           TransportType = "http" // legacy; kept for VS Code "type":"http" compat
 )
 
-// MCPConfig represents a generalized, provider-agnostic MCP server configuration.
-type MCPConfig struct {
-	Type    TransportType
-	URL     string            // For HTTP/SSE
-	Command string            // For stdio
-	Args    []string          // For stdio
-	Env     map[string]string // Environment variables required by the server
+// PackageRuntime describes the packaging type of a stdio server.
+// Used to communicate install context (npm, pypi, oci) to UI layers.
+// Nil means the provider is a remote HTTP server.
+type PackageRuntime struct {
+    Type string // "npm" | "pypi" | "oci" | "mcpb"
 }
 
-// CredentialValidator is a function that validates a credential string.
+// MCPConfig is a provider-agnostic description of one MCP server connection.
+type MCPConfig struct {
+    Type    TransportType
+    URL     string            // HTTP / SSE / StreamableHTTP
+    Command string            // stdio: executable name, e.g. "npx"
+    Args    []string          // stdio: arguments after command
+    Env     map[string]string // stdio: env vars injected into the subprocess
+    Runtime *PackageRuntime   // non-nil for packaged stdio servers; nil for remote
+}
+
+// CredentialValidator validates one credential string value.
 type CredentialValidator func(string) error
 
-// CredentialSpec describes a credential required by an MCP provider.
+// CredentialSpec describes one credential field required by a provider.
 type CredentialSpec struct {
-	Key         string
-	Label       string
-	Description string
-	Secret      bool
-	MultiValue  bool
-	Validator   CredentialValidator
+    Key         string
+    Label       string
+    Description string
+    Secret      bool
+    MultiValue  bool
+    Validator   CredentialValidator
 }
 
-// CredentialProfile represents a collected set of credentials for a specific provider.
+// CredentialProfile is a collected set of credentials for one provider instance.
 type CredentialProfile struct {
-	ProviderID string
-	Values     map[string]string
-	Label      string
+    ProviderID string
+    Values     map[string]string
+    Label      string // redacted display string shown in UI
 }
 
-// MCPProvider defines the contract for any MCP server we support.
+// MCPProvider is the contract every MCP server plugin must implement.
 type MCPProvider interface {
-	ID() string
-	Name() string
-	Description() string
-	// RequiredCredentials returns an ordered list of credential metadata.
-	RequiredCredentials() []CredentialSpec
-	// GenerateConfig builds the final MCPConfig based on the user's provided credentials.
-	GenerateConfig(credentials map[string]string) (MCPConfig, error)
-}
+    ID() string
+    Name() string
+    Description() string
+    RequiredCredentials() []CredentialSpec
+    GenerateConfig(credentials map[string]string) (MCPConfig, error)
+    }
+
+    // MultiValueParser is an optional interface for providers whose credential
+    // input accepts multiple values in one text area (e.g. Exa's multi-key paste field).
+    // If a provider does not implement this interface, the TUI creates one profile
+    // per form submission using the raw input values directly.
+    type MultiValueParser interface {
+    // ParseMultiValue parses raw text for credential key into one or more profiles.
+    // The returned profiles each represent one independent credential set.
+    ParseMultiValue(credentialKey string, raw string) ([]CredentialProfile, error)
+    }
