@@ -37,6 +37,9 @@ The provider system is intentionally generic. New MCP servers are added through 
 
 MCP client configuration is fragmented. Each AI client stores different JSON or TOML, uses different root keys, and handles transports differently. Manually copying credentials into those files is slow, hard to review, and easy to get wrong.
 
+> [!NOTE]
+> **Terraform-inspired:** `usync` borrows Terraform's provider pattern and `init -> plan -> apply` workflow. The core setup, preview, and apply path stays generic while each MCP provider owns its credentials, validation, and generated transport config.
+
 `usync` focuses on the native-config sync path:
 
 - **One guided setup** for supported MCP servers and local AI clients.
@@ -145,20 +148,78 @@ Several MCP tools solve adjacent problems:
 ## Provider Architecture
 
 ```mermaid
-flowchart LR
-    user["User"] --> entry["TUI or CLI"]
-    entry --> manager["pkg/app Manager"]
-    manager --> registry["Provider Registry"]
-    registry --> providers["MCP Providers<br/>Exa / Context7 / GitHub"]
-    providers --> config["Provider MCPConfig<br/>transport + credentials"]
-    config --> adapter["Client Adapter<br/>capability matrix + bridges"]
-    adapter --> plan["Dry-run Plan<br/>redacted preview"]
-    plan --> apply{"Apply?"}
-    apply -- "no" --> stop["No files changed"]
-    apply -- "yes" --> writers["Config Writers<br/>JSON / TOML / Claude CLI"]
-    writers --> backup["Backup + Atomic Write"]
-    backup --> clients["Native AI Client Configs"]
-    clients --> verify["Verification"]
+flowchart TB
+    subgraph entry["Entry Points"]
+        cli["cmd/usync<br/>flags: --keys, --keys-file, --dry-run, --apply"]
+        tui["pkg/tui<br/>provider setup, target selection, preview"]
+    end
+
+    subgraph orchestration["Orchestration"]
+        manager["pkg/app.Manager<br/>PrepareProvider / Apply"]
+        plan["ExecutionPlan<br/>operations + warnings"]
+        result["ApplyResult<br/>backups + verification + rollback state"]
+    end
+
+    subgraph providerLayer["Provider Layer"]
+        registry["pkg/provider.Registry<br/>DefaultRegistry"]
+        providerAPI["MCPProvider interface<br/>credentials -> MCPConfig"]
+        exa["Exa provider<br/>pkg/exa helpers"]
+        context7["Context7 provider<br/>pkg/context7 helpers"]
+        github["GitHub provider<br/>stdio npx + env"]
+    end
+
+    subgraph clientLayer["Client Compatibility"]
+        matrix["pkg/client.Matrix<br/>transport support"]
+        adapt["pkg/client.Adapt<br/>bridges remote -> stdio when needed"]
+        headers["pkg/client.HeadersFor<br/>client-specific HTTP headers"]
+    end
+
+    subgraph configLayer["Config Persistence"]
+        paths["pkg/config.DetectAppConfigs<br/>target paths + file kinds"]
+        json["pkg/config JSON writers<br/>mcpServers / servers / context_servers"]
+        toml["pkg/config TOML writer<br/>Codex config"]
+        backup["WriteWithBackup<br/>private perms + atomic replace"]
+        rollback["rollback<br/>restore previous write outcomes"]
+    end
+
+    subgraph safety["Safety + Output"]
+        redact["pkg/redact<br/>keys, URLs, headers, args"]
+        verify["pkg/verify<br/>file and CLI verification"]
+        format["FormatPlan / FormatApplyResult<br/>redacted terminal output"]
+    end
+
+    subgraph clients["Native Client Configs"]
+        claude["Claude Desktop / Claude Code"]
+        editors["Cursor / VS Code / Windsurf / Zed / Roo Code"]
+        agents["OpenCode / Kiro / Gemini CLI / Antigravity / Codex CLI"]
+    end
+
+    cli --> manager
+    tui --> manager
+    manager --> paths
+    manager --> registry
+    registry --> providerAPI
+    providerAPI --> exa
+    providerAPI --> context7
+    providerAPI --> github
+    exa --> manager
+    context7 --> manager
+    github --> manager
+    manager --> matrix
+    matrix --> adapt
+    adapt --> headers
+    headers --> plan
+    plan --> format
+    format --> redact
+    plan --> manager
+    manager --> json
+    manager --> toml
+    manager --> backup
+    backup --> rollback
+    backup --> clients
+    clients --> verify
+    verify --> result
+    rollback --> result
 ```
 
 Every MCP server integrates through this interface:
