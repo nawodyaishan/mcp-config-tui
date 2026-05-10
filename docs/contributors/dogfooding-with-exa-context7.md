@@ -11,7 +11,7 @@ As a contributor, you can use `usync` to configure your local AI tools to help b
 
 2. **Get API keys**
    - Get an Exa API key from [exa.ai](https://exa.ai).
-   - Get a Context7 API key from [context7.com](https://context7.com).
+   - Get a Context7 key from [context7.com/dashboard](https://context7.com/dashboard): open the API Keys card, create a key, and copy it immediately. Current keys usually look like `ctx7sk-...`; legacy `ctx7sk_...` keys are also accepted.
 
 3. **Preview Exa from the CLI**
    ```bash
