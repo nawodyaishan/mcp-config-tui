@@ -10,8 +10,8 @@ type Context7Provider struct{}
 
 func NewContext7Provider() *Context7Provider { return &Context7Provider{} }
 
-func (p *Context7Provider) ID() string          { return "context7" }
-func (p *Context7Provider) Name() string        { return "Context7" }
+func (p *Context7Provider) ID() string   { return "context7" }
+func (p *Context7Provider) Name() string { return "Context7" }
 func (p *Context7Provider) Description() string {
 	return "Up-to-date library documentation and code examples for AI agents."
 }
@@ -21,7 +21,7 @@ func (p *Context7Provider) RequiredCredentials() []CredentialSpec {
 		{
 			Key:         "CONTEXT7_API_KEY",
 			Label:       "Context7 API Key",
-			Description: "Get your key at context7.com/dashboard. Format: ctx7sk_...",
+			Description: "Create one at context7.com/dashboard -> API Keys, copy it once, then paste it here. Accepted formats: ctx7sk-... or ctx7sk_...",
 			Secret:      true,
 			MultiValue:  false,
 			Validator: func(s string) error {

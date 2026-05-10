@@ -62,20 +62,20 @@ func (p *ExaProvider) GenerateConfig(credentials map[string]string) (MCPConfig, 
 // ParseMultiValue implements MultiValueParser.
 // It extracts multiple UUID-format Exa API keys from a single pasted text blob.
 func (p *ExaProvider) ParseMultiValue(credentialKey string, raw string) ([]CredentialProfile, error) {
-    if credentialKey != "EXA_API_KEY" {
-        return nil, fmt.Errorf("ExaProvider: unknown multi-value credential key %q", credentialKey)
-    }
-    keys, err := exa.ParseKeys(raw)
-    if err != nil {
-        return nil, err
-    }
-    profiles := make([]CredentialProfile, len(keys))
-    for i, k := range keys {
-        profiles[i] = CredentialProfile{
-            ProviderID: p.ID(),
-            Values:     map[string]string{credentialKey: k},
-            Label:      exa.RedactKey(k),
-        }
-    }
-    return profiles, nil
+	if credentialKey != "EXA_API_KEY" {
+		return nil, fmt.Errorf("ExaProvider: unknown multi-value credential key %q", credentialKey)
+	}
+	keys, err := exa.ParseKeys(raw)
+	if err != nil {
+		return nil, err
+	}
+	profiles := make([]CredentialProfile, len(keys))
+	for i, k := range keys {
+		profiles[i] = CredentialProfile{
+			ProviderID: p.ID(),
+			Values:     map[string]string{credentialKey: k},
+			Label:      exa.RedactKey(k),
+		}
+	}
+	return profiles, nil
 }

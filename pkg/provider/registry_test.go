@@ -99,4 +99,3 @@ func TestGitHubProviderMetadata(t *testing.T) {
 		t.Error("expected description")
 	}
 }
-
