@@ -4,16 +4,22 @@ import (
 	"testing"
 )
 
-func TestDefaultRegistryContainsExa(t *testing.T) {
+func TestDefaultRegistryContainsAllProviders(t *testing.T) {
 	r := DefaultRegistry()
 	all := r.All()
 
-	if len(all) != 2 {
-		t.Fatalf("expected 2 providers, got %d", len(all))
+	if len(all) != 3 {
+		t.Fatalf("expected 3 providers, got %d", len(all))
 	}
 
 	if all[0].ID() != "exa" {
 		t.Fatalf("expected first provider to be exa, got %s", all[0].ID())
+	}
+	if all[1].ID() != "github" {
+		t.Fatalf("expected second provider to be github, got %s", all[1].ID())
+	}
+	if all[2].ID() != "context7" {
+		t.Fatalf("expected third provider to be context7, got %s", all[2].ID())
 	}
 
 	p, ok := r.Get("exa")

@@ -16,6 +16,12 @@ type PackageRuntime struct {
     Type string // "npm" | "pypi" | "oci" | "mcpb"
 }
 
+// BridgeConfig describes a stdio wrapper that proxies a remote transport.
+type BridgeConfig struct {
+	Command string
+	Args    []string
+}
+
 // MCPConfig is a provider-agnostic description of one MCP server connection.
 type MCPConfig struct {
     Type    TransportType
@@ -23,7 +29,9 @@ type MCPConfig struct {
     Command string            // stdio: executable name, e.g. "npx"
     Args    []string          // stdio: arguments after command
     Env     map[string]string // stdio: env vars injected into the subprocess
+    Headers map[string]string // Per-server HTTP headers for remote transports. Nil for stdio.
     Runtime *PackageRuntime   // non-nil for packaged stdio servers; nil for remote
+    BridgeOverride *BridgeConfig // when non-nil, used by client.Adapt in place of Matrix bridge
 }
 
 // CredentialValidator validates one credential string value.

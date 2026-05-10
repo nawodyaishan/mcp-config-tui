@@ -12,6 +12,7 @@ func DefaultRegistry() Registry {
 	}
 	r.register(NewExaProvider())
 	r.register(NewGitHubProvider())
+	r.register(NewContext7Provider())
 	return r
 }
 
