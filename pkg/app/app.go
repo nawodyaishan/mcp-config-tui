@@ -471,6 +471,8 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		return preparedWrite{}, err
 	}
 
+	op.Config.Headers = client.HeadersFor(op.AppID, op.Config.Headers) // augment per-client
+
 	var updated []byte
 	switch op.Kind {
 	case config.FileKindMCPServers:

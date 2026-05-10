@@ -326,3 +326,138 @@ func TestQAExaAndGitHubCoexist(t *testing.T) {
         t.Errorf("Cursor: GitHub entry should be present\n%s", data)
     }
 }
+
+func TestQAContext7AllClients(t *testing.T) {
+    homeDir := t.TempDir()
+
+    // Write empty config files for all clients
+    paths := map[config.AppID]string{
+        config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+        config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+        config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+        config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+        config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+        config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+        config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+        config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+        config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
+        config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+        config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+    }
+    for _, p := range paths {
+        mustWriteFile(t, p, []byte("{}"))
+    }
+    mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
+
+    manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+
+    prov := provider.NewContext7Provider()
+    key := "ctx7sk_" + strings.Repeat("a", 20)
+    profiles := []provider.CredentialProfile{{
+        ProviderID: "context7",
+        Values:     map[string]string{"CONTEXT7_API_KEY": key},
+        Label:      "ctx7sk_aaaa...aaaa",
+    }}
+    selected := make(map[config.AppID]bool)
+    for id := range paths {
+        selected[id] = true
+    }
+    assignments := DefaultAssignments(selected, 1)
+
+    plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+    if err != nil { t.Fatalf("PrepareProvider: %v", err) }
+
+    // Raw key must never appear in plan
+    planText := FormatPlan(plan)
+    if strings.Contains(planText, key) {
+        t.Errorf("plan output must not contain raw API key")
+    }
+
+    _, err = manager.Apply(plan)
+    if err != nil { t.Fatalf("Apply: %v", err) }
+
+    // Claude Desktop: stdio shape
+    data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
+    if !bytes.Contains(data, []byte(`"@upstash/context7-mcp"`)) {
+        t.Errorf("Claude Desktop: expected direct npx invocation\n%s", data)
+    }
+
+    // Cursor: url + headers
+    data, _ = os.ReadFile(paths[config.AppCursor])
+    if !bytes.Contains(data, []byte(`"https://mcp.context7.com/mcp"`)) {
+        t.Errorf("Cursor: expected Context7 endpoint\n%s", data)
+    }
+    if !bytes.Contains(data, []byte(`"CONTEXT7_API_KEY"`)) {
+        t.Errorf("Cursor: expected headers field\n%s", data)
+    }
+
+    // Gemini: also has Accept header
+    data, _ = os.ReadFile(paths[config.AppGeminiCLI])
+    if !bytes.Contains(data, []byte(`"Accept"`)) {
+        t.Errorf("Gemini CLI: expected Accept header\n%s", data)
+    }
+
+    // Codex: http_headers in TOML
+    data, _ = os.ReadFile(paths[config.AppCodexCLI])
+    if !bytes.Contains(data, []byte(`http_headers`)) {
+        t.Errorf("Codex: expected http_headers in TOML\n%s", data)
+    }
+    
+    // Idempotency check (T-D3)
+    cursorData1, _ := os.ReadFile(paths[config.AppCursor])
+    _, err = manager.Apply(plan)
+    if err != nil { t.Fatalf("Apply 2: %v", err) }
+    
+    data2, _ := os.ReadFile(paths[config.AppCursor])
+    if !bytes.Equal(cursorData1, data2) {
+        t.Errorf("Cursor file changed on second apply\nRun 1: %s\nRun 2: %s", string(cursorData1), string(data2))
+    }
+}
+
+func TestQAExaAndContext7Coexist(t *testing.T) {
+    homeDir := t.TempDir()
+    cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+    mustWriteFile(t, cursorPath, []byte("{}"))
+
+    manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{})
+    selected := map[config.AppID]bool{config.AppCursor: true}
+    assignments := DefaultAssignments(selected, 1)
+
+    // 1. Sync Exa
+    exaProv := provider.NewExaProvider()
+    exaProfiles := []provider.CredentialProfile{{
+        ProviderID: "exa",
+        Values:     map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"},
+        Label:      "1111...1111",
+    }}
+    plan1, err := manager.PrepareProvider(exaProv, exaProfiles, selected, assignments)
+    if err != nil { t.Fatalf("PrepareProvider Exa: %v", err) }
+    _, err = manager.Apply(plan1)
+    if err != nil { t.Fatalf("Apply Exa: %v", err) }
+    
+    exaData1, _ := os.ReadFile(cursorPath)
+
+    // 2. Sync Context7
+    ctx7Prov := provider.NewContext7Provider()
+    ctx7Profiles := []provider.CredentialProfile{{
+        ProviderID: "context7",
+        Values:     map[string]string{"CONTEXT7_API_KEY": "ctx7sk_abcdef1234567890wxyz"},
+        Label:      "ctx7sk_abcd...wxyz",
+    }}
+    plan2, err := manager.PrepareProvider(ctx7Prov, ctx7Profiles, selected, assignments)
+    if err != nil { t.Fatalf("PrepareProvider Context7: %v", err) }
+    _, err = manager.Apply(plan2)
+    if err != nil { t.Fatalf("Apply Context7: %v", err) }
+
+    data, _ := os.ReadFile(cursorPath)
+    // Both providers must be present
+    if !bytes.Contains(data, []byte(`"exa"`)) {
+        t.Errorf("Cursor: Exa entry should survive Context7 sync\n%s", data)
+    }
+    if !bytes.Contains(data, []byte(`"context7"`)) {
+        t.Errorf("Cursor: Context7 entry should be present\n%s", data)
+    }
+    if bytes.Contains(exaData1, []byte(`"headers"`)) {
+        t.Errorf("Exa should not have headers")
+    }
+}
