@@ -43,7 +43,7 @@ make test
 make lint
 ```
 
-If you use Claude Code in this repo, the `.claude/skills/add-provider` skill can follow an approved provider spec, for example:
+If you use Gemini CLI in this repo, the `.gemini/skills/agentic-sdd-implement` skill can follow an approved provider spec, for example:
 ```text
-/add-provider using docs/specs/add-<name>-provider.md as the strict implementation contract
+Implement docs/specs/add-<name>-provider.md using the agentic-sdd-implement skill.
 ```

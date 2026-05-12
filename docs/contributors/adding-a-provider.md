@@ -68,11 +68,11 @@ When using an AI coding assistant to add a new provider, we follow a strict Spec
 
 1. **Draft the Spec**: Do not prompt the agent to "just build it." First, use the `agentic-sdd-spec` skill to draft a clear, scoped specification document (e.g., `docs/specs/add-<name>-provider.md`) detailing the provider's transport, auth method, credentials, and any per-client adaptations.
 2. **Review and Approve**: Ensure the specification correctly captures the architectural constraints before any code is generated. You can use the `agentic-sdd-architecture-review` skill to assist. No implementation should occur without an approved spec.
-3. **Invoke the Skill**: Trigger the `.claude/skills/add-provider` skill or `agentic-sdd-implement`, explicitly binding it to your approved spec document:
+3. **Invoke the Skill**: Trigger the `.gemini/skills/agentic-sdd-implement` skill, explicitly binding it to your approved spec document:
    ```text
-   /add-provider using docs/specs/add-<name>-provider.md as the strict implementation contract
+   Implement the docs/specs/add-<name>-provider.md spec using the agentic-sdd-implement skill.
    ```
-4. **Execution and Validation**: The agent will follow the procedure defined in the skill, acting within the bounds of the spec. Alternatively, follow the generic SDD pipeline via `agentic-sdd-router`.
+4. **Execution and Validation**: The agent will follow the procedure defined in the skill, acting within the bounds of the spec. Alternatively, follow the generic SDD pipeline by triggering the `.gemini/skills/agentic-sdd-router` skill.
 
 Validate the result with:
 ```bash
