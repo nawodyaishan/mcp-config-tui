@@ -157,4 +157,4 @@ Detailed coverage is defined in `docs/specs/linux-support/test-plan.md`.
   **Mitigation**: Add focused OpenCode tests and update golden files intentionally.
 
 ## Human Architecture Approval Status
-- Pending approval before implementation.
+- Approved for implementation on 2026-05-12.
