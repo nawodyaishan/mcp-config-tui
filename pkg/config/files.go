@@ -36,7 +36,7 @@ func EnsureParentDir(path string) error {
 }
 
 func BuildBackupPath(path string, now time.Time) string {
-	return fmt.Sprintf("%s.bak-exa-%s", path, now.Format("20060102-150405"))
+	return fmt.Sprintf("%s.bak-usync-%s", path, now.Format("20060102-150405"))
 }
 
 func WriteWithBackup(path string, data []byte, now time.Time) (WriteOutcome, error) {
@@ -102,7 +102,7 @@ func writeAtomic(path string, data []byte) error {
 	}
 
 	dir := filepath.Dir(path)
-	temp, err := os.CreateTemp(dir, ".exa-mcp-*")
+	temp, err := os.CreateTemp(dir, ".usync-*")
 	if err != nil {
 		return fmt.Errorf("create temp file for %s: %w", path, err)
 	}

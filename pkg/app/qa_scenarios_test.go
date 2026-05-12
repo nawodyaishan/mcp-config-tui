@@ -593,7 +593,7 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		if op.AppID == config.AppClaudeCode {
 			foundClaudeCode = true
 			got := strings.Join(op.CLIAddArgs, " ")
-			want := "mcp add -s user playwright npx @playwright/mcp@latest"
+			want := "mcp add -s user playwright -- npx @playwright/mcp@latest"
 			if got != want {
 				t.Fatalf("Claude Code args mismatch:\ngot:  %s\nwant: %s", got, want)
 			}
@@ -706,7 +706,7 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 		if op.AppID == config.AppClaudeCode {
 			foundClaudeCode = true
 			got := strings.Join(op.CLIAddArgs, " ")
-			want := "mcp add -s user kubernetes npx -y kubernetes-mcp-server@latest --read-only"
+			want := "mcp add -s user kubernetes -- npx -y kubernetes-mcp-server@latest --read-only"
 			if got != want {
 				t.Fatalf("Claude Code args mismatch:\ngot:  %s\nwant: %s", got, want)
 			}
@@ -833,7 +833,7 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		if op.AppID == config.AppClaudeCode {
 			foundClaudeCode = true
 			got := strings.Join(op.CLIAddArgs, " ")
-			want := "mcp add -s user terraform docker run -i --rm -e ENABLE_TF_OPERATIONS=false hashicorp/terraform-mcp-server:0.5.2"
+			want := "mcp add -s user terraform -- docker run -i --rm -e ENABLE_TF_OPERATIONS=false hashicorp/terraform-mcp-server:0.5.2"
 			if got != want {
 				t.Fatalf("Claude Code args mismatch:\ngot:  %s\nwant: %s", got, want)
 			}

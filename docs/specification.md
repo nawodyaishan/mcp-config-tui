@@ -87,7 +87,7 @@ https://mcp.exa.ai/mcp?exaApiKey=<KEY>&tools=<comma-separated-tools>
 
 6. Apply screen
    - Backup each touched config with suffix:
-     - `.bak-exa-YYYYMMDD-HHMMSS`
+     - `.bak-usync-YYYYMMDD-HHMMSS`
    - Update selected configs.
    - Preserve unrelated MCP servers and existing non-MCP settings.
 

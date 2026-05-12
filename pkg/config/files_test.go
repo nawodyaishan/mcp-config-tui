@@ -10,7 +10,7 @@ import (
 func TestBuildBackupPathFormat(t *testing.T) {
 	now := time.Date(2026, time.May, 8, 21, 30, 45, 0, time.UTC)
 	got := BuildBackupPath("/tmp/config.json", now)
-	want := "/tmp/config.json.bak-exa-20260508-213045"
+	want := "/tmp/config.json.bak-usync-20260508-213045"
 	if got != want {
 		t.Fatalf("unexpected backup path: got %s want %s", got, want)
 	}

@@ -102,7 +102,7 @@ MCP sync plan
 - Claude Desktop: Claude Desktop config
   credential: exa_****abcd
   path: ~/Library/Application Support/Claude/claude_desktop_config.json
-  backup: .../claude_desktop_config.json.bak-exa-20260509-084228
+  backup: .../claude_desktop_config.json.bak-usync-20260509-084228
 ```
 
 Apply only after the preview is correct:

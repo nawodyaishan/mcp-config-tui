@@ -114,7 +114,7 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 		t.Fatalf("expected missing Gemini MCP file to be created: %v", err)
 	}
 
-	claudeDesktopBackup := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json.bak-exa-20260508-213045")
+	claudeDesktopBackup := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json.bak-usync-20260508-213045")
 	if _, err := os.Stat(claudeDesktopBackup); err != nil {
 		t.Fatalf("expected backup to be created: %v", err)
 	}
@@ -183,7 +183,39 @@ func TestPrepareProviderBuildsClaudeCodeStdioArgs(t *testing.T) {
 	}
 
 	got := strings.Join(plan.Operations[0].CLIAddArgs, " ")
-	want := "mcp add -s user playwright npx @playwright/mcp@latest"
+	want := "mcp add -s user playwright -- npx @playwright/mcp@latest"
+	if got != want {
+		t.Fatalf("Claude Code stdio args mismatch:\ngot:  %s\nwant: %s", got, want)
+	}
+}
+
+func TestPrepareProviderBuildsClaudeCodeStdioArgsWithFlagSeparator(t *testing.T) {
+	homeDir := t.TempDir()
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+
+	prov := provider.NewTavilyProvider()
+	key := "tvly-" + strings.Repeat("a", 20)
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "tavily",
+		Values:     map[string]string{"TAVILY_API_KEY": key},
+		Label:      "tvly-aaaa...aaaa",
+	}}
+	selected := map[config.AppID]bool{config.AppClaudeCode: true}
+	assignments := DefaultAssignments(selected, 1)
+
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Operations) != 1 {
+		t.Fatalf("expected 1 operation, got %d", len(plan.Operations))
+	}
+
+	got := strings.Join(plan.Operations[0].CLIAddArgs, " ")
+	want := "mcp add -s user tavily -- npx -y tavily-mcp@latest"
 	if got != want {
 		t.Fatalf("Claude Code stdio args mismatch:\ngot:  %s\nwant: %s", got, want)
 	}

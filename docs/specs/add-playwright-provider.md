@@ -57,7 +57,7 @@ provider.MCPConfig{
 **Claude Code decision:** For stdio providers, generate CLI args equivalent to:
 
 ```bash
-claude mcp add playwright npx @playwright/mcp@latest
+claude mcp add -s user playwright -- npx @playwright/mcp@latest
 ```
 
 Remote providers keep the existing `--transport <type> <name> <url>` CLI shape.
@@ -151,7 +151,7 @@ Allow `VerifyProviderFile` for non-special providers to validate Codex TOML entr
 **Files:** `pkg/app/app.go`, `pkg/app/app_test.go` - modified
 
 Build `claude mcp add` args from transport:
-- stdio: `mcp add -s user <providerID> <command> <args...>`
+- stdio: `mcp add -s user <providerID> -- <command> <args...>`
 - remote: preserve existing URL-based transport shape.
 
 ---

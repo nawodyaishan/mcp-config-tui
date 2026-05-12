@@ -208,7 +208,7 @@ func providerPrerequisiteWarning(providerID string, cfg provider.MCPConfig, runn
 
 func buildClaudeCodeAddArgs(providerID string, cfg provider.MCPConfig) []string {
 	if cfg.Type == provider.TransportStdio {
-		args := []string{"mcp", "add", "-s", "user", providerID, cfg.Command}
+		args := []string{"mcp", "add", "-s", "user", providerID, "--", cfg.Command}
 		args = append(args, cfg.Args...)
 		return args
 	}
