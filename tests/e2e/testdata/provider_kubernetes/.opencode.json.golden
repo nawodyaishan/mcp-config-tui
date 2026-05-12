@@ -1,12 +1,12 @@
 {
   "mcp": {
     "kubernetes": {
-      "args": [
+      "command": [
+        "npx",
         "-y",
         "kubernetes-mcp-server@latest",
         "--read-only"
       ],
-      "command": "npx",
       "enabled": true,
       "type": "local"
     }

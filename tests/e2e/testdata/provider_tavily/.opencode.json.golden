@@ -1,13 +1,13 @@
 {
   "mcp": {
     "tavily": {
-      "args": [
+      "command": [
+        "npx",
         "-y",
         "tavily-mcp@latest"
       ],
-      "command": "npx",
       "enabled": true,
-      "env": {
+      "environment": {
         "TAVILY_API_KEY": "tvly-1234567890"
       },
       "type": "local"

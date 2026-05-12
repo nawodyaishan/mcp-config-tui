@@ -1,10 +1,10 @@
 {
   "mcp": {
     "playwright": {
-      "args": [
+      "command": [
+        "npx",
         "@playwright/mcp@latest"
       ],
-      "command": "npx",
       "enabled": true,
       "type": "local"
     }

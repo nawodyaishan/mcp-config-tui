@@ -72,7 +72,7 @@ make build
 
 Requirements for source builds:
 - Go 1.23+
-- macOS for full local client path detection
+- macOS or Linux for full local client path detection
 
 ### Configure With The TUI
 
@@ -112,22 +112,22 @@ usync sync --keys-file ./exa_keys.txt --apply
 
 ## Supported Clients
 
-`usync` detects and updates native config files for these macOS targets:
+`usync` detects and updates native config files for these macOS and Linux targets:
 
-| Client | Config target |
-|---|---|
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Code | Managed through `claude mcp` CLI when available |
-| Cursor | `~/.cursor/mcp.json` |
-| VS Code | `~/.vscode/mcp.json` |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
-| Zed | `~/.config/zed/settings.json` |
-| Roo Code | `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json` |
-| OpenCode | `~/.opencode.json` |
-| Kiro | `~/.kiro/settings/mcp.json` |
-| Gemini CLI | `~/.gemini/settings.json` and `~/.gemini/mcp_config.json` |
-| Antigravity | `~/.gemini/antigravity/mcp_config.json` |
-| Codex CLI | `~/.codex/config.toml` |
+| Client | macOS target | Linux target |
+|---|---|---|
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | `~/.config/Claude/claude_desktop_config.json` |
+| Claude Code | Managed through `claude mcp` CLI when available | Managed through `claude mcp` CLI when available |
+| Cursor | `~/.cursor/mcp.json` | `~/.cursor/mcp.json` |
+| VS Code | `~/.vscode/mcp.json` | `~/.config/Code/User/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | `~/.codeium/mcp_config.json`, with existing `~/.codeium/windsurf/mcp_config.json` preserved |
+| Zed | `~/.config/zed/settings.json` | `~/.config/zed/settings.json` |
+| Roo Code | `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json` | `~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json` |
+| OpenCode | `~/.opencode.json` | `~/.config/opencode/opencode.json` |
+| Kiro | `~/.kiro/settings/mcp.json` | `~/.kiro/settings/mcp.json` |
+| Gemini CLI | `~/.gemini/settings.json` and `~/.gemini/mcp_config.json` | `~/.gemini/settings.json` |
+| Antigravity | `~/.gemini/antigravity/mcp_config.json` | `~/.gemini/antigravity/mcp_config.json` |
+| Codex CLI | `~/.codex/config.toml` | `~/.codex/config.toml` |
 
 A dry run always shows the exact path on your machine before any write.
 
@@ -148,6 +148,7 @@ Several MCP tools solve adjacent problems:
 - **Atomic file updates**: Config files are written through the repo's backup/write path rather than ad hoc in-place edits.
 - **Rollback on failure**: If an apply sequence fails after earlier writes, `usync` attempts to restore previous files.
 - **Verification**: Tests cover provider output, client adaptation, JSON/TOML mutation, redaction, rollback, and scenario-level config shapes.
+- **QA coverage**: The suite combines unit, scenario, and CLI/TUI E2E golden tests, with `make coverage-check` enforcing the 60% coverage gate (68.2% in the latest local run).
 
 ## Provider Architecture
 
@@ -294,9 +295,9 @@ func main() {
 
 Requirements:
 - Go 1.23+
-- macOS for real local config path testing
+- macOS or Linux for real local config path testing
 - `golangci-lint` for `make lint`
-- Lefthook is optional but recommended
+- Lefthook is optional but recommended for local pre-commit checks
 
 Common commands:
 ```bash
@@ -306,13 +307,16 @@ make fmt           # format Go sources
 make vet           # run go vet
 make lint          # run golangci-lint
 make test          # run all tests with repo-local caches
+make test-e2e      # run CLI/TUI end-to-end golden tests
+make coverage-check # enforce the 60% total coverage gate
 make build         # build ./bin/usync
 make verify        # run local CI guard
+make gitignore-check # verify important fixtures are tracked/ignored correctly
 ```
 
 Install Git hooks:
 ```bash
-brew install lefthook
+brew install lefthook  # or install from your OS package manager
 lefthook install
 ```
 

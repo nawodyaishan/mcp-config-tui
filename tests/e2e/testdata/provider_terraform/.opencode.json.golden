@@ -1,7 +1,8 @@
 {
   "mcp": {
     "terraform": {
-      "args": [
+      "command": [
+        "docker",
         "run",
         "-i",
         "--rm",
@@ -9,7 +10,6 @@
         "ENABLE_TF_OPERATIONS=false",
         "hashicorp/terraform-mcp-server:0.5.2"
       ],
-      "command": "docker",
       "enabled": true,
       "type": "local"
     }
