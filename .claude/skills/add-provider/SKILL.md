@@ -13,7 +13,10 @@ allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 
 # Add Provider Procedure
 
-When requested to add a new MCP provider to `usync`, strictly follow these 9 steps in order.
+We follow a strict Spec-Driven Development (SDD) workflow. When requested to add a new MCP provider to `usync`, strictly follow these steps:
+
+## 0. SDD Pre-requisite
+Ensure an approved specification document exists (e.g., `docs/specs/add-<name>-provider.md`). If it doesn't exist or hasn't been approved, use the `agentic-sdd-router` or `agentic-sdd-spec` skill to create and refine the spec first. Do not proceed to implementation without a spec.
 
 ## 1. STOP and gather
 Read the following files to understand the system context:
