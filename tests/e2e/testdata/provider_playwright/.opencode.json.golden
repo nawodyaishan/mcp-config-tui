@@ -1,0 +1,12 @@
+{
+  "mcp": {
+    "playwright": {
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "command": "npx",
+      "enabled": true,
+      "type": "local"
+    }
+  }
+}

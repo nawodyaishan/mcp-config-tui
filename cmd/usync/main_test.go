@@ -1,12 +1,38 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 )
+
+var binaryPath string
+
+func TestMain(m *testing.M) {
+	// Build the usync binary into a temporary directory
+	dir, err := os.MkdirTemp("", "usync-e2e-*")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(dir)
+
+	binaryPath = filepath.Join(dir, "usync")
+	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to build usync: %v\n%s\n", err, out)
+		os.Exit(1)
+	}
+
+	// Make the binary path available to tests in other packages via env var if needed
+	os.Setenv("USYNC_E2E_BINARY", binaryPath)
+
+	os.Exit(m.Run())
+}
 
 func TestLoadInitialKeys(t *testing.T) {
 	// Test CSV

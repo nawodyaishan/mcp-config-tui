@@ -1,0 +1,10 @@
+{
+  "context_servers": {
+    "playwright": {
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "command": "npx"
+    }
+  }
+}

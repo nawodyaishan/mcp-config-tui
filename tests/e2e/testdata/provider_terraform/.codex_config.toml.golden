@@ -1,0 +1,3 @@
+[mcp_servers.terraform]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "ENABLE_TF_OPERATIONS=false", "hashicorp/terraform-mcp-server:0.5.2"]

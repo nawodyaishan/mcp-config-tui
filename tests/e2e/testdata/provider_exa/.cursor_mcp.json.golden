@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111\u0026tools=web_search_exa%2Cweb_search_advanced_exa%2Cweb_fetch_exa"
+    }
+  }
+}

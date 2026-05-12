@@ -1,0 +1,14 @@
+{
+  "firstStartTime": "2026-05-12T10:38:10.927Z",
+  "opusProMigrationComplete": true,
+  "sonnet1m45MigrationComplete": true,
+  "seenNotifications": {},
+  "migrationVersion": 13,
+  "mcpServers": {
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp?exaApiKey=22222222-2222-2222-2222-222222222222&tools=web_search_exa%2Cweb_search_advanced_exa%2Cweb_fetch_exa"
+    }
+  },
+  "userID": "2d93d2a5ee57c378b00c4a9d7e71cad3a72d4dd09bfdd1fae0b68138375d1ffd"
+}

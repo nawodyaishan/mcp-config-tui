@@ -61,3 +61,8 @@ gitignore-check:
 
 clean:
 	@bash scripts/clean.sh
+
+.PHONY: test-e2e
+test-e2e:
+	@mkdir -p tests/e2e
+	go test -v ./cmd/usync ./tests/e2e/...

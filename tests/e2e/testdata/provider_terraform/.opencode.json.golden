@@ -1,0 +1,17 @@
+{
+  "mcp": {
+    "terraform": {
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "ENABLE_TF_OPERATIONS=false",
+        "hashicorp/terraform-mcp-server:0.5.2"
+      ],
+      "command": "docker",
+      "enabled": true,
+      "type": "local"
+    }
+  }
+}

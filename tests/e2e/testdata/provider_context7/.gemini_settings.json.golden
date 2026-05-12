@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "context7": {
+      "headers": {
+        "Accept": "application/json, text/event-stream",
+        "CONTEXT7_API_KEY": "ctx7sk-1234567890"
+      },
+      "httpUrl": "https://mcp.context7.com/mcp"
+    }
+  }
+}
