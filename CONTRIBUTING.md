@@ -8,7 +8,10 @@ Universal MCP Sync started as an Exa-focused utility and now uses a **provider-b
 ## How to Contribute
 
 ### 1. Adding a New MCP Provider
-If you want to add support for a new MCP server, start with [Adding a Provider Guide](docs/contributors/adding-a-provider.md). It covers interface scaffolding, credential validation, config generation, redaction, registry inclusion, and per-client adaptation through `pkg/client.Adapt()` and `pkg/client.HeadersFor()`.
+If you want to add support for a new MCP server, we strictly follow **Spec-Driven Development (SDD)**.
+1. **Draft a Spec**: Start by creating a specification document in `docs/specs/add-<name>-provider.md` rather than writing code directly.
+2. **Reference the Guide**: Use the [Adding a Provider Guide](docs/contributors/adding-a-provider.md) to understand interface scaffolding, credential validation, config generation, redaction, registry inclusion, and per-client adaptation.
+3. **Execute**: Once the spec is reviewed and approved, invoke the `.claude/skills/add-provider` skill (or an SDD implement skill) using the spec as the strict implementation contract.
 
 ### 2. Adding a New AI Client
 If a new AI assistant with local MCP support is released:

@@ -24,6 +24,7 @@ Configure an MCP server once, preview every file that would change, then sync na
 | **Exa AI Search** | Web search and retrieval for agents | HTTP | API key in URL query | Stable |
 | **Context7** | Current library docs and code examples | Streamable HTTP | `CONTEXT7_API_KEY` header | Stable |
 | **GitHub** | Repository, issue, and PR workflows | Stdio via `npx` | `GITHUB_PERSONAL_ACCESS_TOKEN` env var | Beta |
+| **Tavily Search** | Real-time web search and data extraction | Stdio via `npx` | `TAVILY_API_KEY` env var | Stable |
 
 The provider system is intentionally generic. New MCP servers are added through `MCPProvider`, then adapted per client through the capability matrix instead of branching the TUI or apply flow.
 
