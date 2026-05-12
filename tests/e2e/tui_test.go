@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/tui"
 )
 
@@ -20,6 +21,10 @@ func TestTUI_InteractiveFlow(t *testing.T) {
 	manager, err := app.NewManager(homeDir, func() time.Time { return time.Time{} }, fakeRunner{})
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+	if err != nil {
+		t.Fatalf("failed to detect app configs: %v", err)
 	}
 
 	keys := []string{"11111111-1111-1111-1111-111111111111"}
@@ -80,10 +85,10 @@ func TestTUI_InteractiveFlow(t *testing.T) {
 
 	// We scrub paths to ensure the test is robust
 	outScrubbed := scrubPath(out, homeDir)
-	
+
 	// Create testdata dir if not exists
 	goldenFile := filepath.Join("testdata", "tui_interactive_flow.golden")
-	
+
 	// We assert the final output matches the golden file
 	assertGolden(t, outScrubbed, goldenFile)
 }

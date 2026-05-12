@@ -11,6 +11,21 @@ import (
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
+func newDarwinQAManager(t *testing.T, homeDir string, runner CommandRunner) *Manager {
+	t.Helper()
+
+	manager, err := NewManager(homeDir, fixedNow(), runner)
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS: %v", err)
+	}
+
+	return manager
+}
+
 func TestQAExaReadmeScenarios(t *testing.T) {
 	homeDir := t.TempDir()
 
@@ -39,10 +54,7 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 	mustWriteFile(t, opencodePath, []byte("{}"))
 	mustWriteFile(t, kiroPath, []byte("{}"))
 
-	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-	if err != nil {
-		t.Fatalf("NewManager: %v", err)
-	}
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 
 	key := "11111111-1111-1111-1111-111111111111"
 	selected := make(map[config.AppID]bool)
@@ -127,10 +139,7 @@ func TestQAIdempotency(t *testing.T) {
 	claudeDesktopPath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
 	mustWriteFile(t, claudeDesktopPath, []byte("{}"))
 
-	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-	if err != nil {
-		t.Fatalf("NewManager: %v", err)
-	}
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 
 	key := "11111111-1111-1111-1111-111111111111"
 	selected := map[config.AppID]bool{config.AppClaudeDesktop: true}
@@ -169,10 +178,7 @@ func TestQAGitHubStdioSupportedClients(t *testing.T) {
 		mustWriteFile(t, p, []byte("{}"))
 	}
 
-	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
-	if err != nil {
-		t.Fatalf("NewManager: %v", err)
-	}
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{available: map[string]bool{"claude": true}})
 
 	prov := provider.NewGitHubProvider()
 	pat := "ghp_" + strings.Repeat("a", 36)
@@ -233,10 +239,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 	mustWriteFile(t, geminiPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
 
-	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-	if err != nil {
-		t.Fatalf("NewManager: %v", err)
-	}
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 
 	prov := provider.NewGitHubProvider()
 	pat := "ghp_" + strings.Repeat("a", 36)
@@ -284,10 +287,7 @@ func TestQAExaAndGitHubCoexist(t *testing.T) {
 	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
 	mustWriteFile(t, cursorPath, []byte("{}"))
 
-	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
-	if err != nil {
-		t.Fatalf("NewManager: %v", err)
-	}
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 	selected := map[config.AppID]bool{config.AppCursor: true}
 	assignments := DefaultAssignments(selected, 1)
 
@@ -349,7 +349,7 @@ func TestQAContext7AllClients(t *testing.T) {
 	}
 	mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
 
-	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{available: map[string]bool{"claude": true}})
 
 	prov := provider.NewContext7Provider()
 	key := "ctx7sk-" + strings.Repeat("a", 20)
@@ -425,7 +425,7 @@ func TestQAExaAndContext7Coexist(t *testing.T) {
 	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
 	mustWriteFile(t, cursorPath, []byte("{}"))
 
-	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{})
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 	selected := map[config.AppID]bool{config.AppCursor: true}
 	assignments := DefaultAssignments(selected, 1)
 
@@ -493,7 +493,7 @@ func TestQATavilyAllClients(t *testing.T) {
 		mustWriteFile(t, p, []byte("{}"))
 	}
 
-	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{available: map[string]bool{"claude": true}})
 
 	prov := provider.NewTavilyProvider()
 	key := "tvly-" + strings.Repeat("a", 20)
@@ -561,7 +561,7 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 	}
 	mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
 
-	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{available: map[string]bool{"claude": true}})
 
 	prov := provider.NewPlaywrightProvider()
 	profiles := []provider.CredentialProfile{{
@@ -674,7 +674,7 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 	}
 	mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
 
-	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	manager := newDarwinQAManager(t, homeDir, fakeRunner{available: map[string]bool{"claude": true}})
 
 	prov := provider.NewKubernetesProvider()
 	profiles := []provider.CredentialProfile{{
@@ -798,7 +798,7 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 			"docker info --format {{.ServerVersion}}": "27.0.0",
 		},
 	}
-	manager, _ := NewManager(homeDir, fixedNow(), runner)
+	manager := newDarwinQAManager(t, homeDir, runner)
 
 	prov := provider.NewTerraformProvider()
 	profiles := []provider.CredentialProfile{{

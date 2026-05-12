@@ -82,6 +82,10 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewManager returned error: %v", err)
 	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS returned error: %v", err)
+	}
 
 	keys := []string{
 		"11111111-1111-1111-1111-111111111111",

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,15 +48,33 @@ func runBinary(t *testing.T, args []string, homeDir string) ([]byte, error) {
 	cmd := exec.Command(binaryPath, args...)
 	// Set a restricted PATH so real system binaries like `claude` or `docker`
 	// aren't executed, ensuring determinism across different environments.
-	cmd.Env = append(os.Environ(), "HOME="+homeDir, "PATH=/usr/bin:/bin")
+	cmd.Env = e2eEnv(homeDir)
 	return cmd.CombinedOutput()
 }
 
 func runBinaryWithError(t *testing.T, args []string, homeDir string) ([]byte, error) {
 	t.Helper()
 	cmd := exec.Command(binaryPath, args...)
-	cmd.Env = append(os.Environ(), "HOME="+homeDir, "PATH=/usr/bin:/bin")
+	cmd.Env = e2eEnv(homeDir)
 	return cmd.CombinedOutput()
+}
+
+func e2eEnv(homeDir string) []string {
+	env := make([]string, 0, len(os.Environ())+3)
+	for _, item := range os.Environ() {
+		if strings.HasPrefix(item, "HOME=") ||
+			strings.HasPrefix(item, "PATH=") ||
+			strings.HasPrefix(item, "USYNC_TARGET_OS=") {
+			continue
+		}
+		env = append(env, item)
+	}
+
+	return append(env,
+		"HOME="+homeDir,
+		"PATH=/usr/bin:/bin",
+		"USYNC_TARGET_OS=darwin",
+	)
 }
 
 func scrubPath(content []byte, pathToScrub string) []byte {
@@ -176,7 +195,7 @@ func TestEdgeCase_Idempotency(t *testing.T) {
 	scaffoldHome(t, homeDir)
 
 	args := []string{"--apply", "--keys", "11111111-1111-1111-1111-111111111111"}
-	
+
 	// First run
 	if out, err := runBinary(t, args, homeDir); err != nil {
 		t.Fatalf("first run failed: %v\nOutput: %s", err, string(out))
@@ -219,7 +238,8 @@ func TestEdgeCase_Merging(t *testing.T) {
 }
 
 type fakeRunner struct{}
-func (f fakeRunner) LookPath(name string) (string, error) { return "/usr/bin/" + name, nil }
+
+func (f fakeRunner) LookPath(name string) (string, error)            { return "/usr/bin/" + name, nil }
 func (f fakeRunner) Run(name string, args ...string) (string, error) { return "", nil }
 
 func TestProviders_Golden(t *testing.T) {
@@ -236,6 +256,10 @@ func TestProviders_Golden(t *testing.T) {
 			manager, err := app.NewManager(homeDir, func() time.Time { return time.Time{} }, fakeRunner{})
 			if err != nil {
 				t.Fatalf("failed to create manager: %v", err)
+			}
+			manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+			if err != nil {
+				t.Fatalf("failed to detect app configs: %v", err)
 			}
 
 			selected := make(map[config.AppID]bool)
@@ -317,7 +341,7 @@ func TestCLI_FailureModes(t *testing.T) {
 			homeDir := t.TempDir()
 
 			out, err := runBinaryWithError(t, tc.args, homeDir)
-			
+
 			if err == nil {
 				t.Fatalf("expected command to fail with exit code %d, but it succeeded", tc.expectedExit)
 			}

@@ -89,7 +89,7 @@ func NewManager(homeDir string, now func() time.Time, runner CommandRunner) (*Ma
 		runner = osRunner{}
 	}
 
-	apps, err := config.DetectAppConfigs(homeDir)
+	apps, err := detectAppConfigs(homeDir)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +102,13 @@ func NewManager(homeDir string, now func() time.Time, runner CommandRunner) (*Ma
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 		WriteConfig: config.WriteWithBackup,
 	}, nil
+}
+
+func detectAppConfigs(homeDir string) ([]config.AppConfig, error) {
+	if targetOS := os.Getenv("USYNC_TARGET_OS"); targetOS != "" {
+		return config.DetectAppConfigsForOS(homeDir, targetOS)
+	}
+	return config.DetectAppConfigs(homeDir)
 }
 
 func (m *Manager) PrepareProvider(
