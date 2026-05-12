@@ -16,6 +16,7 @@ func DefaultRegistry() Registry {
 	r.register(NewTavilyProvider())
 	r.register(NewPlaywrightProvider())
 	r.register(NewKubernetesProvider())
+	r.register(NewTerraformProvider())
 	return r
 }
 

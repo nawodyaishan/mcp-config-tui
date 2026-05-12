@@ -27,6 +27,7 @@ Configure an MCP server once, preview every file that would change, then sync na
 | **Tavily Search** | Real-time web search and data extraction | Stdio via `npx` | `TAVILY_API_KEY` env var | Stable |
 | **Playwright** | Browser automation through accessibility snapshots | Stdio via `npx` | None | Stable |
 | **Kubernetes** | Read-only Kubernetes and OpenShift runtime state | Stdio via `npx` | None; uses kubeconfig/RBAC | Beta |
+| **Terraform** | Terraform Registry and HCP Terraform context | Stdio via Docker | None required; operations disabled by default | Beta |
 
 The provider system is intentionally generic. New MCP servers are added through `MCPProvider`, then adapted per client through the capability matrix instead of branching the TUI or apply flow.
 

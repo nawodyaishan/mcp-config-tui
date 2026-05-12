@@ -19,6 +19,7 @@ import (
 type fakeRunner struct {
 	available map[string]bool
 	outputs   map[string]string
+	errors    map[string]error
 }
 
 func (f fakeRunner) LookPath(name string) (string, error) {
@@ -30,6 +31,9 @@ func (f fakeRunner) LookPath(name string) (string, error) {
 
 func (f fakeRunner) Run(name string, args ...string) (string, error) {
 	key := name + " " + strings.Join(args, " ")
+	if err, ok := f.errors[key]; ok {
+		return "", err
+	}
 	if output, ok := f.outputs[key]; ok {
 		return output, nil
 	}
@@ -182,6 +186,93 @@ func TestPrepareProviderBuildsClaudeCodeStdioArgs(t *testing.T) {
 	want := "mcp add -s user playwright npx @playwright/mcp@latest"
 	if got != want {
 		t.Fatalf("Claude Code stdio args mismatch:\ngot:  %s\nwant: %s", got, want)
+	}
+}
+
+func TestPrepareProviderSkipsTerraformWhenDockerMissing(t *testing.T) {
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
+
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+
+	profiles := []provider.CredentialProfile{{ProviderID: "terraform", Values: map[string]string{}, Label: "Default"}}
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	plan, err := manager.PrepareProvider(provider.NewTerraformProvider(), profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Operations) != 0 {
+		t.Fatalf("expected no operations when Docker is missing, got %d", len(plan.Operations))
+	}
+	if len(plan.Warnings) != 1 || !strings.Contains(plan.Warnings[0], "docker CLI was not found") {
+		t.Fatalf("expected missing Docker warning, got %v", plan.Warnings)
+	}
+}
+
+func TestPrepareProviderSkipsTerraformWhenDockerDaemonUnavailable(t *testing.T) {
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
+
+	runner := fakeRunner{
+		available: map[string]bool{"docker": true},
+		errors: map[string]error{
+			"docker info --format {{.ServerVersion}}": errors.New("Cannot connect to the Docker daemon"),
+		},
+	}
+	manager, err := NewManager(homeDir, fixedNow(), runner)
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+
+	profiles := []provider.CredentialProfile{{ProviderID: "terraform", Values: map[string]string{}, Label: "Default"}}
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	plan, err := manager.PrepareProvider(provider.NewTerraformProvider(), profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Operations) != 0 {
+		t.Fatalf("expected no operations when Docker daemon is unavailable, got %d", len(plan.Operations))
+	}
+	if len(plan.Warnings) != 1 || !strings.Contains(plan.Warnings[0], "Docker to be running") {
+		t.Fatalf("expected Docker daemon warning, got %v", plan.Warnings)
+	}
+}
+
+func TestPrepareProviderAllowsTerraformWhenDockerReady(t *testing.T) {
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
+
+	runner := fakeRunner{
+		available: map[string]bool{"docker": true},
+		outputs: map[string]string{
+			"docker info --format {{.ServerVersion}}": "27.0.0",
+		},
+	}
+	manager, err := NewManager(homeDir, fixedNow(), runner)
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+
+	profiles := []provider.CredentialProfile{{ProviderID: "terraform", Values: map[string]string{}, Label: "Default"}}
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	plan, err := manager.PrepareProvider(provider.NewTerraformProvider(), profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Warnings) != 0 {
+		t.Fatalf("expected no warnings, got %v", plan.Warnings)
+	}
+	if len(plan.Operations) != 1 {
+		t.Fatalf("expected 1 operation, got %d", len(plan.Operations))
+	}
+	if plan.Operations[0].Config.Command != "docker" {
+		t.Fatalf("expected docker command, got %q", plan.Operations[0].Config.Command)
 	}
 }
 

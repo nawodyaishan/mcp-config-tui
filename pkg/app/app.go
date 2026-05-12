@@ -115,6 +115,8 @@ func (m *Manager) PrepareProvider(
 	}
 
 	plan := ExecutionPlan{}
+	prereqChecked := make(map[int]bool)
+	prereqWarningByProfile := make(map[int]string)
 	for _, appConfig := range m.Apps {
 		if !selected[appConfig.ID] {
 			continue
@@ -132,6 +134,16 @@ func (m *Manager) PrepareProvider(
 		cfg, err := prov.GenerateConfig(profile.Values)
 		if err != nil {
 			return ExecutionPlan{}, fmt.Errorf("generate config for %s: %w", prov.ID(), err)
+		}
+		if !prereqChecked[index] {
+			prereqChecked[index] = true
+			prereqWarningByProfile[index] = providerPrerequisiteWarning(prov.ID(), cfg, m.Runner)
+			if prereqWarningByProfile[index] != "" {
+				plan.Warnings = append(plan.Warnings, prereqWarningByProfile[index])
+			}
+		}
+		if prereqWarningByProfile[index] != "" {
+			continue
 		}
 
 		if appConfig.ID == config.AppClaudeCode {
@@ -179,6 +191,19 @@ func (m *Manager) PrepareProvider(
 	}
 
 	return plan, nil
+}
+
+func providerPrerequisiteWarning(providerID string, cfg provider.MCPConfig, runner CommandRunner) string {
+	if cfg.Type != provider.TransportStdio || cfg.Command != "docker" {
+		return ""
+	}
+	if _, err := runner.LookPath("docker"); err != nil {
+		return fmt.Sprintf("%s requires Docker, but the docker CLI was not found; install Docker and retry", providerID)
+	}
+	if _, err := runner.Run("docker", "info", "--format", "{{.ServerVersion}}"); err != nil {
+		return fmt.Sprintf("%s requires Docker to be running; docker info failed: %s", providerID, redact.Text(err.Error()))
+	}
+	return ""
 }
 
 func buildClaudeCodeAddArgs(providerID string, cfg provider.MCPConfig) []string {
