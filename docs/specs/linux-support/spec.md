@@ -127,9 +127,9 @@ Linux support must make `usync` detect, preview, write, and verify the correct n
 - Existing macOS users should not see path changes in this feature.
 
 ## Open Questions
-- Should VS Code default to user-level `~/.config/Code/User/mcp.json`, workspace `.vscode/mcp.json`, or support both with an explicit target selection later?
-- For Windsurf, should new Linux files be created at `~/.codeium/mcp_config.json` or the existing repo path `~/.codeium/windsurf/mcp_config.json` when neither exists?
-- Should VSCodium and VS Code Insiders extension storage paths be included in this feature or deferred?
+- Resolved: VS Code defaults to user-level `~/.config/Code/User/mcp.json`; workspace `.vscode/mcp.json` support is deferred until target scope selection exists.
+- Resolved: Windsurf path resolution checks existing candidate files first, then creates new Linux config at `~/.codeium/mcp_config.json` when neither candidate exists.
+- Resolved: VSCodium and VS Code Insiders extension storage paths are deferred.
 
 ## Human Approval Status
-- Pending maintainer review and approval before technical planning.
+- Approved to proceed into technical planning. Architecture approval remains required before implementation.

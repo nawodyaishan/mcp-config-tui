@@ -15,7 +15,11 @@ import (
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
-var update = flag.Bool("update", false, "update .golden files")
+func isUpdate() bool {
+	f := flag.Lookup("update")
+	return f != nil && f.Value.String() == "true"
+}
+
 var binaryPath string
 
 func TestMain(m *testing.M) {
@@ -47,6 +51,13 @@ func runBinary(t *testing.T, args []string, homeDir string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
+func runBinaryWithError(t *testing.T, args []string, homeDir string) ([]byte, error) {
+	t.Helper()
+	cmd := exec.Command(binaryPath, args...)
+	cmd.Env = append(os.Environ(), "HOME="+homeDir, "PATH=/usr/bin:/bin")
+	return cmd.CombinedOutput()
+}
+
 func scrubPath(content []byte, pathToScrub string) []byte {
 	return bytes.ReplaceAll(content, []byte(pathToScrub), []byte("{{HOME}}"))
 }
@@ -54,7 +65,7 @@ func scrubPath(content []byte, pathToScrub string) []byte {
 func assertGolden(t *testing.T, actual []byte, goldenFile string) {
 	t.Helper()
 
-	if *update {
+	if isUpdate() {
 		if err := os.MkdirAll(filepath.Dir(goldenFile), 0755); err != nil {
 			t.Fatalf("failed to create golden file directory: %v", err)
 		}
@@ -268,6 +279,62 @@ func TestProviders_Golden(t *testing.T) {
 			}
 
 			validateGoldenFiles(t, "provider_"+prov.ID(), homeDir)
+		})
+	}
+}
+
+func TestCLI_FailureModes(t *testing.T) {
+	cases := []struct {
+		name           string
+		args           []string
+		expectedExit   int
+		expectedStderr string
+	}{
+		{
+			name:           "mutually_exclusive_flags",
+			args:           []string{"--apply", "--dry-run"},
+			expectedExit:   2,
+			expectedStderr: "--dry-run and --apply cannot be used together",
+		},
+		{
+			name:           "missing_keys_in_non_interactive",
+			args:           []string{"--apply"}, // no keys provided
+			expectedExit:   1,
+			expectedStderr: "non-interactive mode requires --keys or --keys-file",
+		},
+		{
+			name:           "invalid_provider_keys",
+			args:           []string{"--apply", "--keys", "invalid-key"},
+			expectedExit:   1,
+			expectedStderr: "no UUID-style Exa API keys found", // Note: The exa provider parses this
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			homeDir := t.TempDir()
+
+			out, err := runBinaryWithError(t, tc.args, homeDir)
+			
+			if err == nil {
+				t.Fatalf("expected command to fail with exit code %d, but it succeeded", tc.expectedExit)
+			}
+
+			exitErr, ok := err.(*exec.ExitError)
+			if !ok {
+				t.Fatalf("expected *exec.ExitError, got %T: %v", err, err)
+			}
+
+			if exitErr.ExitCode() != tc.expectedExit {
+				t.Errorf("expected exit code %d, got %d", tc.expectedExit, exitErr.ExitCode())
+			}
+
+			// We need to check if the error message is present in the combined output
+			if !bytes.Contains(out, []byte(tc.expectedStderr)) {
+				t.Errorf("expected stderr to contain %q\nActual output: %s", tc.expectedStderr, string(out))
+			}
 		})
 	}
 }

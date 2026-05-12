@@ -13,9 +13,9 @@
 - [x] API and integration expectations avoid implementation design.
 
 ## Implementation Readiness
-- [ ] Open questions are resolved or explicitly deferred.
-- [ ] Human approval status is approved.
-- [ ] Spec is ready for technical planning.
+- [x] Open questions are resolved or explicitly deferred.
+- [x] Human approval status is approved.
+- [x] Spec is ready for technical planning.
 
 ## Test Coverage Expectations
 - [x] Unit test expectations are listed.
