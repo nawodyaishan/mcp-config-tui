@@ -19,7 +19,9 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	binaryPath = filepath.Join(dir, "usync")
 	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
@@ -29,7 +31,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Make the binary path available to tests in other packages via env var if needed
-	os.Setenv("USYNC_E2E_BINARY", binaryPath)
+	_ = os.Setenv("USYNC_E2E_BINARY", binaryPath)
 
 	os.Exit(m.Run())
 }
