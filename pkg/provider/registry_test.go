@@ -8,8 +8,8 @@ func TestDefaultRegistryContainsAllProviders(t *testing.T) {
 	r := DefaultRegistry()
 	all := r.All()
 
-	if len(all) != 5 {
-		t.Fatalf("expected 5 providers, got %d", len(all))
+	if len(all) != 6 {
+		t.Fatalf("expected 6 providers, got %d", len(all))
 	}
 
 	if all[0].ID() != "exa" {
@@ -26,6 +26,9 @@ func TestDefaultRegistryContainsAllProviders(t *testing.T) {
 	}
 	if all[4].ID() != "playwright" {
 		t.Fatalf("expected fifth provider to be playwright, got %s", all[4].ID())
+	}
+	if all[5].ID() != "kubernetes" {
+		t.Fatalf("expected sixth provider to be kubernetes, got %s", all[5].ID())
 	}
 
 	p, ok := r.Get("exa")

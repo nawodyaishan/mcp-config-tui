@@ -652,3 +652,121 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		t.Errorf("Antigravity should not be modified for Playwright stdio provider\n%s", data)
 	}
 }
+
+func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
+	homeDir := t.TempDir()
+
+	paths := map[config.AppID]string{
+		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+	}
+	for _, p := range paths {
+		mustWriteFile(t, p, []byte("{}"))
+	}
+	mustWriteFile(t, paths[config.AppCodexCLI], []byte(""))
+
+	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+
+	prov := provider.NewKubernetesProvider()
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "kubernetes",
+		Values:     map[string]string{},
+		Label:      "Default",
+	}}
+	selected := make(map[config.AppID]bool)
+	for _, id := range config.AppOrder {
+		selected[id] = true
+	}
+	assignments := DefaultAssignments(selected, 1)
+
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
+
+	warnings := strings.Join(plan.Warnings, "\n")
+	if !strings.Contains(warnings, "Gemini CLI does not support stdio transport") {
+		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
+	}
+	if !strings.Contains(warnings, "Antigravity does not support stdio transport") {
+		t.Errorf("expected Antigravity skip warning, got:\n%s", warnings)
+	}
+
+	foundClaudeCode := false
+	for _, op := range plan.Operations {
+		if op.AppID == config.AppClaudeCode {
+			foundClaudeCode = true
+			got := strings.Join(op.CLIAddArgs, " ")
+			want := "mcp add -s user kubernetes npx -y kubernetes-mcp-server@latest --read-only"
+			if got != want {
+				t.Fatalf("Claude Code args mismatch:\ngot:  %s\nwant: %s", got, want)
+			}
+		}
+	}
+	if !foundClaudeCode {
+		t.Fatal("expected Claude Code CLI operation")
+	}
+
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+
+	for _, id := range []config.AppID{
+		config.AppClaudeDesktop,
+		config.AppCursor,
+		config.AppVSCode,
+		config.AppWindsurf,
+		config.AppZed,
+		config.AppRooCode,
+		config.AppOpenCode,
+		config.AppKiro,
+	} {
+		data, _ := os.ReadFile(paths[id])
+		if !bytes.Contains(data, []byte(`kubernetes-mcp-server@latest`)) {
+			t.Errorf("%s: expected Kubernetes MCP server package\n%s", id, data)
+		}
+		if !bytes.Contains(data, []byte(`--read-only`)) {
+			t.Errorf("%s: expected read-only flag\n%s", id, data)
+		}
+	}
+
+	data, _ := os.ReadFile(paths[config.AppRooCode])
+	if !bytes.Contains(data, []byte(`"type": "stdio"`)) {
+		t.Errorf("Roo Code: expected stdio type\n%s", data)
+	}
+	if bytes.Contains(data, []byte(`"streamable-http"`)) {
+		t.Errorf("Roo Code: stdio provider must not be written as streamable-http\n%s", data)
+	}
+
+	data, _ = os.ReadFile(paths[config.AppOpenCode])
+	if !bytes.Contains(data, []byte(`"type": "local"`)) {
+		t.Errorf("OpenCode: expected local type for stdio\n%s", data)
+	}
+
+	data, _ = os.ReadFile(paths[config.AppCodexCLI])
+	if !bytes.Contains(data, []byte(`[mcp_servers.kubernetes]`)) ||
+		!bytes.Contains(data, []byte(`command = "npx"`)) ||
+		!bytes.Contains(data, []byte(`"kubernetes-mcp-server@latest"`)) ||
+		!bytes.Contains(data, []byte(`"--read-only"`)) {
+		t.Errorf("Codex: expected read-only stdio TOML\n%s", data)
+	}
+
+	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Gemini CLI should not be modified for Kubernetes stdio provider\n%s", data)
+	}
+	data, _ = os.ReadFile(paths[config.AppAntigravity])
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity should not be modified for Kubernetes stdio provider\n%s", data)
+	}
+}
