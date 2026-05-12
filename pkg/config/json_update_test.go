@@ -199,3 +199,91 @@ func TestUpdateNamedServerJSON_Stdio(t *testing.T) {
 		t.Errorf("expected command npx, got %v", exa["command"])
 	}
 }
+
+func TestUpdateOpenCodeJSONRemoteProvider(t *testing.T) {
+	data := []byte(`{"model":"anthropic/claude","mcp":{"manual":{"type":"remote","url":"https://example.com/mcp"}}}`)
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStreamableHTTP,
+		URL:     "https://mcp.context7.com/mcp",
+		Headers: map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"},
+	}
+
+	updated, err := UpdateOpenCodeJSON(data, "context7", cfg)
+	if err != nil {
+		t.Fatalf("UpdateOpenCodeJSON returned error: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	if root["model"] != "anthropic/claude" {
+		t.Fatalf("expected unrelated model field to survive, got %#v", root["model"])
+	}
+	mcp := root["mcp"].(map[string]any)
+	if _, ok := mcp["manual"].(map[string]any); !ok {
+		t.Fatal("expected unrelated MCP entry to survive")
+	}
+	entry := mcp["context7"].(map[string]any)
+	if entry["type"] != "remote" {
+		t.Fatalf("expected remote type, got %#v", entry["type"])
+	}
+	if entry["url"] != cfg.URL {
+		t.Fatalf("expected url %q, got %#v", cfg.URL, entry["url"])
+	}
+	if entry["enabled"] != true {
+		t.Fatalf("expected enabled=true, got %#v", entry["enabled"])
+	}
+	headers := entry["headers"].(map[string]any)
+	if headers["CONTEXT7_API_KEY"] != "ctx7sk_test" {
+		t.Fatalf("expected header to be written, got %#v", headers)
+	}
+}
+
+func TestUpdateOpenCodeJSONLocalProvider(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"-y", "@playwright/mcp@latest"},
+		Env:     map[string]string{"DEBUG": "pw:mcp"},
+	}
+
+	updated, err := UpdateOpenCodeJSON([]byte("{}"), "playwright", cfg)
+	if err != nil {
+		t.Fatalf("UpdateOpenCodeJSON returned error: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	entry := root["mcp"].(map[string]any)["playwright"].(map[string]any)
+	if entry["type"] != "local" {
+		t.Fatalf("expected local type, got %#v", entry["type"])
+	}
+	command := entry["command"].([]any)
+	if len(command) != 3 || command[0] != "npx" || command[2] != "@playwright/mcp@latest" {
+		t.Fatalf("unexpected command array: %#v", command)
+	}
+	env := entry["environment"].(map[string]any)
+	if env["DEBUG"] != "pw:mcp" {
+		t.Fatalf("expected environment map, got %#v", env)
+	}
+	if entry["enabled"] != true {
+		t.Fatalf("expected enabled=true, got %#v", entry["enabled"])
+	}
+}
+
+func TestUpdateOpenCodeJSONReplacesProviderOnly(t *testing.T) {
+	data := []byte(`{"mcp":{"playwright":{"type":"local","command":["old"]},"manual":{"type":"remote","url":"https://example.com"}}}`)
+	cfg := provider.MCPConfig{Type: provider.TransportHTTP, URL: "https://new.example.com/mcp"}
+
+	updated, err := UpdateOpenCodeJSON(data, "playwright", cfg)
+	if err != nil {
+		t.Fatalf("UpdateOpenCodeJSON returned error: %v", err)
+	}
+
+	root := decodeJSONForTest(t, updated)
+	mcp := root["mcp"].(map[string]any)
+	if _, ok := mcp["manual"].(map[string]any); !ok {
+		t.Fatal("expected manual entry to remain")
+	}
+	entry := mcp["playwright"].(map[string]any)
+	if entry["type"] != "remote" || entry["url"] != "https://new.example.com/mcp" {
+		t.Fatalf("expected provider entry to be replaced, got %#v", entry)
+	}
+}

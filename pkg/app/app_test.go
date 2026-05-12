@@ -245,6 +245,101 @@ func TestPrepareProviderSkipsTerraformWhenDockerMissing(t *testing.T) {
 	}
 }
 
+func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
+	homeDir := t.TempDir()
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "linux")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS returned error: %v", err)
+	}
+
+	key := "11111111-1111-1111-1111-111111111111"
+	selected := map[config.AppID]bool{
+		config.AppClaudeDesktop: true,
+		config.AppVSCode:        true,
+		config.AppOpenCode:      true,
+		config.AppGeminiCLI:     true,
+	}
+	plan, err := manager.Prepare([]string{key}, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("Prepare returned error: %v", err)
+	}
+
+	formatted := FormatPlan(plan)
+	if strings.Contains(formatted, key) {
+		t.Fatal("plan output should not contain full API key")
+	}
+	for _, want := range []string{
+		filepath.Join(homeDir, ".config", "Claude", "claude_desktop_config.json"),
+		filepath.Join(homeDir, ".config", "Code", "User", "mcp.json"),
+		filepath.Join(homeDir, ".config", "opencode", "opencode.json"),
+		filepath.Join(homeDir, ".gemini", "settings.json"),
+	} {
+		if !strings.Contains(formatted, want) {
+			t.Fatalf("expected linux path %s in plan:\n%s", want, formatted)
+		}
+	}
+	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "mcp_config.json")) {
+		t.Fatalf("did not expect linux Gemini CLI plan to include legacy mcp_config.json:\n%s", formatted)
+	}
+}
+
+func TestManagerApplyLinuxOpenCodeRemoteAndLocal(t *testing.T) {
+	homeDir := t.TempDir()
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "linux")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS returned error: %v", err)
+	}
+
+	selected := map[config.AppID]bool{config.AppOpenCode: true}
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "exa",
+		Values:     map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"},
+		Label:      "test",
+	}}
+	remotePlan, err := manager.PrepareProvider(provider.NewExaProvider(), profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider remote returned error: %v", err)
+	}
+	if _, err := manager.Apply(remotePlan); err != nil {
+		t.Fatalf("Apply remote returned error: %v", err)
+	}
+
+	openCodePath := filepath.Join(homeDir, ".config", "opencode", "opencode.json")
+	data, err := os.ReadFile(openCodePath)
+	if err != nil {
+		t.Fatalf("read OpenCode config: %v", err)
+	}
+	if !bytes.Contains(data, []byte(`"type": "remote"`)) || !bytes.Contains(data, []byte(`"enabled": true`)) {
+		t.Fatalf("expected remote OpenCode config, got:\n%s", data)
+	}
+
+	localPlan, err := manager.PrepareProvider(provider.NewPlaywrightProvider(), []provider.CredentialProfile{{ProviderID: "playwright", Label: "Default"}}, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider local returned error: %v", err)
+	}
+	if _, err := manager.Apply(localPlan); err != nil {
+		t.Fatalf("Apply local returned error: %v", err)
+	}
+	data, err = os.ReadFile(openCodePath)
+	if err != nil {
+		t.Fatalf("read OpenCode config: %v", err)
+	}
+	if !bytes.Contains(data, []byte(`"type": "local"`)) || !bytes.Contains(data, []byte(`"command": [`)) {
+		t.Fatalf("expected local OpenCode command array, got:\n%s", data)
+	}
+	if bytes.Contains(data, []byte(`"env"`)) {
+		t.Fatalf("OpenCode config should not use generic env field, got:\n%s", data)
+	}
+}
+
 func TestPrepareProviderSkipsTerraformWhenDockerDaemonUnavailable(t *testing.T) {
 	homeDir := t.TempDir()
 	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")

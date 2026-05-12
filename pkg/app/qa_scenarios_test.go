@@ -859,8 +859,12 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		config.AppKiro,
 	} {
 		data, _ := os.ReadFile(paths[id])
-		if !bytes.Contains(data, []byte(`"command": "docker"`)) {
-			t.Errorf("%s: expected Docker command\n%s", id, data)
+		if id == config.AppOpenCode {
+			if !bytes.Contains(data, []byte(`"command": [`)) || !bytes.Contains(data, []byte(`"docker"`)) {
+				t.Errorf("%s: expected Docker command array\n%s", id, data)
+			}
+		} else if !bytes.Contains(data, []byte(`"command": "docker"`)) {
+			t.Errorf("%s: expected Docker command string\n%s", id, data)
 		}
 		if !bytes.Contains(data, []byte(`hashicorp/terraform-mcp-server:0.5.2`)) {
 			t.Errorf("%s: expected Terraform MCP image\n%s", id, data)

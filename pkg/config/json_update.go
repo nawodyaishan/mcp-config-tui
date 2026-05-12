@@ -108,6 +108,41 @@ func UpdateNamedServerJSON(data []byte, providerID, rootKey, urlFieldName string
 	return marshalJSON(root)
 }
 
+func UpdateOpenCodeJSON(data []byte, providerID string, cfg provider.MCPConfig) ([]byte, error) {
+	root, err := decodeJSONObject(data)
+	if err != nil {
+		return nil, err
+	}
+
+	servers := ensureObject(root, "mcp")
+	entry := map[string]any{
+		"enabled": true,
+	}
+	if cfg.Type == provider.TransportStdio {
+		command := make([]string, 0, 1+len(cfg.Args))
+		command = append(command, cfg.Command)
+		command = append(command, cfg.Args...)
+		entry["type"] = "local"
+		entry["command"] = command
+		if len(cfg.Env) > 0 {
+			entry["environment"] = cfg.Env
+		}
+	} else {
+		entry["type"] = "remote"
+		entry["url"] = cfg.URL
+		if len(cfg.Headers) > 0 {
+			headers := make(map[string]string, len(cfg.Headers))
+			for k, v := range cfg.Headers {
+				headers[k] = v
+			}
+			entry["headers"] = headers
+		}
+	}
+	servers[providerID] = entry
+
+	return marshalJSON(root)
+}
+
 func decodeJSONObject(data []byte) (map[string]any, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {

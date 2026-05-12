@@ -201,6 +201,11 @@ func verifyGenericProviderFile(path string, kind config.FileKind, providerID str
 func verifyGenericStdioServer(path string, server map[string]any, cfg provider.MCPConfig) Result {
 	command, _ := server["command"].(string)
 	if command == "" {
+		if commandList, ok := server["command"].([]any); ok && len(commandList) > 0 {
+			command, _ = commandList[0].(string)
+		}
+	}
+	if command == "" {
 		return failure(path, "missing stdio command field")
 	}
 	if command != cfg.Command {

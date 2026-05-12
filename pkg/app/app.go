@@ -544,6 +544,10 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		}
 		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, urlFieldName, op.Config, nil)
 	case config.FileKindNamedServer:
+		if op.AppID == config.AppOpenCode {
+			updated, err = config.UpdateOpenCodeJSON(data, op.ProviderID, op.Config)
+			break
+		}
 		rootKey := ""
 		urlFieldName := "url"
 		var extra map[string]any
@@ -556,13 +560,6 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 			}
 		case config.AppZed:
 			rootKey = "context_servers"
-		case config.AppOpenCode:
-			rootKey = "mcp"
-			if op.Config.Type == provider.TransportStdio {
-				extra = map[string]any{"type": "local", "enabled": true}
-			} else {
-				extra = map[string]any{"type": "remote", "enabled": true}
-			}
 		case config.AppAntigravity:
 			// Backward compatibility: Antigravity used to be a named server but now we use FileKindMCPServers
 			// with serverUrl if it's nested. If it's a legacy standalone file, this path still works.
