@@ -41,6 +41,7 @@ func buildConfigMap(cfg provider.MCPConfig, urlFieldName string, extra map[strin
 }
 
 func UpdateMCPServersJSON(data []byte, providerID, rootKey, urlFieldName string, cfg provider.MCPConfig, extra map[string]any) ([]byte, error) {
+	fmt.Printf("DEBUG: UpdateMCPServersJSON providerID=%s rootKey=%s urlField=%s\n", providerID, rootKey, urlFieldName)
 	root, err := decodeJSONObject(data)
 	if err != nil {
 		return nil, err
@@ -51,9 +52,19 @@ func UpdateMCPServersJSON(data []byte, providerID, rootKey, urlFieldName string,
 	}
 
 	servers := ensureObject(root, rootKey)
+	fmt.Printf("DEBUG: UpdateMCPServersJSON servers keys before update: %v\n", getKeys(servers))
 	servers[providerID] = buildConfigMap(cfg, urlFieldName, extra)
+	fmt.Printf("DEBUG: UpdateMCPServersJSON servers keys after update: %v\n", getKeys(servers))
 
 	return marshalJSON(root)
+}
+
+func getKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func UpdateBareMCPServersJSON(data []byte, providerID, urlFieldName string, cfg provider.MCPConfig, extra map[string]any) ([]byte, error) {
@@ -175,6 +186,9 @@ func ensureObject(root map[string]any, key string) map[string]any {
 }
 
 func marshalJSON(root map[string]any) ([]byte, error) {
+	if len(root) == 0 {
+		fmt.Printf("DEBUG: marshalJSON called with empty root\n")
+	}
 	data, err := json.MarshalIndent(root, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal JSON config: %w", err)

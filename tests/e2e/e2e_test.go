@@ -49,7 +49,11 @@ func runBinary(t *testing.T, args []string, homeDir string) ([]byte, error) {
 	// Set a restricted PATH so real system binaries like `claude` or `docker`
 	// aren't executed, ensuring determinism across different environments.
 	cmd.Env = e2eEnv(homeDir)
-	return cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
+	if len(out) > 0 {
+		t.Logf("Binary output:\n%s", string(out))
+	}
+	return out, err
 }
 
 func runBinaryWithError(t *testing.T, args []string, homeDir string) ([]byte, error) {
