@@ -104,6 +104,39 @@ func TestVerifyProviderFile_GenericHTTP(t *testing.T) {
 	}
 }
 
+func TestVerifyProviderFile_GenericCodexStdio(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	_ = os.WriteFile(path, []byte(`[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+`), 0o600)
+
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"@playwright/mcp@latest"},
+	}
+	result := VerifyProviderFile(path, config.FileKindCodexTOML, "playwright", cfg)
+	if result.Status != StatusOK {
+		t.Fatalf("expected OK, got %s: %v", result.Status, result.Details)
+	}
+}
+
+func TestVerifyProviderFile_GenericCodexStdioMissingCommand(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	_ = os.WriteFile(path, []byte(`[mcp_servers.playwright]
+args = ["@playwright/mcp@latest"]
+`), 0o600)
+
+	cfg := provider.MCPConfig{Type: provider.TransportStdio, Command: "npx"}
+	result := VerifyProviderFile(path, config.FileKindCodexTOML, "playwright", cfg)
+	if result.Status != StatusFailed {
+		t.Fatalf("expected failed, got %s: %v", result.Status, result.Details)
+	}
+}
+
 func TestVerifyProviderFile_GenericMissingEntry(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")

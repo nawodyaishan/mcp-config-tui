@@ -144,7 +144,7 @@ func (m *Manager) PrepareProvider(
 				ProviderID:      prov.ID(),
 				Config:          cfg,
 				CLIRemoveArgs:   []string{"mcp", "remove", prov.ID(), "-s", "user"},
-				CLIAddArgs:      []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", prov.ID(), cfg.URL},
+				CLIAddArgs:      buildClaudeCodeAddArgs(prov.ID(), cfg),
 			}
 			if _, err := m.Runner.LookPath("claude"); err != nil {
 				op.SkipReason = "claude CLI not found; skipping direct mutation of ~/.claude.json"
@@ -179,6 +179,15 @@ func (m *Manager) PrepareProvider(
 	}
 
 	return plan, nil
+}
+
+func buildClaudeCodeAddArgs(providerID string, cfg provider.MCPConfig) []string {
+	if cfg.Type == provider.TransportStdio {
+		args := []string{"mcp", "add", "-s", "user", providerID, cfg.Command}
+		args = append(args, cfg.Args...)
+		return args
+	}
+	return []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", providerID, cfg.URL}
 }
 
 func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {
@@ -495,7 +504,11 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		case config.AppAntigravity, config.AppWindsurf:
 			urlFieldName = "serverUrl"
 		case config.AppRooCode:
-			extra = map[string]any{"type": "streamable-http"}
+			if op.Config.Type == provider.TransportStdio {
+				extra = map[string]any{"type": "stdio"}
+			} else {
+				extra = map[string]any{"type": "streamable-http"}
+			}
 		}
 
 		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
@@ -513,12 +526,18 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		switch op.AppID {
 		case config.AppVSCode:
 			rootKey = "servers"
-			extra = map[string]any{"type": "http"}
+			if op.Config.Type != provider.TransportStdio {
+				extra = map[string]any{"type": "http"}
+			}
 		case config.AppZed:
 			rootKey = "context_servers"
 		case config.AppOpenCode:
 			rootKey = "mcp"
-			extra = map[string]any{"type": "remote", "enabled": true}
+			if op.Config.Type == provider.TransportStdio {
+				extra = map[string]any{"type": "local", "enabled": true}
+			} else {
+				extra = map[string]any{"type": "remote", "enabled": true}
+			}
 		case config.AppAntigravity:
 			// Backward compatibility: Antigravity used to be a named server but now we use FileKindMCPServers
 			// with serverUrl if it's nested. If it's a legacy standalone file, this path still works.

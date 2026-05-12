@@ -14,6 +14,7 @@ func DefaultRegistry() Registry {
 	r.register(NewGitHubProvider())
 	r.register(NewContext7Provider())
 	r.register(NewTavilyProvider())
+	r.register(NewPlaywrightProvider())
 	return r
 }
 

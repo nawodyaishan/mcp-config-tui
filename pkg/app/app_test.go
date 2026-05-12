@@ -154,6 +154,37 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	}
 }
 
+func TestPrepareProviderBuildsClaudeCodeStdioArgs(t *testing.T) {
+	homeDir := t.TempDir()
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+
+	prov := provider.NewPlaywrightProvider()
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "playwright",
+		Values:     map[string]string{},
+		Label:      "Default",
+	}}
+	selected := map[config.AppID]bool{config.AppClaudeCode: true}
+	assignments := DefaultAssignments(selected, 1)
+
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Operations) != 1 {
+		t.Fatalf("expected 1 operation, got %d", len(plan.Operations))
+	}
+
+	got := strings.Join(plan.Operations[0].CLIAddArgs, " ")
+	want := "mcp add -s user playwright npx @playwright/mcp@latest"
+	if got != want {
+		t.Fatalf("Claude Code stdio args mismatch:\ngot:  %s\nwant: %s", got, want)
+	}
+}
+
 func TestManagerApplyRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 	homeDir := t.TempDir()
 	firstPath := filepath.Join(homeDir, ".gemini", "settings.json")

@@ -126,6 +126,7 @@ func TestCanHandle(t *testing.T) {
 		{config.AppGeminiCLI, provider.TransportStdio, false}, // no support, no bridge
 		{config.AppAntigravity, provider.TransportStdio, false},
 		{config.AppCursor, provider.TransportStdio, true},
+		{config.AppCodexCLI, provider.TransportStdio, true},
 		{config.AppID("unknown"), provider.TransportStdio, false},
 	}
 	for _, tt := range tests {

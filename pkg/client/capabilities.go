@@ -76,7 +76,6 @@ var Matrix = map[config.AppID]Capability{
 		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
 	},
 	config.AppCodexCLI: {
-		// TODO: Codex TOML writer does not support stdio yet, so mark false.
-		Supports: TransportSupport{StreamableHTTP: true, HTTP: true, Stdio: false},
+		Supports: TransportSupport{StreamableHTTP: true, HTTP: true, Stdio: true},
 	},
 }

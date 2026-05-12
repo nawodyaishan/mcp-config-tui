@@ -52,3 +52,40 @@ func TestUpdateCodexTOML_WritesHttpHeaders(t *testing.T) {
 		t.Errorf("expected header key:\n%s", result)
 	}
 }
+
+func TestUpdateCodexTOML_WritesStdio(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"@playwright/mcp@latest"},
+	}
+	result, err := UpdateCodexTOML([]byte(""), "playwright", cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(result, []byte(`[mcp_servers.playwright]`)) {
+		t.Errorf("expected Playwright section:\n%s", result)
+	}
+	if !bytes.Contains(result, []byte(`command = "npx"`)) {
+		t.Errorf("expected command in TOML:\n%s", result)
+	}
+	if !bytes.Contains(result, []byte(`args = ["@playwright/mcp@latest"]`)) {
+		t.Errorf("expected args in TOML:\n%s", result)
+	}
+}
+
+func TestUpdateCodexTOML_WritesStdioEnv(t *testing.T) {
+	cfg := provider.MCPConfig{
+		Type:    provider.TransportStdio,
+		Command: "npx",
+		Args:    []string{"-y", "tavily-mcp@latest"},
+		Env:     map[string]string{"TAVILY_API_KEY": "tvly_test"},
+	}
+	result, err := UpdateCodexTOML([]byte(""), "tavily", cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(result, []byte(`env = { "TAVILY_API_KEY" = "tvly_test" }`)) {
+		t.Errorf("expected env inline table in TOML:\n%s", result)
+	}
+}

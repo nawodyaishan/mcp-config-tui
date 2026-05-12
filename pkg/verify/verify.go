@@ -248,6 +248,8 @@ func readServerEntryByKind(path string, kind config.FileKind, providerID string)
 			}
 		}
 		return readRootServerEntry(path, providerID)
+	case config.FileKindCodexTOML:
+		return readCodexServerEntry(path, providerID)
 	default:
 		return nil, fmt.Errorf("verification not supported for kind %q", kind)
 	}
@@ -407,6 +409,47 @@ func readRootServerEntry(path, providerID string) (map[string]any, error) {
 		return nil, fmt.Errorf("missing %s entry", providerID)
 	}
 	return server, nil
+}
+
+func readCodexServerEntry(path, providerID string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	section := "[mcp_servers." + providerID + "]"
+	lines := strings.Split(string(data), "\n")
+	inSection := false
+	server := make(map[string]any)
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if isTOMLSectionHeader(trimmed) {
+			if trimmed == section {
+				inSection = true
+				continue
+			}
+			if inSection {
+				break
+			}
+		}
+		if !inSection {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(trimmed, "url = "):
+			server["url"] = strings.Trim(strings.TrimPrefix(trimmed, "url = "), `"`)
+		case strings.HasPrefix(trimmed, "command = "):
+			server["command"] = strings.Trim(strings.TrimPrefix(trimmed, "command = "), `"`)
+		}
+	}
+	if !inSection {
+		return nil, fmt.Errorf("missing %s block", section)
+	}
+	return server, nil
+}
+
+func isTOMLSectionHeader(line string) bool {
+	return strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]")
 }
 
 func inspectExaServer(path string, server map[string]any, cfg provider.MCPConfig) Result {
