@@ -94,12 +94,17 @@ func NewManager(homeDir string, now func() time.Time, runner CommandRunner) (*Ma
 		return nil, err
 	}
 
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	if os.Getenv("USYNC_DEBUG") == "true" {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	}
+
 	return &Manager{
 		HomeDir:     homeDir,
 		Apps:        apps,
 		Now:         now,
 		Runner:      runner,
-		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger:      logger,
 		WriteConfig: config.WriteWithBackup,
 	}, nil
 }
@@ -142,6 +147,9 @@ func (m *Manager) PrepareProvider(
 		if err != nil {
 			return ExecutionPlan{}, fmt.Errorf("generate config for %s: %w", prov.ID(), err)
 		}
+
+		m.logDebug("preparing app", "app", appConfig.Name, "id", appConfig.ID, "transport", cfg.Type)
+
 		if !prereqChecked[index] {
 			prereqChecked[index] = true
 			prereqWarningByProfile[index] = providerPrerequisiteWarning(prov.ID(), cfg, m.Runner)
@@ -150,10 +158,12 @@ func (m *Manager) PrepareProvider(
 			}
 		}
 		if prereqWarningByProfile[index] != "" {
+			m.logDebug("skipping app due to prerequisite failure", "app", appConfig.Name)
 			continue
 		}
 
 		if appConfig.ID == config.AppClaudeCode {
+			m.logDebug("handling Claude Code", "app", appConfig.Name)
 			op := Operation{
 				AppID:           appConfig.ID,
 				AppName:         appConfig.Name,
@@ -174,13 +184,17 @@ func (m *Manager) PrepareProvider(
 		}
 
 		if !client.CanHandle(appConfig.ID, cfg.Type) {
+			m.logDebug("client cannot handle transport", "app", appConfig.Name, "transport", cfg.Type)
 			plan.Warnings = append(plan.Warnings, fmt.Sprintf(
 				"%s does not support %s transport — skipping %s",
 				appConfig.Name, cfg.Type, prov.ID(),
 			))
 			continue
 		}
+
+		m.logDebug("handling files for app", "app", appConfig.Name, "fileCount", len(appConfig.Files))
 		for _, file := range appConfig.Files {
+			m.logDebug("adding operation for file", "app", appConfig.Name, "file", file.Label, "path", file.Path)
 			fileCfg := client.Adapt(appConfig.ID, cfg)
 			plan.Operations = append(plan.Operations, Operation{
 				AppID:           appConfig.ID,
@@ -487,8 +501,11 @@ func (m *Manager) prepareOperations(plan ExecutionPlan, result *ApplyResult) ([]
 	cliOps := make([]Operation, 0, 1)
 	seenApps := make(map[config.AppID]bool)
 
+	m.logDebug("preparing operations", "count", len(plan.Operations))
+
 	for _, op := range plan.Operations {
 		if op.SkipReason != "" {
+			m.logDebug("skipping operation due to SkipReason", "app", op.AppName, "reason", op.SkipReason)
 			result.Warnings = append(result.Warnings, op.SkipReason)
 			continue
 		}
@@ -496,12 +513,14 @@ func (m *Manager) prepareOperations(plan ExecutionPlan, result *ApplyResult) ([]
 		seenApps[op.AppID] = true
 		switch op.Kind {
 		case config.FileKindMCPServers, config.FileKindBareMCPServers, config.FileKindNamedServer, config.FileKindCodexTOML:
+			m.logDebug("preparing file operation", "app", op.AppName, "path", op.Path)
 			item, err := m.prepareFileOperation(op)
 			if err != nil {
 				return nil, nil, nil, err
 			}
 			prepared = append(prepared, item)
 		case config.FileKindClaudeCodeCLI:
+			m.logDebug("preparing Claude Code CLI operation", "app", op.AppName)
 			cliOps = append(cliOps, op)
 		default:
 			return nil, nil, nil, fmt.Errorf("unsupported operation kind %q", op.Kind)
@@ -516,10 +535,12 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		return preparedWrite{}, fmt.Errorf("%s (%s): %w", op.AppName, op.FileLabel, err)
 	}
 
-	data, _, err := config.ReadFileOrEmpty(op.Path)
+	data, existed, err := config.ReadFileOrEmpty(op.Path)
 	if err != nil {
 		return preparedWrite{}, err
 	}
+
+	m.logDebug("read existing config", "path", op.Path, "existed", existed, "size", len(data))
 
 	op.Config.Headers = client.HeadersFor(op.AppID, op.Config.Headers) // augment per-client
 
@@ -543,12 +564,14 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 			}
 		}
 
+		m.logDebug("updating MCPServers JSON", "app", op.AppID, "rootKey", rootKey, "urlField", urlFieldName)
 		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindBareMCPServers:
 		urlFieldName := "url"
 		if op.AppID == config.AppGeminiCLI {
 			urlFieldName = "httpUrl"
 		}
+		m.logDebug("updating BareMCPServers JSON", "app", op.AppID, "urlField", urlFieldName)
 		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, urlFieldName, op.Config, nil)
 	case config.FileKindNamedServer:
 		if op.AppID == config.AppOpenCode {
@@ -572,8 +595,10 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 			// with serverUrl if it's nested. If it's a legacy standalone file, this path still works.
 			urlFieldName = "serverUrl"
 		}
+		m.logDebug("updating NamedServer JSON", "app", op.AppID, "rootKey", rootKey, "urlField", urlFieldName)
 		updated, err = config.UpdateNamedServerJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindCodexTOML:
+		m.logDebug("updating Codex TOML", "app", op.AppID)
 		updated, err = config.UpdateCodexTOML(data, op.ProviderID, op.Config)
 	default:
 		err = fmt.Errorf("unsupported file operation kind %q", op.Kind)
@@ -582,6 +607,7 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		return preparedWrite{}, fmt.Errorf("%s (%s): %w", op.AppName, op.FileLabel, err)
 	}
 
+	m.logDebug("prepared content", "app", op.AppName, "size", len(updated))
 	return preparedWrite{op: op, content: updated}, nil
 }
 

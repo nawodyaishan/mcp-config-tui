@@ -70,6 +70,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if os.Getenv("USYNC_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "DEBUG: detected %d apps\n", len(manager.Apps))
+		for _, a := range manager.Apps {
+			fmt.Fprintf(os.Stderr, "DEBUG: app %s id=%s files=%d\n", a.Name, a.ID, len(a.Files))
+		}
+	}
+
 	initialKeys, initialRaw, err := loadInitialKeys(keysCSV, keysFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -97,11 +104,19 @@ func main() {
 	}
 
 	selected := mapAllSelected(manager.Apps)
+	if os.Getenv("USYNC_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "DEBUG: selected %d apps\n", len(selected))
+	}
 	assignments := app.DefaultAssignments(selected, len(initialKeys))
+
 	plan, err := manager.Prepare(initialKeys, selected, assignments)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+
+	if os.Getenv("USYNC_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "DEBUG: plan has %d operations\n", len(plan.Operations))
 	}
 
 	if dryRun {
