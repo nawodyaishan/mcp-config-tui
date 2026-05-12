@@ -5,13 +5,36 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 )
 
 type previewModel struct {
-	ctx *wizardContext
+	ctx      *wizardContext
+	spinner  spinner.Model
+	applying bool
+}
+
+type applyResultMsg struct {
+	result app.ApplyResult
+	err    error
+}
+
+func newPreviewModel(ctx *wizardContext) previewModel {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(colorAccent)
+	return previewModel{ctx: ctx, spinner: s}
+}
+
+func runApplyCmd(ctx *wizardContext) tea.Cmd {
+	return func() tea.Msg {
+		result, err := ctx.manager.Apply(ctx.plan)
+		return applyResultMsg{result: result, err: err}
+	}
 }
 
 func (m previewModel) Init() tea.Cmd {
@@ -21,27 +44,47 @@ func (m previewModel) Init() tea.Cmd {
 func (m previewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.applying {
+			return m, nil
+		}
 		switch msg.String() {
-		case "b":
+		case "b", "esc":
 			return m, signalBack
 		case "enter":
-			result, err := m.ctx.manager.Apply(m.ctx.plan)
-			if err != nil {
-				m.ctx.err = err
-				return m, nil
-			}
-			m.ctx.result = result
-			return m, signalNext
+			m.applying = true
+			return m, tea.Batch(runApplyCmd(m.ctx), m.spinner.Tick)
+		}
+	case applyResultMsg:
+		m.applying = false
+		if msg.err != nil {
+			m.ctx.err = msg.err
+			return m, nil
+		}
+		m.ctx.err = nil
+		m.ctx.result = msg.result
+		return m, signalNext
+	case spinner.TickMsg:
+		if m.applying {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
 		}
 	}
 	return m, nil
 }
 
 func (m previewModel) View() string {
+	if m.applying {
+		return renderSection(
+			"Applying",
+			m.spinner.View()+" Applying configuration…",
+			renderKeyHelp("ctrl+c quit"),
+		)
+	}
 	return renderSection(
 		"Preview",
 		renderPreviewPlan(m.ctx.plan, m.ctx.manager.HomeDir),
-		renderKeyHelp("enter apply", "b back", "ctrl+c quit"),
+		renderKeyHelp("enter apply", "esc back", "? help", "ctrl+c quit"),
 	)
 }
 

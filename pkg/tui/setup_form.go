@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
@@ -65,6 +67,7 @@ func (sf *setupForm) rebuildForm() {
 			Title("Provider").
 			Description("Choose the MCP server profile to install").
 			Options(providerOptions...).
+			Filtering(true).
 			Value(&sf.selectedProvider),
 
 		huh.NewMultiSelect[config.AppID]().
@@ -101,7 +104,9 @@ func (sf *setupForm) rebuildForm() {
 		}
 	}
 
-	sf.form = huh.NewForm(huh.NewGroup(fields...)).WithTheme(huh.ThemeCatppuccin())
+	sf.form = huh.NewForm(huh.NewGroup(fields...)).
+		WithTheme(huh.ThemeCatppuccin()).
+		WithAccessible(os.Getenv("ACCESSIBLE") != "")
 }
 
 func (sf *setupForm) update(msg tea.Msg) (*setupForm, tea.Cmd) {

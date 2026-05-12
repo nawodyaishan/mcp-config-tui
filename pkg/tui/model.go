@@ -20,9 +20,10 @@ const (
 )
 
 type Model struct {
-	ctx   *wizardContext
-	stage stage
-	width int
+	ctx      *wizardContext
+	stage    stage
+	width    int
+	showHelp bool
 
 	// Sub-models
 	setupForm   *setupForm
@@ -70,7 +71,7 @@ func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Mod
 		stage:       stageSetup,
 		setupForm:   newSetupForm(ctx, initialRaw),
 		assignments: assignmentModel{ctx: ctx},
-		preview:     previewModel{ctx: ctx},
+		preview:     newPreviewModel(ctx),
 		results:     resultsModel{ctx: ctx},
 	}
 	return model
@@ -86,6 +87,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "?":
+			m.showHelp = !m.showHelp
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -117,17 +121,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stage = stageAssignments
 		}
 	case stageAssignments:
-		_, cmd = m.assignments.Update(msg)
+		next, c := m.assignments.Update(msg)
+		if a, ok := next.(assignmentModel); ok {
+			m.assignments = a
+		}
+		cmd = c
 	case stagePreview:
-		_, cmd = m.preview.Update(msg)
+		next, c := m.preview.Update(msg)
+		if p, ok := next.(previewModel); ok {
+			m.preview = p
+		}
+		cmd = c
 	case stageResults:
-		_, cmd = m.results.Update(msg)
+		next, c := m.results.Update(msg)
+		if r, ok := next.(resultsModel); ok {
+			m.results = r
+		}
+		cmd = c
 	}
 
 	return m, cmd
 }
 
 func (m Model) View() string {
+	if m.showHelp {
+		return renderShell(renderHelpOverlay(), m.stage, m.width)
+	}
+
 	view := ""
 	switch m.stage {
 	case stageSetup:

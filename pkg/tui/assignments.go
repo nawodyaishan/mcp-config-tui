@@ -50,7 +50,7 @@ func (m assignmentModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ctx.err = nil
 		m.ctx.plan = plan
 		return m, signalNext
-	case "b":
+	case "b", "esc":
 		return m, signalBack
 	}
 	return m, nil
@@ -66,10 +66,15 @@ func (m assignmentModel) View() string {
 		}
 		fmt.Fprintf(&builder, "%s %s -> %s\n", cursor, config.AppName(appID), assignmentLabel(m.ctx.profiles, m.ctx.assignments[appID]))
 	}
+	hints := []string{"up/down move"}
+	if len(m.ctx.profiles) > 1 {
+		hints = append(hints, "left/right change")
+	}
+	hints = append(hints, "enter preview", "esc back")
 	return renderSection(
 		"Distribute Credentials",
 		builder.String(),
-		renderKeyHelp("up/down move", "left/right change", "enter preview", "b back"),
+		renderKeyHelp(hints...),
 	)
 }
 

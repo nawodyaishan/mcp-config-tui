@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -61,5 +62,150 @@ func TestModelPreloaded(t *testing.T) {
 	}
 	if len(m.ctx.profiles) != 1 {
 		t.Errorf("expected 1 profile, got %d", len(m.ctx.profiles))
+	}
+}
+
+func TestPreviewModel_EnterStartsApply(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+
+	next, cmd := pm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	p, ok := next.(previewModel)
+	if !ok {
+		t.Fatal("expected previewModel")
+	}
+	if !p.applying {
+		t.Error("expected applying=true after enter")
+	}
+	if cmd == nil {
+		t.Error("expected non-nil cmd (batch of apply+spinner tick)")
+	}
+}
+
+func TestPreviewModel_ResultTransitionsToNext(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+	pm.applying = true
+
+	result := app.ApplyResult{}
+	next, cmd := pm.Update(applyResultMsg{result: result, err: nil})
+	p, ok := next.(previewModel)
+	if !ok {
+		t.Fatal("expected previewModel")
+	}
+	if p.applying {
+		t.Error("expected applying=false after result")
+	}
+	if ctx.err != nil {
+		t.Errorf("expected no error, got %v", ctx.err)
+	}
+	if cmd == nil {
+		t.Error("expected signalNext cmd")
+	}
+	// Verify the cmd fires a nextMsg
+	msg := cmd()
+	if _, ok := msg.(nextMsg); !ok {
+		t.Errorf("expected nextMsg, got %T", msg)
+	}
+}
+
+func TestPreviewModel_ErrorStaysOnPreview(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+	pm.applying = true
+
+	applyErr := errors.New("disk full")
+	next, cmd := pm.Update(applyResultMsg{err: applyErr})
+	p, ok := next.(previewModel)
+	if !ok {
+		t.Fatal("expected previewModel")
+	}
+	if p.applying {
+		t.Error("expected applying=false after error result")
+	}
+	if ctx.err == nil || ctx.err.Error() != "disk full" {
+		t.Errorf("expected ctx.err='disk full', got %v", ctx.err)
+	}
+	if cmd != nil {
+		msg := cmd()
+		if _, isNext := msg.(nextMsg); isNext {
+			t.Error("must not advance stage on error")
+		}
+	}
+}
+
+func TestPreviewModel_BlocksInputWhileApplying(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+	pm.applying = true
+
+	next, cmd := pm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	p, ok := next.(previewModel)
+	if !ok {
+		t.Fatal("expected previewModel")
+	}
+	if !p.applying {
+		t.Error("applying should remain true while blocked")
+	}
+	if cmd != nil {
+		t.Error("no cmd expected when input is blocked")
+	}
+}
+
+func TestPreviewModel_SpinnerTickUpdatesFrame(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+	pm.applying = true
+
+	tick := pm.spinner.Tick() // invoke the Cmd to get the TickMsg
+	next, cmd := pm.Update(tick)
+	_, ok := next.(previewModel)
+	if !ok {
+		t.Fatal("expected previewModel")
+	}
+	if cmd == nil {
+		t.Error("spinner should schedule another tick while applying")
+	}
+}
+
+func TestPreviewModel_SpinnerTickIgnoredWhenNotApplying(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	ctx := &wizardContext{manager: manager}
+	pm := newPreviewModel(ctx)
+	// applying == false
+
+	tick := pm.spinner.Tick()
+	_, cmd := pm.Update(tick)
+	if cmd != nil {
+		t.Error("spinner tick should be ignored when not applying")
+	}
+}
+
+func TestModel_SubModelStatePreserved(t *testing.T) {
+	manager, _ := app.NewManager("/tmp/test", nil, nil)
+	keys := []string{"11111111-1111-1111-1111-111111111111"}
+	m := NewModel(manager, keys, "")
+
+	// Manually advance to assignments stage so cursor navigation is active
+	m.stage = stageAssignments
+	m.ctx.selected = map[config.AppID]bool{config.AppClaudeDesktop: true, config.AppClaudeCode: true}
+
+	// Move cursor down
+	m2, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	model2 := m2.(Model)
+	if model2.assignments.cursor != 1 {
+		t.Errorf("expected cursor=1 after down key, got %d", model2.assignments.cursor)
+	}
+
+	// Move cursor up
+	m3, _ := model2.Update(tea.KeyMsg{Type: tea.KeyUp})
+	model3 := m3.(Model)
+	if model3.assignments.cursor != 0 {
+		t.Errorf("expected cursor=0 after up key, got %d", model3.assignments.cursor)
 	}
 }

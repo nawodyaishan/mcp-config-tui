@@ -12,47 +12,61 @@ import (
 const defaultViewWidth = 88
 
 var (
+	colorBorder      = lipgloss.AdaptiveColor{Light: "57", Dark: "99"}
+	colorPanelBorder = lipgloss.AdaptiveColor{Light: "55", Dark: "62"}
+	colorAccent      = lipgloss.AdaptiveColor{Light: "28", Dark: "114"}
+	colorBrand       = lipgloss.AdaptiveColor{Light: "136", Dark: "229"}
+	colorMuted       = lipgloss.AdaptiveColor{Light: "240", Dark: "244"}
+	colorStep        = lipgloss.AdaptiveColor{Light: "241", Dark: "245"}
+	colorSection     = lipgloss.AdaptiveColor{Light: "93", Dark: "183"}
+	colorError       = lipgloss.AdaptiveColor{Light: "160", Dark: "203"}
+	colorWarning     = lipgloss.AdaptiveColor{Light: "166", Dark: "214"}
+	colorDim         = lipgloss.AdaptiveColor{Light: "246", Dark: "240"}
+
 	shellStyle = lipgloss.NewStyle().
 			Padding(1, 2).
 			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(lipgloss.Color("99"))
+			BorderForeground(colorBorder)
 	panelStyle = lipgloss.NewStyle().
 			PaddingLeft(1).
 			Border(lipgloss.NormalBorder(), false, false, false, true).
-			BorderForeground(lipgloss.Color("62"))
+			BorderForeground(colorPanelBorder)
 	markStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("114")).
+			Foreground(colorAccent).
 			Bold(true)
 	brandStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("229")).
+			Foreground(colorBrand).
 			Bold(true)
 	accentStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("114")).
+			Foreground(colorAccent).
 			Bold(true)
 	mutedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244"))
+			Foreground(colorMuted)
 	stepStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
+			Foreground(colorStep).
 			Padding(0, 1)
 	activeStepStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("16")).
-			Background(lipgloss.Color("114")).
+			Background(colorAccent).
 			Bold(true).
 			Padding(0, 1)
+	doneStepStyle = lipgloss.NewStyle().
+			Foreground(colorAccent).
+			Padding(0, 1)
 	sectionTitleStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("183")).
+				Foreground(colorSection).
 				Bold(true)
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("203")).
+			Foreground(colorError).
 			Bold(true)
 	successStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("114")).
+			Foreground(colorAccent).
 			Bold(true)
 	warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")).
+			Foreground(colorWarning).
 			Bold(true)
 	dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
+			Foreground(colorDim)
 )
 
 func selectedAppIDs(apps []config.AppConfig, selected map[config.AppID]bool) []config.AppID {
@@ -109,14 +123,17 @@ func renderShell(body string, current stage, width int) string {
 }
 
 func renderStageBar(current stage) string {
-	labels := []string{"1 Setup", "2 Assign", "3 Preview", "4 Results"}
+	labels := []string{"Setup", "Assign", "Preview", "Results"}
 	parts := make([]string, len(labels))
 	for i, label := range labels {
-		if stage(i) == current {
-			parts[i] = activeStepStyle.Render(label)
-			continue
+		switch {
+		case stage(i) == current:
+			parts[i] = activeStepStyle.Render(fmt.Sprintf("%d %s", i+1, label))
+		case stage(i) < current:
+			parts[i] = doneStepStyle.Render(fmt.Sprintf("✓ %s", label))
+		default:
+			parts[i] = stepStyle.Render(fmt.Sprintf("%d %s", i+1, label))
 		}
-		parts[i] = stepStyle.Render(label)
 	}
 	return strings.Join(parts, mutedStyle.Render(" -> "))
 }
@@ -131,4 +148,41 @@ func renderSection(title, body, help string) string {
 
 func renderKeyHelp(items ...string) string {
 	return fmt.Sprintf("[%s]", strings.Join(items, "] ["))
+}
+
+func renderHelpOverlay() string {
+	rows := [][2]string{
+		{"Navigation", ""},
+		{"↑ / k", "move up"},
+		{"↓ / j", "move down"},
+		{"← / h", "previous credential"},
+		{"→ / l", "next credential"},
+		{"enter", "confirm / advance"},
+		{"esc / b", "go back"},
+		{"ctrl+c", "quit"},
+		{"", ""},
+		{"Global", ""},
+		{"?", "toggle this help"},
+	}
+
+	keyCol := lipgloss.NewStyle().Foreground(colorAccent).Bold(true).Width(16)
+	descCol := lipgloss.NewStyle().Foreground(colorMuted)
+	headCol := lipgloss.NewStyle().Foreground(colorSection).Bold(true)
+
+	var sb strings.Builder
+	for _, row := range rows {
+		if row[1] == "" {
+			if row[0] == "" {
+				sb.WriteString("\n")
+			} else {
+				sb.WriteString(headCol.Render(row[0]) + "\n")
+			}
+			continue
+		}
+		sb.WriteString(keyCol.Render(row[0]) + descCol.Render(row[1]) + "\n")
+	}
+
+	return panelStyle.Render(
+		sectionTitleStyle.Render("Keyboard Shortcuts") + "\n\n" + strings.TrimRight(sb.String(), "\n"),
+	)
 }
