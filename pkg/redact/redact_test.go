@@ -38,6 +38,25 @@ func TestText_RedactsContext7Keys(t *testing.T) {
 		})
 	}
 }
+
+func TestText_RedactsTavilyKeys(t *testing.T) {
+	tests := []string{
+		"tvly-abcdef1234567890wxyz",
+		"tvly-06801456-a80a-4de8",
+	}
+	for _, key := range tests {
+		t.Run(key, func(t *testing.T) {
+			got := redact.Text("config key: " + key)
+			if strings.Contains(got, key) {
+				t.Errorf("full key must not appear in output: %s", got)
+			}
+			if !strings.Contains(got, "tvly-") {
+				t.Errorf("redacted output should preserve recognizable key prefix: %s", got)
+			}
+		})
+	}
+}
+
 func TestText(t *testing.T) {
 	uuid := "11111111-1111-1111-1111-111111111111"
 	input := "error: key " + uuid + " rejected"

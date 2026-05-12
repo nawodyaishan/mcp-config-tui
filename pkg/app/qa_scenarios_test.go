@@ -475,3 +475,67 @@ func TestQAExaAndContext7Coexist(t *testing.T) {
 		t.Errorf("Exa should not have headers")
 	}
 }
+
+func TestQATavilyAllClients(t *testing.T) {
+	homeDir := t.TempDir()
+
+	paths := map[config.AppID]string{
+		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
+	}
+	for _, p := range paths {
+		mustWriteFile(t, p, []byte("{}"))
+	}
+
+	manager, _ := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"claude": true}})
+
+	prov := provider.NewTavilyProvider()
+	key := "tvly-" + strings.Repeat("a", 20)
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "tavily",
+		Values:     map[string]string{"TAVILY_API_KEY": key},
+		Label:      "tvly-aaaa...aaaa",
+	}}
+	selected := make(map[config.AppID]bool)
+	for id := range paths {
+		selected[id] = true
+	}
+	assignments := DefaultAssignments(selected, 1)
+
+	plan, err := manager.PrepareProvider(prov, profiles, selected, assignments)
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
+
+	// Raw key must never appear in plan
+	planText := FormatPlan(plan)
+	if strings.Contains(planText, key) {
+		t.Errorf("plan output must not contain raw API key")
+	}
+
+	_, err = manager.Apply(plan)
+	if err != nil {
+		t.Fatalf("Apply: %v", err)
+	}
+
+	// Claude Desktop: stdio shape
+	data, _ := os.ReadFile(paths[config.AppClaudeDesktop])
+	if !bytes.Contains(data, []byte(`"tavily-mcp@latest"`)) {
+		t.Errorf("Claude Desktop: expected direct npx invocation for tavily-mcp@latest\n%s", data)
+	}
+
+	// Cursor: stdio shape
+	data, _ = os.ReadFile(paths[config.AppCursor])
+	if !bytes.Contains(data, []byte(`"tavily-mcp@latest"`)) {
+		t.Errorf("Cursor: expected direct npx invocation for tavily-mcp@latest\n%s", data)
+	}
+	if !bytes.Contains(data, []byte(`"TAVILY_API_KEY"`)) {
+		t.Errorf("Cursor: expected TAVILY_API_KEY in env\n%s", data)
+	}
+}

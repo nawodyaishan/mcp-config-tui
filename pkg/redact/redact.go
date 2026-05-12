@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/context7"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/tavily"
 )
 
 var uuidRE = regexp.MustCompile(
@@ -11,12 +12,16 @@ var uuidRE = regexp.MustCompile(
 )
 
 var ctx7RE = regexp.MustCompile(`ctx7sk[-_][A-Za-z0-9_\-]{8,}`)
+var tvlyRE = regexp.MustCompile(`tvly-[A-Za-z0-9_\-]{8,}`)
 
 // Text replaces every UUID-shaped substring in s with a truncated token.
 func Text(s string) string {
 	s = uuidRE.ReplaceAllStringFunc(s, Key)
 	s = ctx7RE.ReplaceAllStringFunc(s, func(key string) string {
 		return context7.RedactKey(key)
+	})
+	s = tvlyRE.ReplaceAllStringFunc(s, func(key string) string {
+		return tavily.RedactKey(key)
 	})
 	return s
 }
