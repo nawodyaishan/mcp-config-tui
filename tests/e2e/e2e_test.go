@@ -33,12 +33,12 @@ func TestMain(m *testing.M) {
 	cmd := exec.Command("go", "build", "-o", binaryPath, "../../cmd/usync")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to build usync: %v\n%s\n", err, out)
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 		os.Exit(1)
 	}
 
 	code := m.Run()
-	os.RemoveAll(dir)
+	_ = os.RemoveAll(dir)
 	os.Exit(code)
 }
 
