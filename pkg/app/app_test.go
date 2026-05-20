@@ -45,16 +45,17 @@ func (f fakeRunner) Run(name string, args ...string) (string, error) {
 
 func TestDefaultAssignmentsForTwoKeys(t *testing.T) {
 	selected := map[config.AppID]bool{
-		config.AppClaudeDesktop: true,
-		config.AppClaudeCode:    true,
-		config.AppGeminiCLI:     true,
-		config.AppAntigravity:   true,
-		config.AppCodexCLI:      true,
+		config.AppClaudeDesktop:  true,
+		config.AppClaudeCode:     true,
+		config.AppGeminiCLI:      true,
+		config.AppAntigravityCLI: true,
+		config.AppAntigravity:    true,
+		config.AppCodexCLI:       true,
 	}
 
 	assignments := DefaultAssignments(selected, 2)
-	if assignments[config.AppClaudeDesktop] != 0 || assignments[config.AppGeminiCLI] != 0 || assignments[config.AppCodexCLI] != 0 {
-		t.Fatal("expected first key for Claude Desktop, Gemini CLI, and Codex")
+	if assignments[config.AppClaudeDesktop] != 0 || assignments[config.AppGeminiCLI] != 0 || assignments[config.AppAntigravityCLI] != 0 || assignments[config.AppCodexCLI] != 0 {
+		t.Fatal("expected first key for Claude Desktop, Gemini CLI, Antigravity CLI, and Codex")
 	}
 	if assignments[config.AppClaudeCode] != 1 || assignments[config.AppAntigravity] != 1 {
 		t.Fatal("expected second key for Claude Code and Antigravity")
@@ -66,6 +67,7 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	writeFixture(t, homeDir, filepath.Join("Library", "Application Support", "Claude", "claude_desktop_config.json"), filepath.Join("..", "config", "testdata", "claude_desktop.json"))
 	writeFixture(t, homeDir, filepath.Join(".gemini", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
 	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity", "mcp_config.json"), filepath.Join("..", "config", "testdata", "antigravity.json"))
+	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity-cli", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
 	writeFixture(t, homeDir, filepath.Join(".codex", "config.toml"), filepath.Join("..", "config", "testdata", "codex.toml"))
 
 	runner := fakeRunner{
@@ -92,11 +94,12 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 		"22222222-2222-2222-2222-222222222222",
 	}
 	selected := map[config.AppID]bool{
-		config.AppClaudeDesktop: true,
-		config.AppClaudeCode:    true,
-		config.AppGeminiCLI:     true,
-		config.AppAntigravity:   true,
-		config.AppCodexCLI:      true,
+		config.AppClaudeDesktop:  true,
+		config.AppClaudeCode:     true,
+		config.AppGeminiCLI:      true,
+		config.AppAntigravityCLI: true,
+		config.AppAntigravity:    true,
+		config.AppCodexCLI:       true,
 	}
 	assignments := DefaultAssignments(selected, len(keys))
 
@@ -116,6 +119,11 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	missingGeminiPath := filepath.Join(homeDir, ".gemini", "mcp_config.json")
 	if _, err := os.Stat(missingGeminiPath); err != nil {
 		t.Fatalf("expected missing Gemini MCP file to be created: %v", err)
+	}
+
+	missingAntigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
+	if _, err := os.Stat(missingAntigravityCLIPath); err != nil {
+		t.Fatalf("expected missing Antigravity CLI MCP file to be created: %v", err)
 	}
 
 	claudeDesktopBackup := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json.bak-usync-20260508-213045")
@@ -262,10 +270,11 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 
 	key := "11111111-1111-1111-1111-111111111111"
 	selected := map[config.AppID]bool{
-		config.AppClaudeDesktop: true,
-		config.AppVSCode:        true,
-		config.AppOpenCode:      true,
-		config.AppGeminiCLI:     true,
+		config.AppClaudeDesktop:  true,
+		config.AppVSCode:         true,
+		config.AppOpenCode:       true,
+		config.AppGeminiCLI:      true,
+		config.AppAntigravityCLI: true,
 	}
 	plan, err := manager.Prepare([]string{key}, selected, DefaultAssignments(selected, 1))
 	if err != nil {
@@ -281,6 +290,7 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 		filepath.Join(homeDir, ".config", "Code", "User", "mcp.json"),
 		filepath.Join(homeDir, ".config", "opencode", "opencode.json"),
 		filepath.Join(homeDir, ".gemini", "settings.json"),
+		filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
 	} {
 		if !strings.Contains(formatted, want) {
 			t.Fatalf("expected linux path %s in plan:\n%s", want, formatted)
@@ -288,6 +298,9 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 	}
 	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "mcp_config.json")) {
 		t.Fatalf("did not expect linux Gemini CLI plan to include legacy mcp_config.json:\n%s", formatted)
+	}
+	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")) {
+		t.Fatalf("did not expect linux Antigravity CLI plan to include legacy mcp_config.json:\n%s", formatted)
 	}
 }
 

@@ -37,3 +37,13 @@ func TestGeminiCLICapabilities(t *testing.T) {
 		t.Error("GeminiCLI must support StreamableHTTP")
 	}
 }
+
+func TestAntigravityCLICapabilities(t *testing.T) {
+	cap := client.Matrix[config.AppAntigravityCLI]
+	if cap.Supports.Stdio {
+		t.Error("AntigravityCLI does not support local stdio subprocess servers")
+	}
+	if !cap.Supports.StreamableHTTP {
+		t.Error("AntigravityCLI must support StreamableHTTP")
+	}
+}

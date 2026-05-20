@@ -337,6 +337,9 @@ func (m *Manager) Apply(plan ExecutionPlan) (ApplyResult, error) {
 		case config.AppGeminiCLI:
 			result.Verification = append(result.Verification,
 				verify.VerifyOptionalCLI(m.Runner, "gemini", "mcp", "get", provID))
+		case config.AppAntigravityCLI:
+			result.Verification = append(result.Verification,
+				verify.VerifyOptionalCLI(m.Runner, "antigravity", "mcp", "get", provID))
 		}
 	}
 
@@ -374,11 +377,12 @@ func DefaultAssignments(selected map[config.AppID]bool, keyCount int) map[config
 
 	if keyCount == 2 {
 		preferred := map[config.AppID]int{
-			config.AppClaudeDesktop: 0,
-			config.AppGeminiCLI:     0,
-			config.AppCodexCLI:      0,
-			config.AppClaudeCode:    1,
-			config.AppAntigravity:   1,
+			config.AppClaudeDesktop:  0,
+			config.AppGeminiCLI:      0,
+			config.AppAntigravityCLI: 0,
+			config.AppCodexCLI:       0,
+			config.AppClaudeCode:     1,
+			config.AppAntigravity:    1,
 		}
 		for appID, isSelected := range selected {
 			if isSelected {
@@ -552,7 +556,7 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		var extra map[string]any
 
 		switch op.AppID {
-		case config.AppGeminiCLI:
+		case config.AppGeminiCLI, config.AppAntigravityCLI:
 			urlFieldName = "httpUrl"
 		case config.AppAntigravity, config.AppWindsurf:
 			urlFieldName = "serverUrl"
@@ -568,7 +572,7 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindBareMCPServers:
 		urlFieldName := "url"
-		if op.AppID == config.AppGeminiCLI {
+		if op.AppID == config.AppGeminiCLI || op.AppID == config.AppAntigravityCLI {
 			urlFieldName = "httpUrl"
 		}
 		m.logDebug("updating BareMCPServers JSON", "app", op.AppID, "urlField", urlFieldName)

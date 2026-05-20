@@ -10,18 +10,19 @@ import (
 type AppID string
 
 const (
-	AppClaudeDesktop AppID = "claude-desktop"
-	AppClaudeCode    AppID = "claude-code"
-	AppGeminiCLI     AppID = "gemini-cli"
-	AppAntigravity   AppID = "antigravity"
-	AppCodexCLI      AppID = "codex-cli"
-	AppCursor        AppID = "cursor"
-	AppVSCode        AppID = "vscode"
-	AppWindsurf      AppID = "windsurf"
-	AppZed           AppID = "zed"
-	AppRooCode       AppID = "roocode"
-	AppOpenCode      AppID = "opencode"
-	AppKiro          AppID = "kiro"
+	AppClaudeDesktop  AppID = "claude-desktop"
+	AppClaudeCode     AppID = "claude-code"
+	AppGeminiCLI      AppID = "gemini-cli"
+	AppAntigravity    AppID = "antigravity"
+	AppAntigravityCLI AppID = "antigravity-cli"
+	AppCodexCLI       AppID = "codex-cli"
+	AppCursor         AppID = "cursor"
+	AppVSCode         AppID = "vscode"
+	AppWindsurf       AppID = "windsurf"
+	AppZed            AppID = "zed"
+	AppRooCode        AppID = "roocode"
+	AppOpenCode       AppID = "opencode"
+	AppKiro           AppID = "kiro"
 )
 
 type FileKind string
@@ -59,6 +60,7 @@ var AppOrder = []AppID{
 	AppOpenCode,
 	AppKiro,
 	AppGeminiCLI,
+	AppAntigravityCLI,
 	AppAntigravity,
 	AppCodexCLI,
 }
@@ -79,6 +81,8 @@ func DetectAppConfigsForOS(home, goos string) ([]AppConfig, error) {
 	kiro := filepath.Join(home, ".kiro", "settings", "mcp.json")
 	geminiSettings := filepath.Join(home, ".gemini", "settings.json")
 	antigravity := filepath.Join(home, ".gemini", "antigravity", "mcp_config.json")
+	antigravityCLISettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
+	antigravityCLILegacy := filepath.Join(home, ".gemini", "antigravity-cli", "mcp_config.json")
 	codex := filepath.Join(home, ".codex", "config.toml")
 
 	apps := []AppConfig{
@@ -147,14 +151,19 @@ func DetectAppConfigsForOS(home, goos string) ([]AppConfig, error) {
 		},
 		{
 			ID:    AppGeminiCLI,
-			Name:  "Gemini CLI",
+			Name:  "Gemini CLI (deprecated)",
 			Files: geminiFilesForOS(goos, geminiSettings, filepath.Join(home, ".gemini", "mcp_config.json")),
 		},
 		{
+			ID:    AppAntigravityCLI,
+			Name:  "Antigravity CLI",
+			Files: antigravityCLIFilesForOS(goos, antigravityCLISettings, antigravityCLILegacy),
+		},
+		{
 			ID:   AppAntigravity,
-			Name: "Antigravity",
+			Name: "Antigravity IDE",
 			Files: []TargetFile{
-				targetFile("Antigravity MCP config", antigravity, FileKindMCPServers, true),
+				targetFile("Antigravity IDE MCP config", antigravity, FileKindMCPServers, true),
 			},
 		},
 		{
@@ -219,6 +228,16 @@ func geminiFilesForOS(goos, settingsPath, legacyMCPPath string) []TargetFile {
 	return files
 }
 
+func antigravityCLIFilesForOS(goos, settingsPath, legacyMCPPath string) []TargetFile {
+	files := []TargetFile{
+		targetFile("Antigravity CLI settings", settingsPath, FileKindMCPServers, true),
+	}
+	if goos != "linux" {
+		files = append(files, targetFile("Antigravity CLI MCP config", legacyMCPPath, FileKindBareMCPServers, true))
+	}
+	return files
+}
+
 func targetFile(label, path string, kind FileKind, creatable bool) TargetFile {
 	_, err := os.Stat(path)
 	return TargetFile{
@@ -237,9 +256,11 @@ func AppName(id AppID) string {
 	case AppClaudeCode:
 		return "Claude Code"
 	case AppGeminiCLI:
-		return "Gemini CLI"
+		return "Gemini CLI (deprecated)"
 	case AppAntigravity:
-		return "Antigravity"
+		return "Antigravity IDE"
+	case AppAntigravityCLI:
+		return "Antigravity CLI"
 	case AppCodexCLI:
 		return "Codex CLI"
 	default:

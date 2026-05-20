@@ -72,6 +72,9 @@ var Matrix = map[config.AppID]Capability{
 		// Gemini CLI does not support local stdio subprocess servers.
 		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
 	},
+	config.AppAntigravityCLI: {
+		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
+	},
 	config.AppAntigravity: {
 		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
 	},

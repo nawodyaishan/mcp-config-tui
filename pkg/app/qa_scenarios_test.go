@@ -236,8 +236,10 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 
 	geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
 	antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+	antigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json")
 	mustWriteFile(t, geminiPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
+	mustWriteFile(t, antigravityCLIPath, []byte("{}"))
 
 	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 
@@ -249,8 +251,9 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 		Label:      "ghp_...aaaa",
 	}}
 	selected := map[config.AppID]bool{
-		config.AppGeminiCLI:   true,
-		config.AppAntigravity: true,
+		config.AppGeminiCLI:      true,
+		config.AppAntigravityCLI: true,
+		config.AppAntigravity:    true,
 	}
 	assignments := DefaultAssignments(selected, 1)
 
@@ -267,7 +270,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 		}
 	}
 	if skipped == 0 && len(plan.Warnings) == 0 {
-		t.Error("expected GeminiCLI and Antigravity to be skipped for stdio-only provider")
+		t.Error("expected GeminiCLI, AntigravityCLI and Antigravity to be skipped for stdio-only provider")
 	}
 
 	// Files should not be modified
@@ -279,6 +282,14 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 	data, _ := os.ReadFile(geminiPath)
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Gemini settings should not be modified for GitHub stdio provider\n%s", data)
+	}
+	data, _ = os.ReadFile(antigravityCLIPath)
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity CLI settings should not be modified for GitHub stdio provider\n%s", data)
+	}
+	data, _ = os.ReadFile(antigravityPath)
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity config should not be modified for GitHub stdio provider\n%s", data)
 	}
 }
 
@@ -340,9 +351,10 @@ func TestQAContext7AllClients(t *testing.T) {
 		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
-		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
 		mustWriteFile(t, p, []byte("{}"))
@@ -399,6 +411,12 @@ func TestQAContext7AllClients(t *testing.T) {
 	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
 	if !bytes.Contains(data, []byte(`"Accept"`)) {
 		t.Errorf("Gemini CLI: expected Accept header\n%s", data)
+	}
+
+	// Antigravity CLI: also has Accept header
+	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
+	if !bytes.Contains(data, []byte(`"Accept"`)) {
+		t.Errorf("Antigravity CLI: expected Accept header\n%s", data)
 	}
 
 	// Codex: http_headers in TOML
@@ -552,9 +570,10 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
-		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
 		mustWriteFile(t, p, []byte("{}"))
@@ -581,11 +600,14 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI does not support stdio transport") {
+	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
-	if !strings.Contains(warnings, "Antigravity does not support stdio transport") {
-		t.Errorf("expected Antigravity skip warning, got:\n%s", warnings)
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
+		t.Errorf("expected Antigravity CLI skip warning, got:\n%s", warnings)
+	}
+	if !strings.Contains(warnings, "Antigravity IDE does not support stdio transport") {
+		t.Errorf("expected Antigravity IDE skip warning, got:\n%s", warnings)
 	}
 
 	foundClaudeCode := false
@@ -647,9 +669,13 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Gemini CLI should not be modified for Playwright stdio provider\n%s", data)
 	}
+	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity CLI should not be modified for Playwright stdio provider\n%s", data)
+	}
 	data, _ = os.ReadFile(paths[config.AppAntigravity])
 	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Antigravity should not be modified for Playwright stdio provider\n%s", data)
+		t.Errorf("Antigravity IDE should not be modified for Playwright stdio provider\n%s", data)
 	}
 }
 
@@ -665,9 +691,10 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
-		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
 		mustWriteFile(t, p, []byte("{}"))
@@ -694,11 +721,14 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI does not support stdio transport") {
+	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
-	if !strings.Contains(warnings, "Antigravity does not support stdio transport") {
-		t.Errorf("expected Antigravity skip warning, got:\n%s", warnings)
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
+		t.Errorf("expected Antigravity CLI skip warning, got:\n%s", warnings)
+	}
+	if !strings.Contains(warnings, "Antigravity IDE does not support stdio transport") {
+		t.Errorf("expected Antigravity IDE skip warning, got:\n%s", warnings)
 	}
 
 	foundClaudeCode := false
@@ -765,9 +795,13 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Gemini CLI should not be modified for Kubernetes stdio provider\n%s", data)
 	}
+	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity CLI should not be modified for Kubernetes stdio provider\n%s", data)
+	}
 	data, _ = os.ReadFile(paths[config.AppAntigravity])
 	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Antigravity should not be modified for Kubernetes stdio provider\n%s", data)
+		t.Errorf("Antigravity IDE should not be modified for Kubernetes stdio provider\n%s", data)
 	}
 }
 
@@ -783,9 +817,10 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:     filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravity:   filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
-		config.AppCodexCLI:      filepath.Join(homeDir, ".codex", "config.toml"),
+		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
 		mustWriteFile(t, p, []byte("{}"))
@@ -818,11 +853,14 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI does not support stdio transport") {
+	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
-	if !strings.Contains(warnings, "Antigravity does not support stdio transport") {
-		t.Errorf("expected Antigravity skip warning, got:\n%s", warnings)
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
+		t.Errorf("expected Antigravity CLI skip warning, got:\n%s", warnings)
+	}
+	if !strings.Contains(warnings, "Antigravity IDE does not support stdio transport") {
+		t.Errorf("expected Antigravity IDE skip warning, got:\n%s", warnings)
 	}
 	if strings.Contains(warnings, "Docker") {
 		t.Errorf("did not expect Docker prerequisite warning, got:\n%s", warnings)
@@ -899,8 +937,12 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Gemini CLI should not be modified for Terraform stdio provider\n%s", data)
 	}
+	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
+	if !bytes.Equal(data, []byte("{}")) {
+		t.Errorf("Antigravity CLI should not be modified for Terraform stdio provider\n%s", data)
+	}
 	data, _ = os.ReadFile(paths[config.AppAntigravity])
 	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Antigravity should not be modified for Terraform stdio provider\n%s", data)
+		t.Errorf("Antigravity IDE should not be modified for Terraform stdio provider\n%s", data)
 	}
 }

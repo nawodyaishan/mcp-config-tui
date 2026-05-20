@@ -35,7 +35,7 @@ func TestTUI_InteractiveFlow(t *testing.T) {
 
 	// Wait for the UI to be ready
 	teatest.WaitFor(t, tm.Output(), func(bts []byte) bool {
-		return bytes.Contains(bts, []byte("MCP Config")) || bytes.Contains(bts, []byte("Provider"))
+		return bytes.Contains(bts, []byte("Choose the MCP server")) || bytes.Contains(bts, []byte("Target Apps"))
 	}, teatest.WithDuration(time.Second*3))
 
 	// Step 1: Setup Form (Provider/Key selection)

@@ -92,7 +92,7 @@ func HeadersFor(appID config.AppID, base map[string]string) map[string]string {
 	for k, v := range base {
 		out[k] = v
 	}
-	if appID == config.AppGeminiCLI {
+	if appID == config.AppGeminiCLI || appID == config.AppAntigravityCLI {
 		out["Accept"] = "application/json, text/event-stream"
 	}
 	return out

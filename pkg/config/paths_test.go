@@ -58,6 +58,10 @@ func TestDetectAppConfigsForOS_DarwinPreservesCurrentPaths(t *testing.T) {
 	if files := findApp(t, apps, AppGeminiCLI).Files; len(files) != 2 {
 		t.Fatalf("expected darwin Gemini CLI to keep 2 files, got %d", len(files))
 	}
+	if files := findApp(t, apps, AppAntigravityCLI).Files; len(files) != 2 {
+		t.Fatalf("expected darwin Antigravity CLI to keep 2 files, got %d", len(files))
+	}
+	assertAppPath(t, apps, AppAntigravityCLI, filepath.Join(home, ".gemini", "antigravity-cli", "settings.json"))
 }
 
 func TestDetectAppConfigsForOS_LinuxUsesNativePaths(t *testing.T) {
@@ -79,6 +83,10 @@ func TestDetectAppConfigsForOS_LinuxUsesNativePaths(t *testing.T) {
 	if files := findApp(t, apps, AppGeminiCLI).Files; len(files) != 1 {
 		t.Fatalf("expected linux Gemini CLI to use settings.json only, got %d files", len(files))
 	}
+	if files := findApp(t, apps, AppAntigravityCLI).Files; len(files) != 1 {
+		t.Fatalf("expected linux Antigravity CLI to use settings.json only, got %d files", len(files))
+	}
+	assertAppPath(t, apps, AppAntigravityCLI, filepath.Join(home, ".gemini", "antigravity-cli", "settings.json"))
 }
 
 func TestDetectAppConfigsForOS_LinuxMarksExistingFiles(t *testing.T) {
@@ -132,7 +140,9 @@ func TestAppName(t *testing.T) {
 	}{
 		{AppClaudeDesktop, "Claude Desktop"},
 		{AppClaudeCode, "Claude Code"},
-		{AppGeminiCLI, "Gemini CLI"},
+		{AppGeminiCLI, "Gemini CLI (deprecated)"},
+		{AppAntigravity, "Antigravity IDE"},
+		{AppAntigravityCLI, "Antigravity CLI"},
 		{"custom", "custom"},
 	}
 	for _, tc := range tests {
