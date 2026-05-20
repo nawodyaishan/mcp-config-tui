@@ -21,7 +21,7 @@ Use Bubble Tea for the TUI and Go standard libraries for config updates.
   - `~/.claude.json`
   - `~/.gemini/settings.json`
   - `~/.gemini/mcp_config.json`
-  - `~/.gemini/antigravity/mcp_config.json`
+  - `~/.gemini/config/mcp_config.json`
   - `~/.codex/config.toml`
 - Accept keys from:
   - pasted multiline input
@@ -125,7 +125,7 @@ https://mcp.exa.ai/mcp?exaApiKey=<KEY>&tools=<comma-separated-tools>
     ```
 
 - Antigravity:
-  - Update `~/.gemini/antigravity/mcp_config.json`.
+  - Update `~/.gemini/config/mcp_config.json`.
   - Use:
     ```json
     {

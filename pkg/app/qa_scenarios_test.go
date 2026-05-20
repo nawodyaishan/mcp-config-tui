@@ -32,7 +32,7 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 	// Initialize dummy files
 	claudeDesktopPath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
 	geminiSettingsPath := filepath.Join(homeDir, ".gemini", "settings.json")
-	antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+	antigravityPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	codexPath := filepath.Join(homeDir, ".codex", "config.toml")
 	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
 	vscodePath := filepath.Join(homeDir, ".vscode", "mcp.json")
@@ -235,7 +235,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 	homeDir := t.TempDir()
 
 	geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
-	antigravityPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+	antigravityPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	antigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json")
 	mustWriteFile(t, geminiPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
@@ -353,7 +353,7 @@ func TestQAContext7AllClients(t *testing.T) {
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
-		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
@@ -572,7 +572,7 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
-		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
@@ -693,7 +693,7 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
-		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {
@@ -819,7 +819,7 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
-		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json"),
+		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
 	for _, p := range paths {

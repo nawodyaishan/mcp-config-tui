@@ -126,7 +126,7 @@ usync sync --keys-file ./exa_keys.txt --apply
 | OpenCode | `~/.opencode.json` | `~/.config/opencode/opencode.json` |
 | Kiro | `~/.kiro/settings/mcp.json` | `~/.kiro/settings/mcp.json` |
 | Gemini CLI | `~/.gemini/settings.json` and `~/.gemini/mcp_config.json` | `~/.gemini/settings.json` |
-| Antigravity | `~/.gemini/antigravity/mcp_config.json` | `~/.gemini/antigravity/mcp_config.json` |
+| Antigravity | `~/.gemini/config/mcp_config.json` | `~/.gemini/config/mcp_config.json` |
 | Codex CLI | `~/.codex/config.toml` | `~/.codex/config.toml` |
 
 A dry run always shows the exact path on your machine before any write.

@@ -80,7 +80,7 @@ func DetectAppConfigsForOS(home, goos string) ([]AppConfig, error) {
 	zed := filepath.Join(home, ".config", "zed", "settings.json")
 	kiro := filepath.Join(home, ".kiro", "settings", "mcp.json")
 	geminiSettings := filepath.Join(home, ".gemini", "settings.json")
-	antigravity := filepath.Join(home, ".gemini", "antigravity", "mcp_config.json")
+	antigravity := filepath.Join(home, ".gemini", "config", "mcp_config.json")
 	antigravityCLISettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	antigravityCLILegacy := filepath.Join(home, ".gemini", "antigravity-cli", "mcp_config.json")
 	codex := filepath.Join(home, ".codex", "config.toml")

@@ -66,7 +66,7 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	homeDir := t.TempDir()
 	writeFixture(t, homeDir, filepath.Join("Library", "Application Support", "Claude", "claude_desktop_config.json"), filepath.Join("..", "config", "testdata", "claude_desktop.json"))
 	writeFixture(t, homeDir, filepath.Join(".gemini", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
-	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity", "mcp_config.json"), filepath.Join("..", "config", "testdata", "antigravity.json"))
+	writeFixture(t, homeDir, filepath.Join(".gemini", "config", "mcp_config.json"), filepath.Join("..", "config", "testdata", "antigravity.json"))
 	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity-cli", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
 	writeFixture(t, homeDir, filepath.Join(".codex", "config.toml"), filepath.Join("..", "config", "testdata", "codex.toml"))
 

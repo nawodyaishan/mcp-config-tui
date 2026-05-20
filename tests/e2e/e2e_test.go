@@ -124,7 +124,7 @@ func getFilesToScaffold() []string {
 		filepath.Join(".kiro", "settings", "mcp.json"),
 		filepath.Join(".gemini", "settings.json"),
 		filepath.Join(".gemini", "antigravity-cli", "settings.json"),
-		filepath.Join(".gemini", "antigravity", "mcp_config.json"),
+		filepath.Join(".gemini", "config", "mcp_config.json"),
 		filepath.Join(".codex", "config.toml"),
 	}
 }
