@@ -33,6 +33,10 @@ type Model struct {
 }
 
 func NewModel(manager *app.Manager, initialKeys []string, initialRaw string) Model {
+	return NewWizardModel(manager, initialKeys, initialRaw)
+}
+
+func NewWizardModel(manager *app.Manager, initialKeys []string, initialRaw string) Model {
 	selected := make(map[config.AppID]bool, len(manager.Apps))
 	for _, appConfig := range manager.Apps {
 		if appConfig.ID == config.AppClaudeCode {
