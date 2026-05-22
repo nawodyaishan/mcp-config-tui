@@ -1,0 +1,211 @@
+package app
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
+)
+
+const (
+	SavedPlanSchemaVersion = 1
+
+	PlanActionCreate   = "create"
+	PlanActionUpdate   = "update"
+	PlanActionSkip     = "skip"
+	PlanActionConflict = "conflict"
+
+	PlanManagerFile = "file"
+	PlanManagerCLI  = "cli"
+
+	PlanCurrentSHAMissing = "missing"
+
+	defaultPlanTTL = 24 * time.Hour
+)
+
+type SavedPlan struct {
+	SchemaVersion int             `json:"schema_version"`
+	PlanID        string          `json:"plan_id"`
+	CreatedAt     time.Time       `json:"created_at"`
+	ExpiresAt     time.Time       `json:"expires_at"`
+	UsyncVersion  string          `json:"usync_version"`
+	ProviderID    string          `json:"provider_id"`
+	Credentials   []CredentialRef `json:"credential_refs"`
+	Operations    []PlanOperation `json:"operations"`
+	Warnings      []string        `json:"warnings,omitempty"`
+	DoctorSummary DoctorSummary   `json:"doctor_summary"`
+}
+
+type CredentialRef struct {
+	Key    string `json:"key"`
+	Label  string `json:"label"`
+	EnvVar string `json:"env_var"`
+}
+
+type PlanOperation struct {
+	TargetID     string   `json:"target_id"`
+	TargetName   string   `json:"target_name"`
+	Action       string   `json:"action"`
+	FilePath     string   `json:"file_path,omitempty"`
+	CurrentSHA   string   `json:"current_sha,omitempty"`
+	Transport    string   `json:"transport"`
+	Manager      string   `json:"manager"`
+	CLICommand   []string `json:"cli_command,omitempty"`
+	Redacted     string   `json:"redacted"`
+	IsSymlink    bool     `json:"is_symlink"`
+	ResolvedPath string   `json:"resolved_path,omitempty"`
+	Warnings     []string `json:"warnings,omitempty"`
+}
+
+type DoctorSummary struct {
+	ClientsDetected int      `json:"clients_detected"`
+	ClientsReady    int      `json:"clients_ready"`
+	Conflicts       int      `json:"conflicts"`
+	Warnings        []string `json:"warnings,omitempty"`
+}
+
+type SavedPlanOptions struct {
+	PlanID       string
+	CreatedAt    time.Time
+	UsyncVersion string
+	ProviderID   string
+	Credentials  []CredentialRef
+	Doctor       DoctorSummary
+}
+
+func (m *Manager) BuildSavedPlan(plan ExecutionPlan, opts SavedPlanOptions) (SavedPlan, error) {
+	if opts.PlanID == "" {
+		return SavedPlan{}, fmt.Errorf("missing plan id")
+	}
+	if opts.ProviderID == "" {
+		return SavedPlan{}, fmt.Errorf("missing provider id")
+	}
+	if opts.CreatedAt.IsZero() {
+		return SavedPlan{}, fmt.Errorf("missing plan creation time")
+	}
+
+	saved := SavedPlan{
+		SchemaVersion: SavedPlanSchemaVersion,
+		PlanID:        opts.PlanID,
+		CreatedAt:     opts.CreatedAt.UTC(),
+		ExpiresAt:     opts.CreatedAt.UTC().Add(defaultPlanTTL),
+		UsyncVersion:  opts.UsyncVersion,
+		ProviderID:    opts.ProviderID,
+		Credentials:   cloneCredentialRefs(opts.Credentials),
+		Warnings:      append([]string(nil), plan.Warnings...),
+		DoctorSummary: opts.Doctor,
+		Operations:    make([]PlanOperation, 0, len(plan.Operations)),
+	}
+
+	for _, op := range plan.Operations {
+		planOp, err := m.buildPlanOperation(op)
+		if err != nil {
+			return SavedPlan{}, err
+		}
+		saved.Operations = append(saved.Operations, planOp)
+	}
+
+	return saved, nil
+}
+
+func (m *Manager) buildPlanOperation(op Operation) (PlanOperation, error) {
+	planOp := PlanOperation{
+		TargetID:   string(op.AppID),
+		TargetName: op.AppName,
+		Transport:  string(op.Config.Type),
+		Warnings:   []string{},
+	}
+
+	if op.SkipReason != "" {
+		planOp.Action = PlanActionSkip
+		planOp.Redacted = redact.Text(fmt.Sprintf("%s: skip %s", op.AppName, op.SkipReason))
+		planOp.Warnings = append(planOp.Warnings, op.SkipReason)
+	} else if op.Kind == config.FileKindClaudeCodeCLI {
+		planOp.Action = PlanActionUpdate
+		planOp.Manager = PlanManagerCLI
+		planOp.CLICommand = redactStrings(append([]string{"claude"}, op.CLIAddArgs...))
+		planOp.Redacted = redact.Text(fmt.Sprintf("%s: update %s [cli, credential=%s]", op.AppName, op.ProviderID, op.CredentialLabel))
+		return planOp, nil
+	} else {
+		planOp.Manager = PlanManagerFile
+		planOp.FilePath = op.Path
+		if op.WillCreate {
+			planOp.Action = PlanActionCreate
+		} else {
+			planOp.Action = PlanActionUpdate
+		}
+		sha, err := currentSHA(op.Path)
+		if err != nil {
+			return PlanOperation{}, fmt.Errorf("%s (%s): %w", op.AppName, op.FileLabel, err)
+		}
+		planOp.CurrentSHA = sha
+		isSymlink, resolvedPath, err := symlinkStatus(op.Path)
+		if err != nil {
+			return PlanOperation{}, fmt.Errorf("%s (%s): %w", op.AppName, op.FileLabel, err)
+		}
+		planOp.IsSymlink = isSymlink
+		planOp.ResolvedPath = resolvedPath
+		planOp.Redacted = redact.Text(fmt.Sprintf("%s: %s %s [%s, credential=%s]", op.AppName, planOp.Action, op.ProviderID, op.Config.Type, op.CredentialLabel))
+	}
+
+	if len(planOp.Warnings) == 0 {
+		planOp.Warnings = nil
+	}
+
+	return planOp, nil
+}
+
+func currentSHA(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err == nil {
+		sum := sha256.Sum256(data)
+		return "sha256:" + hex.EncodeToString(sum[:]), nil
+	}
+	if os.IsNotExist(err) {
+		return PlanCurrentSHAMissing, nil
+	}
+	return "", fmt.Errorf("read target for hash %s: %w", path, err)
+}
+
+func symlinkStatus(path string) (bool, string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, "", nil
+		}
+		return false, "", fmt.Errorf("lstat %s: %w", path, err)
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return false, "", nil
+	}
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return true, "", fmt.Errorf("resolve symlink %s: %w", path, err)
+	}
+	return true, resolved, nil
+}
+
+func cloneCredentialRefs(values []CredentialRef) []CredentialRef {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]CredentialRef, len(values))
+	copy(out, values)
+	return out
+}
+
+func redactStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, len(values))
+	for i, value := range values {
+		out[i] = redact.Text(value)
+	}
+	return out
+}
