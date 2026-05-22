@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
-	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/validate"
 )
 
@@ -58,26 +58,31 @@ func runApplyCommand(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	credentials, err := loadApplyCredentials(plan, keysCSV, keysFile)
+	prov, err := resolveProvider(plan.ProviderID)
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
-	if plan.ProviderID == "exa" {
-		validationService, err := validate.NewService(manager.HomeDir)
-		if err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return 1
-		}
-		validationReport, err := validationService.ValidateProfiles(context.Background(), provider.NewExaProvider(), exaProfilesFromSavedPlan(plan, credentials), false)
-		if err != nil {
-			_, _ = fmt.Fprintln(stderr, err)
-			return 1
-		}
-		if validationReport.HasFailures() {
-			_, _ = fmt.Fprintln(stderr, validate.FormatReport(validationReport))
-			return 1
-		}
+
+	credentials, err := loadApplyCredentials(plan, prov, keysCSV, keysFile)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	validationService, err := validate.NewService(manager.HomeDir)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+	validationReport, err := validationService.ValidateProfiles(context.Background(), prov, profilesFromSavedPlan(plan, prov, credentials), false)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if validationReport.HasFailures() {
+		_, _ = fmt.Fprintln(stderr, validate.FormatReport(validationReport))
+		return 1
 	}
 
 	opts := app.SavedPlanApplyOptions{
@@ -135,7 +140,7 @@ func (a terminalApprover) Confirm(prompt app.ApprovalPrompt) (bool, error) {
 	}
 }
 
-func loadApplyCredentials(plan app.SavedPlan, keysCSV, keysFile string) (map[string]string, error) {
+func loadApplyCredentials(plan app.SavedPlan, prov provider.MCPProvider, keysCSV, keysFile string) (map[string]string, error) {
 	credentials := make(map[string]string)
 	envCounts := make(map[string]int)
 	for _, ref := range plan.Credentials {
@@ -156,41 +161,21 @@ func loadApplyCredentials(plan app.SavedPlan, keysCSV, keysFile string) (map[str
 	if keysCSV == "" && keysFile == "" {
 		return credentials, nil
 	}
-	if plan.ProviderID != "exa" {
-		return nil, fmt.Errorf("--keys and --keys-file are currently supported for provider exa plans only")
-	}
 
-	keys, _, err := loadInitialKeys(keysCSV, keysFile)
+	profiles, err := loadValidationProfiles(prov, keysCSV, keysFile)
 	if err != nil {
 		return nil, err
 	}
-	refsByLabel := make(map[string]app.CredentialRef)
-	for _, ref := range plan.Credentials {
-		ref = normalizeApplyCredentialRef(ref)
-		if ref.Key != "EXA_API_KEY" {
-			continue
-		}
-		if _, exists := refsByLabel[ref.Label]; exists {
-			return nil, fmt.Errorf("saved plan has ambiguous credential label %q", ref.Label)
-		}
-		refsByLabel[ref.Label] = ref
-	}
-	if len(refsByLabel) == 0 {
-		return nil, fmt.Errorf("saved plan does not declare Exa credential references")
+	if len(profiles) == 0 {
+		return credentials, nil
 	}
 
-	matched := 0
-	for _, key := range keys {
-		label := redact.Key(key)
-		ref, ok := refsByLabel[label]
-		if !ok {
-			continue
-		}
-		credentials[ref.ID] = key
-		matched++
+	matched, err := assignSuppliedPlanCredentials(plan, prov, profiles, credentials)
+	if err != nil {
+		return nil, err
 	}
-	if matched == 0 {
-		return nil, fmt.Errorf("supplied Exa keys did not match any saved plan credential labels")
+	if matched == 0 && len(plan.Credentials) > 0 {
+		return nil, fmt.Errorf("supplied credentials did not match any saved plan credential labels")
 	}
 
 	return credentials, nil
@@ -213,24 +198,89 @@ func defaultApplyCredentialRefID(key, label string) string {
 	return key + ":" + label
 }
 
-func exaProfilesFromSavedPlan(plan app.SavedPlan, credentials map[string]string) []provider.CredentialProfile {
-	profiles := make([]provider.CredentialProfile, 0, len(plan.Credentials))
+func assignSuppliedPlanCredentials(plan app.SavedPlan, prov provider.MCPProvider, profiles []provider.CredentialProfile, credentials map[string]string) (int, error) {
+	if len(plan.Credentials) == 0 {
+		return 0, nil
+	}
+
+	refsByKeyAndLabel := make(map[string]app.CredentialRef, len(plan.Credentials))
+	refsByKeyCount := make(map[string]int)
 	for _, ref := range plan.Credentials {
 		ref = normalizeApplyCredentialRef(ref)
-		if ref.Key != "EXA_API_KEY" {
-			continue
+		key := ref.Key + "\x00" + ref.Label
+		if _, exists := refsByKeyAndLabel[key]; exists {
+			return 0, fmt.Errorf("saved plan has ambiguous credential label %q", ref.Label)
 		}
+		refsByKeyAndLabel[key] = ref
+		refsByKeyCount[ref.Key]++
+	}
+
+	matched := 0
+	for _, profile := range profiles {
+		for _, spec := range prov.RequiredCredentials() {
+			value := strings.TrimSpace(profile.Values[spec.Key])
+			if value == "" {
+				continue
+			}
+			label := strings.TrimSpace(profile.Label)
+			if label == "" {
+				label = validate.RedactedCredentialLabel(prov.ID(), spec.Key, value)
+			}
+
+			ref, ok := refsByKeyAndLabel[spec.Key+"\x00"+label]
+			if !ok && refsByKeyCount[spec.Key] == 1 {
+				for _, candidate := range plan.Credentials {
+					candidate = normalizeApplyCredentialRef(candidate)
+					if candidate.Key == spec.Key {
+						ref = candidate
+						ok = true
+						break
+					}
+				}
+			}
+			if !ok {
+				continue
+			}
+			credentials[ref.ID] = value
+			matched++
+		}
+	}
+	return matched, nil
+}
+
+func profilesFromSavedPlan(plan app.SavedPlan, prov provider.MCPProvider, credentials map[string]string) []provider.CredentialProfile {
+	if len(plan.Credentials) == 0 {
+		return nil
+	}
+
+	profilesByLabel := make(map[string]provider.CredentialProfile)
+	order := make([]string, 0, len(plan.Credentials))
+	for _, ref := range plan.Credentials {
+		ref = normalizeApplyCredentialRef(ref)
 		value := strings.TrimSpace(credentials[ref.ID])
 		if value == "" {
 			continue
 		}
-		profiles = append(profiles, provider.CredentialProfile{
-			ProviderID: "exa",
-			Values: map[string]string{
-				"EXA_API_KEY": value,
-			},
-			Label: ref.Label,
-		})
+
+		label := ref.Label
+		profile, exists := profilesByLabel[label]
+		if !exists {
+			profile = provider.CredentialProfile{
+				ProviderID: prov.ID(),
+				Values:     make(map[string]string),
+				Label:      label,
+			}
+			profilesByLabel[label] = profile
+			order = append(order, label)
+		}
+		profile.Values[ref.Key] = value
+		profilesByLabel[label] = profile
+	}
+
+	slices.Sort(order)
+	profiles := make([]provider.CredentialProfile, 0, len(order))
+	for _, label := range order {
+		profiles = append(profiles, profilesByLabel[label])
 	}
 	return profiles
 }

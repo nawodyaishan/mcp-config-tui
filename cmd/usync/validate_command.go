@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/validate"
 )
@@ -145,18 +144,4 @@ func loadValidationProfiles(prov provider.MCPProvider, keysCSV, keysFile string)
 		ProviderID: prov.ID(),
 		Values:     values,
 	}}, nil
-}
-
-func exaProfilesFromKeys(keys []string) []provider.CredentialProfile {
-	profiles := make([]provider.CredentialProfile, 0, len(keys))
-	for _, key := range keys {
-		profiles = append(profiles, provider.CredentialProfile{
-			ProviderID: "exa",
-			Values: map[string]string{
-				"EXA_API_KEY": key,
-			},
-			Label: exa.RedactKey(key),
-		})
-	}
-	return profiles
 }

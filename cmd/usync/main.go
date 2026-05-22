@@ -54,6 +54,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runValidateCommand(args[1:], stdout, stderr)
 		case "doctor":
 			return runDoctorCommand(args[1:], stdout, stderr)
+		case "providers":
+			return runProvidersCommand(args[1:], stdout, stderr)
 		}
 	}
 

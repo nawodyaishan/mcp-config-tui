@@ -214,6 +214,190 @@ func TestRunPlanCreatesSavedPlan(t *testing.T) {
 	}
 }
 
+func TestRunPlanAllDetectedDetailedExitCode(t *testing.T) {
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	if err := os.MkdirAll(filepath.Dir(cursorPath), 0o700); err != nil {
+		t.Fatalf("mkdir cursor dir: %v", err)
+	}
+	if err := os.WriteFile(cursorPath, []byte("{\"mcpServers\":{}}\n"), 0o600); err != nil {
+		t.Fatalf("write cursor config: %v", err)
+	}
+
+	outPath := filepath.Join(homeDir, "plan.json")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "playwright",
+		"--all-detected",
+		"--detailed-exitcode",
+		"--home-dir", homeDir,
+		"--out", outPath,
+	}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected exit code 2, got %d stderr=%s", code, stderr.String())
+	}
+	if strings.TrimSpace(stdout.String()) != outPath {
+		t.Fatalf("unexpected stdout: %q", stdout.String())
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read saved plan: %v", err)
+	}
+	if !strings.Contains(string(data), `"target_id": "cursor"`) {
+		t.Fatalf("saved plan missing detected cursor target:\n%s", string(data))
+	}
+}
+
+func TestRunPlanAllDetectedIncludeWorkspace(t *testing.T) {
+	homeDir := t.TempDir()
+	workspace := t.TempDir()
+	cursorPath := filepath.Join(workspace, ".cursor", "mcp.json")
+	if err := os.MkdirAll(filepath.Dir(cursorPath), 0o700); err != nil {
+		t.Fatalf("mkdir cursor dir: %v", err)
+	}
+	if err := os.WriteFile(cursorPath, []byte("{\"mcpServers\":{}}\n"), 0o600); err != nil {
+		t.Fatalf("write cursor config: %v", err)
+	}
+
+	outPath := filepath.Join(homeDir, "workspace-plan.json")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "playwright",
+		"--all-detected",
+		"--include-workspace",
+		"--workspace", workspace,
+		"--home-dir", homeDir,
+		"--out", outPath,
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read saved plan: %v", err)
+	}
+	if !strings.Contains(string(data), cursorPath) {
+		t.Fatalf("saved plan missing workspace path:\n%s", string(data))
+	}
+	if !strings.Contains(string(data), `"target_scope": "project"`) {
+		t.Fatalf("saved plan missing project scope:\n%s", string(data))
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = run([]string{
+		"apply",
+		"--plan", outPath,
+		"--home-dir", homeDir,
+		"--dry-run",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected dry-run exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "project-scoped config") {
+		t.Fatalf("dry-run output missing project approval prompt:\n%s", stdout.String())
+	}
+}
+
+func TestRunPlanAndApplySavedPlanForGitHub(t *testing.T) {
+	homeDir := t.TempDir()
+	keysFile := filepath.Join(homeDir, "github.env")
+	rawToken := "ghp_" + strings.Repeat("a", 36)
+	if err := os.WriteFile(keysFile, []byte("GITHUB_PERSONAL_ACCESS_TOKEN="+rawToken+"\n"), 0o600); err != nil {
+		t.Fatalf("write keys file: %v", err)
+	}
+
+	outPath := filepath.Join(homeDir, "github-plan.json")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "github",
+		"--targets", "cursor",
+		"--keys-file", keysFile,
+		"--home-dir", homeDir,
+		"--out", outPath,
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = run([]string{
+		"apply",
+		"--plan", outPath,
+		"--keys-file", keysFile,
+		"--home-dir", homeDir,
+		"--dry-run",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected apply dry-run exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if strings.Contains(stdout.String(), rawToken) || strings.Contains(stderr.String(), rawToken) {
+		t.Fatalf("saved-plan apply output leaked token\nstdout=%s\nstderr=%s", stdout.String(), stderr.String())
+	}
+}
+
+func TestRunDoctorClientsVerbose(t *testing.T) {
+	homeDir := t.TempDir()
+	claudePath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
+	if err := os.MkdirAll(filepath.Dir(claudePath), 0o700); err != nil {
+		t.Fatalf("mkdir claude dir: %v", err)
+	}
+	if err := os.WriteFile(claudePath, []byte("{\"mcpServers\":{\"context7\":{\"url\":\"https://context7.example/mcp\"}}}\n"), 0o600); err != nil {
+		t.Fatalf("write claude config: %v", err)
+	}
+	codexPath := filepath.Join(homeDir, ".codex", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(codexPath), 0o700); err != nil {
+		t.Fatalf("mkdir codex dir: %v", err)
+	}
+	if err := os.WriteFile(codexPath, []byte("[mcp_servers.exa]\nurl = \"https://mcp.exa.ai/mcp\"\n"), 0o600); err != nil {
+		t.Fatalf("write codex config: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"doctor",
+		"--home-dir", homeDir,
+		"--no-runtimes",
+		"--clients", "codex-cli",
+		"--verbose",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "Claude Desktop") {
+		t.Fatalf("doctor output should be filtered to Codex CLI:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Codex CLI") || !strings.Contains(stdout.String(), "candidate:") {
+		t.Fatalf("unexpected verbose doctor output:\n%s", stdout.String())
+	}
+}
+
+func TestRunProvidersJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"providers",
+		"--provider", "exa",
+		"--json",
+		"--home-dir", t.TempDir(),
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `"id": "exa"`) || !strings.Contains(stdout.String(), `"credential_status": "missing"`) {
+		t.Fatalf("unexpected providers json output:\n%s", stdout.String())
+	}
+}
+
 func TestRunShowJSON(t *testing.T) {
 	homeDir := t.TempDir()
 	store, err := app.NewPlanStore(homeDir)
