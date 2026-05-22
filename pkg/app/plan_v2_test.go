@@ -42,6 +42,24 @@ func TestBuildSavedPlanDoesNotContainRawKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildSavedPlan returned error: %v", err)
 	}
+	if saved.SchemaVersion != SavedPlanSchemaVersion {
+		t.Fatalf("unexpected schema version: got %d want %d", saved.SchemaVersion, SavedPlanSchemaVersion)
+	}
+	if len(saved.Credentials) != 1 || saved.Credentials[0].ID == "" {
+		t.Fatalf("expected credential ref id to be populated: %#v", saved.Credentials)
+	}
+	if len(saved.Operations) != 1 {
+		t.Fatalf("expected 1 saved operation, got %d", len(saved.Operations))
+	}
+	if saved.Operations[0].ProviderID != "exa" {
+		t.Fatalf("unexpected provider id: %s", saved.Operations[0].ProviderID)
+	}
+	if saved.Operations[0].CredentialRef != saved.Credentials[0].ID {
+		t.Fatalf("unexpected credential ref mapping: %#v", saved.Operations[0])
+	}
+	if saved.Operations[0].FileKind != string(config.FileKindMCPServers) {
+		t.Fatalf("unexpected file kind: %s", saved.Operations[0].FileKind)
+	}
 
 	data, err := MarshalSavedPlanJSON(saved)
 	if err != nil {
@@ -91,8 +109,41 @@ func TestBuildSavedPlanTracksCLICommandRedacted(t *testing.T) {
 	if len(saved.Operations) != 1 {
 		t.Fatalf("expected 1 operation, got %d", len(saved.Operations))
 	}
+	if saved.Operations[0].ProviderID != "exa" {
+		t.Fatalf("unexpected provider id: %s", saved.Operations[0].ProviderID)
+	}
+	if saved.Operations[0].FileKind != string(config.FileKindClaudeCodeCLI) {
+		t.Fatalf("unexpected file kind: %s", saved.Operations[0].FileKind)
+	}
 	if strings.Contains(strings.Join(saved.Operations[0].CLICommand, " "), key) {
 		t.Fatalf("CLICommand leaked raw key: %v", saved.Operations[0].CLICommand)
+	}
+}
+
+func TestPlanStoreLoadAcceptsLegacySchemaV1ForDisplay(t *testing.T) {
+	homeDir := t.TempDir()
+	store, err := NewPlanStore(homeDir)
+	if err != nil {
+		t.Fatalf("NewPlanStore returned error: %v", err)
+	}
+	now := fixedNow()()
+	path, err := store.Save(SavedPlan{
+		SchemaVersion: 1,
+		PlanID:        "legacyplan",
+		CreatedAt:     now,
+		ExpiresAt:     now.Add(time.Hour),
+		ProviderID:    "exa",
+	}, filepath.Join(homeDir, "legacy-plan.json"))
+	if err != nil {
+		t.Fatalf("Save returned error: %v", err)
+	}
+
+	loaded, err := store.Load(path)
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if loaded.SchemaVersion != 1 {
+		t.Fatalf("unexpected schema version: %d", loaded.SchemaVersion)
 	}
 }
 
@@ -196,5 +247,34 @@ func TestFormatSavedPlanNotesNoWritesAndExpiry(t *testing.T) {
 	}
 	if !strings.Contains(formatted, "No config files were written.") {
 		t.Fatalf("expected no-write note, got:\n%s", formatted)
+	}
+}
+
+func TestFormatSavedPlanPreflightIncludesApprovals(t *testing.T) {
+	now := time.Date(2026, time.May, 22, 12, 0, 0, 0, time.UTC)
+	preflight := SavedPlanPreflight{
+		PlanID:     "planid",
+		ProviderID: "exa",
+		CreatedAt:  now.Add(-2 * time.Hour),
+		ExpiresAt:  now.Add(time.Hour),
+		Operations: []PlanOperation{{
+			TargetName: "Cursor",
+			Action:     PlanActionCreate,
+			FilePath:   "/tmp/cursor.json",
+			Redacted:   "Cursor: create exa [http, credential=1111...1111]",
+		}},
+		ApprovalPrompts: []ApprovalPrompt{{
+			Reason:     "create",
+			TargetPath: "/tmp/cursor.json",
+			Message:    "Create new config file /tmp/cursor.json",
+		}},
+	}
+
+	formatted := FormatSavedPlanPreflight(preflight, now)
+	if !strings.Contains(formatted, "Approvals") {
+		t.Fatalf("expected approvals section, got:\n%s", formatted)
+	}
+	if !strings.Contains(formatted, "Create new config file /tmp/cursor.json") {
+		t.Fatalf("expected approval message, got:\n%s", formatted)
 	}
 }

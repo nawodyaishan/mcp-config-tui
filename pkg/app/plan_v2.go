@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	SavedPlanSchemaVersion = 1
+	SavedPlanSchemaVersion = 2
 
 	PlanActionCreate   = "create"
 	PlanActionUpdate   = "update"
@@ -42,24 +42,30 @@ type SavedPlan struct {
 }
 
 type CredentialRef struct {
+	ID     string `json:"id,omitempty"`
 	Key    string `json:"key"`
 	Label  string `json:"label"`
 	EnvVar string `json:"env_var"`
 }
 
 type PlanOperation struct {
-	TargetID     string   `json:"target_id"`
-	TargetName   string   `json:"target_name"`
-	Action       string   `json:"action"`
-	FilePath     string   `json:"file_path,omitempty"`
-	CurrentSHA   string   `json:"current_sha,omitempty"`
-	Transport    string   `json:"transport"`
-	Manager      string   `json:"manager"`
-	CLICommand   []string `json:"cli_command,omitempty"`
-	Redacted     string   `json:"redacted"`
-	IsSymlink    bool     `json:"is_symlink"`
-	ResolvedPath string   `json:"resolved_path,omitempty"`
-	Warnings     []string `json:"warnings,omitempty"`
+	TargetID      string   `json:"target_id"`
+	TargetName    string   `json:"target_name"`
+	Action        string   `json:"action"`
+	ProviderID    string   `json:"provider_id,omitempty"`
+	CredentialRef string   `json:"credential_ref,omitempty"`
+	FileKind      string   `json:"file_kind,omitempty"`
+	FilePath      string   `json:"file_path,omitempty"`
+	BackupPath    string   `json:"backup_path,omitempty"`
+	CurrentSHA    string   `json:"current_sha,omitempty"`
+	Transport     string   `json:"transport"`
+	Manager       string   `json:"manager"`
+	CLICommand    []string `json:"cli_command,omitempty"`
+	Redacted      string   `json:"redacted"`
+	IsSymlink     bool     `json:"is_symlink"`
+	ResolvedPath  string   `json:"resolved_path,omitempty"`
+	WillCreate    bool     `json:"will_create,omitempty"`
+	Warnings      []string `json:"warnings,omitempty"`
 }
 
 type DoctorSummary struct {
@@ -102,8 +108,13 @@ func (m *Manager) BuildSavedPlan(plan ExecutionPlan, opts SavedPlanOptions) (Sav
 		Operations:    make([]PlanOperation, 0, len(plan.Operations)),
 	}
 
+	credentialRefsByLabel := make(map[string]CredentialRef, len(saved.Credentials))
+	for _, ref := range saved.Credentials {
+		credentialRefsByLabel[ref.Label] = ref
+	}
+
 	for _, op := range plan.Operations {
-		planOp, err := m.buildPlanOperation(op)
+		planOp, err := m.buildPlanOperation(op, credentialRefsByLabel)
 		if err != nil {
 			return SavedPlan{}, err
 		}
@@ -113,12 +124,20 @@ func (m *Manager) BuildSavedPlan(plan ExecutionPlan, opts SavedPlanOptions) (Sav
 	return saved, nil
 }
 
-func (m *Manager) buildPlanOperation(op Operation) (PlanOperation, error) {
+func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[string]CredentialRef) (PlanOperation, error) {
+	credentialRefID := ""
+	if ref, ok := credentialRefsByLabel[op.CredentialLabel]; ok {
+		credentialRefID = ref.ID
+	}
+
 	planOp := PlanOperation{
-		TargetID:   string(op.AppID),
-		TargetName: op.AppName,
-		Transport:  string(op.Config.Type),
-		Warnings:   []string{},
+		TargetID:      string(op.AppID),
+		TargetName:    op.AppName,
+		ProviderID:    op.ProviderID,
+		CredentialRef: credentialRefID,
+		FileKind:      string(op.Kind),
+		Transport:     string(op.Config.Type),
+		Warnings:      []string{},
 	}
 
 	if op.SkipReason != "" {
@@ -134,6 +153,8 @@ func (m *Manager) buildPlanOperation(op Operation) (PlanOperation, error) {
 	} else {
 		planOp.Manager = PlanManagerFile
 		planOp.FilePath = op.Path
+		planOp.BackupPath = op.BackupPath
+		planOp.WillCreate = op.WillCreate
 		if op.WillCreate {
 			planOp.Action = PlanActionCreate
 		} else {
@@ -196,7 +217,22 @@ func cloneCredentialRefs(values []CredentialRef) []CredentialRef {
 	}
 	out := make([]CredentialRef, len(values))
 	copy(out, values)
+	for i := range out {
+		if out[i].ID == "" {
+			out[i].ID = defaultCredentialRefID(out[i].Key, out[i].Label)
+		}
+	}
 	return out
+}
+
+func defaultCredentialRefID(key, label string) string {
+	if key == "" {
+		return label
+	}
+	if label == "" {
+		return key
+	}
+	return key + ":" + label
 }
 
 func redactStrings(values []string) []string {

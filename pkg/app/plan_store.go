@@ -117,10 +117,19 @@ func (s PlanStore) Load(path string) (SavedPlan, error) {
 	if err := json.Unmarshal(data, &plan); err != nil {
 		return SavedPlan{}, fmt.Errorf("parse plan %s: %w", resolved, err)
 	}
-	if plan.SchemaVersion != SavedPlanSchemaVersion {
-		return SavedPlan{}, fmt.Errorf("plan %s uses schema version %d, expected %d", resolved, plan.SchemaVersion, SavedPlanSchemaVersion)
+	if !supportedSavedPlanSchema(plan.SchemaVersion) {
+		return SavedPlan{}, fmt.Errorf("plan %s uses unsupported schema version %d", resolved, plan.SchemaVersion)
 	}
 	return plan, nil
+}
+
+func supportedSavedPlanSchema(version int) bool {
+	switch version {
+	case 1, SavedPlanSchemaVersion:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s PlanStore) List() ([]PlanFile, error) {

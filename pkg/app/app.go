@@ -650,8 +650,14 @@ func validatePathWithinHome(homeDir, target string) error {
 		return fmt.Errorf("empty target path")
 	}
 
-	cleanHome := filepath.Clean(homeDir)
-	cleanTarget := filepath.Clean(target)
+	cleanHome, err := canonicalPath(homeDir)
+	if err != nil {
+		return fmt.Errorf("resolve home path: %w", err)
+	}
+	cleanTarget, err := canonicalPath(target)
+	if err != nil {
+		return fmt.Errorf("resolve target path: %w", err)
+	}
 	rel, err := filepath.Rel(cleanHome, cleanTarget)
 	if err != nil {
 		return fmt.Errorf("resolve target path: %w", err)
@@ -660,6 +666,38 @@ func validatePathWithinHome(homeDir, target string) error {
 		return fmt.Errorf("target path escapes configured home directory")
 	}
 	return nil
+}
+
+func canonicalPath(path string) (string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	missingSuffix := make([]string, 0, 4)
+	current := absPath
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			if len(missingSuffix) == 0 {
+				return resolved, nil
+			}
+			for index := len(missingSuffix) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, missingSuffix[index])
+			}
+			return resolved, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+
+		parent := filepath.Dir(current)
+		if parent == current {
+			return absPath, nil
+		}
+		missingSuffix = append(missingSuffix, filepath.Base(current))
+		current = parent
+	}
 }
 
 func rollbackWarnings(values []string) []string {
