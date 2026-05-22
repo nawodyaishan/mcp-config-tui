@@ -52,7 +52,7 @@ var allRuntimeRequirements = []RuntimeRequirement{
 	{
 		ID:          "antigravity",
 		Name:        "Antigravity CLI",
-		Command:     "antigravity",
+		Command:     "agy",
 		Args:        []string{"--version"},
 		InstallURL:  "https://antigravity.google/docs/mcp",
 		RequiredFor: []string{string(ClientAntigravityCLI)},
