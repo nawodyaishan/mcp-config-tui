@@ -1,0 +1,60 @@
+package manifest
+
+var allRuntimeRequirements = []RuntimeRequirement{
+	{
+		ID:          "node",
+		Name:        "Node.js",
+		Command:     "node",
+		Args:        []string{"--version"},
+		InstallURL:  "https://nodejs.org",
+		RequiredFor: []string{string(ProviderGitHub), string(ProviderTavily), string(ProviderPlaywright), string(ProviderKubernetes)},
+	},
+	{
+		ID:          "npx",
+		Name:        "npx",
+		Command:     "npx",
+		Args:        []string{"--version"},
+		InstallURL:  "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+		RequiredFor: []string{string(ProviderGitHub), string(ProviderTavily), string(ProviderPlaywright), string(ProviderKubernetes)},
+	},
+	{
+		ID:          "docker",
+		Name:        "Docker",
+		Command:     "docker",
+		Args:        []string{"info"},
+		InstallURL:  "https://docs.docker.com/desktop/",
+		RequiredFor: []string{string(ProviderTerraform)},
+	},
+	{
+		ID:          "claude",
+		Name:        "Claude CLI",
+		Command:     "claude",
+		Args:        []string{"--version"},
+		InstallURL:  "https://docs.anthropic.com/en/docs/claude-code/mcp",
+		RequiredFor: []string{string(ClientClaudeCode)},
+	},
+	{
+		ID:          "codex",
+		Name:        "Codex CLI",
+		Command:     "codex",
+		Args:        []string{"--version"},
+		InstallURL:  "https://developers.openai.com/codex/mcp",
+		RequiredFor: []string{string(ClientCodexCLI)},
+	},
+	{
+		ID:          "gemini",
+		Name:        "Gemini CLI",
+		Command:     "gemini",
+		Args:        []string{"--version"},
+		InstallURL:  "https://github.com/google-gemini/gemini-cli",
+		RequiredFor: []string{string(ClientGeminiCLI)},
+	},
+	{
+		ID:          "antigravity",
+		Name:        "Antigravity CLI",
+		Command:     "antigravity",
+		Args:        []string{"--version"},
+		InstallURL:  "https://antigravity.google/docs/mcp",
+		RequiredFor: []string{string(ClientAntigravityCLI)},
+	},
+}
