@@ -205,3 +205,104 @@ func TestRunPlanListAndClean(t *testing.T) {
 		t.Fatalf("unexpected clean output: %q", cleanOut.String())
 	}
 }
+
+func TestRunApplyRequiresPlan(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{"apply"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected exit code 1, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "apply requires --plan") {
+		t.Fatalf("unexpected stderr: %s", stderr.String())
+	}
+}
+
+func TestRunApplyDryRun(t *testing.T) {
+	homeDir := t.TempDir()
+	planPath := filepath.Join(homeDir, "plan.json")
+
+	var planOut bytes.Buffer
+	var planErr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "exa",
+		"--targets", "cursor",
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--home-dir", homeDir,
+		"--out", planPath,
+	}, &planOut, &planErr)
+	if code != 0 {
+		t.Fatalf("plan failed: code=%d stderr=%s", code, planErr.String())
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code = run([]string{
+		"apply",
+		"--plan", planPath,
+		"--home-dir", homeDir,
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--dry-run",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Saved MCP apply preview") {
+		t.Fatalf("unexpected dry-run output:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "No config files were written.") {
+		t.Fatalf("expected no-write note, got:\n%s", stdout.String())
+	}
+}
+
+func TestRunApplySavedPlan(t *testing.T) {
+	homeDir := t.TempDir()
+	planPath := filepath.Join(homeDir, "plan.json")
+	targetPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+		t.Fatalf("mkdir target parent: %v", err)
+	}
+	if err := os.WriteFile(targetPath, []byte("{}\n"), 0o600); err != nil {
+		t.Fatalf("write target fixture: %v", err)
+	}
+
+	var planOut bytes.Buffer
+	var planErr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "exa",
+		"--targets", "cursor",
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--home-dir", homeDir,
+		"--out", planPath,
+	}, &planOut, &planErr)
+	if code != 0 {
+		t.Fatalf("plan failed: code=%d stderr=%s", code, planErr.String())
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code = run([]string{
+		"apply",
+		"--plan", planPath,
+		"--home-dir", homeDir,
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--auto-approve",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "MCP sync result") {
+		t.Fatalf("unexpected apply output:\n%s", stdout.String())
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("read updated target: %v", err)
+	}
+	if !strings.Contains(string(data), "\"url\":") {
+		t.Fatalf("expected updated target file, got:\n%s", string(data))
+	}
+}

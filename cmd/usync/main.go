@@ -48,6 +48,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runShow(args[1:], stdout, stderr)
 		case "plan":
 			return runPlanCommand(args[1:], stdout, stderr)
+		case "apply":
+			return runApplyCommand(args[1:], stdout, stderr)
 		}
 	}
 
