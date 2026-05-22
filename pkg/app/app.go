@@ -586,9 +586,9 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		var extra map[string]any
 
 		switch op.AppID {
-		case config.AppGeminiCLI, config.AppAntigravityCLI:
+		case config.AppGeminiCLI:
 			urlFieldName = "httpUrl"
-		case config.AppAntigravity, config.AppWindsurf:
+		case config.AppAntigravityCLI, config.AppAntigravity, config.AppWindsurf:
 			urlFieldName = "serverUrl"
 		case config.AppRooCode:
 			if op.Config.Type == provider.TransportStdio {
@@ -602,8 +602,10 @@ func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
 		updated, err = config.UpdateMCPServersJSON(data, op.ProviderID, rootKey, urlFieldName, op.Config, extra)
 	case config.FileKindBareMCPServers:
 		urlFieldName := "url"
-		if op.AppID == config.AppGeminiCLI || op.AppID == config.AppAntigravityCLI {
+		if op.AppID == config.AppGeminiCLI {
 			urlFieldName = "httpUrl"
+		} else if op.AppID == config.AppAntigravityCLI {
+			urlFieldName = "serverUrl"
 		}
 		m.logDebug("updating BareMCPServers JSON", "app", op.AppID, "urlField", urlFieldName)
 		updated, err = config.UpdateBareMCPServersJSON(data, op.ProviderID, urlFieldName, op.Config, nil)

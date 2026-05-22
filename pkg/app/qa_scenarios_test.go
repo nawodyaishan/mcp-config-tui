@@ -236,7 +236,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 
 	geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
 	antigravityPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
-	antigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json")
+	antigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
 	mustWriteFile(t, geminiPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
 	mustWriteFile(t, antigravityCLIPath, []byte("{}"))
@@ -352,7 +352,7 @@ func TestQAContext7AllClients(t *testing.T) {
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
@@ -571,7 +571,7 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
@@ -692,7 +692,7 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}
@@ -818,7 +818,7 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
 		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
-		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
 	}

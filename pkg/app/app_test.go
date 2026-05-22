@@ -290,7 +290,7 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 		filepath.Join(homeDir, ".config", "Code", "User", "mcp.json"),
 		filepath.Join(homeDir, ".config", "opencode", "opencode.json"),
 		filepath.Join(homeDir, ".gemini", "settings.json"),
-		filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json"),
+		filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 	} {
 		if !strings.Contains(formatted, want) {
 			t.Fatalf("expected linux path %s in plan:\n%s", want, formatted)
@@ -299,8 +299,8 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "mcp_config.json")) {
 		t.Fatalf("did not expect linux Gemini CLI plan to include legacy mcp_config.json:\n%s", formatted)
 	}
-	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")) {
-		t.Fatalf("did not expect linux Antigravity CLI plan to include legacy mcp_config.json:\n%s", formatted)
+	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json")) {
+		t.Fatalf("did not expect linux Antigravity CLI plan to include old settings.json:\n%s", formatted)
 	}
 }
 
