@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	// Build the usync binary into a temporary directory
 	dir, err := os.MkdirTemp("", "usync-e2e-*")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to create temp dir: %v\n", err)
 		os.Exit(1)
 	}
 	defer func() {
@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 	binaryPath = filepath.Join(dir, "usync")
 	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to build usync: %v\n%s\n", err, out)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to build usync: %v\n%s\n", err, out)
 		os.Exit(1)
 	}
 
@@ -94,6 +94,63 @@ func TestRunPlanRequiresProvider(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "plan requires --provider") {
 		t.Fatalf("unexpected stderr: %s", stderr.String())
+	}
+}
+
+func TestRunValidateRequiresProvider(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{"validate", "--keys", "11111111-1111-1111-1111-111111111111"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected exit code 1, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "validate requires --provider") {
+		t.Fatalf("unexpected stderr: %s", stderr.String())
+	}
+}
+
+func TestRunValidateOfflineExaJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := run([]string{
+		"validate",
+		"--provider", "exa",
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--json",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `"provider_id": "exa"`) {
+		t.Fatalf("unexpected json output:\n%s", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "11111111-1111-1111-1111-111111111111") {
+		t.Fatalf("validation json leaked raw key:\n%s", stdout.String())
+	}
+}
+
+func TestRunValidateInvalidGitHubKeyFailsWithoutLeakingToken(t *testing.T) {
+	dir := t.TempDir()
+	keyFile := filepath.Join(dir, "keys.env")
+	rawToken := "ghp_tooshort"
+	if err := os.WriteFile(keyFile, []byte("GITHUB_PERSONAL_ACCESS_TOKEN="+rawToken+"\n"), 0o600); err != nil {
+		t.Fatalf("write key file: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"validate",
+		"--provider", "github",
+		"--keys-file", keyFile,
+	}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected exit code 1, got %d", code)
+	}
+	if strings.Contains(stdout.String(), rawToken) || strings.Contains(stderr.String(), rawToken) {
+		t.Fatalf("validation output leaked raw token\nstdout=%s\nstderr=%s", stdout.String(), stderr.String())
 	}
 }
 
@@ -304,5 +361,53 @@ func TestRunApplySavedPlan(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "\"url\":") {
 		t.Fatalf("expected updated target file, got:\n%s", string(data))
+	}
+}
+
+func TestRunApplyRejectsMalformedExaKeyBeforeWrite(t *testing.T) {
+	homeDir := t.TempDir()
+	planPath := filepath.Join(homeDir, "plan.json")
+	targetPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	original := []byte("{}\n")
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+		t.Fatalf("mkdir target parent: %v", err)
+	}
+	if err := os.WriteFile(targetPath, original, 0o600); err != nil {
+		t.Fatalf("write target fixture: %v", err)
+	}
+
+	var planOut bytes.Buffer
+	var planErr bytes.Buffer
+	code := run([]string{
+		"plan",
+		"--provider", "exa",
+		"--targets", "cursor",
+		"--keys", "11111111-1111-1111-1111-111111111111",
+		"--home-dir", homeDir,
+		"--out", planPath,
+	}, &planOut, &planErr)
+	if code != 0 {
+		t.Fatalf("plan failed: code=%d stderr=%s", code, planErr.String())
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code = run([]string{
+		"apply",
+		"--plan", planPath,
+		"--home-dir", homeDir,
+		"--keys", "invalid",
+		"--auto-approve",
+	}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected exit code 1, got %d stderr=%s", code, stderr.String())
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("read target after failed apply: %v", err)
+	}
+	if string(data) != string(original) {
+		t.Fatalf("expected target to remain unchanged, got:\n%s", string(data))
 	}
 }

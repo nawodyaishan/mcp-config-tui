@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -9,7 +10,9 @@ import (
 	"strings"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/validate"
 )
 
 func runApplyCommand(args []string, stdout, stderr io.Writer) int {
@@ -35,30 +38,46 @@ func runApplyCommand(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if strings.TrimSpace(planPath) == "" {
-		fmt.Fprintln(stderr, "apply requires --plan")
+		_, _ = fmt.Fprintln(stderr, "apply requires --plan")
 		return 1
 	}
 
 	manager, err := app.NewManager(homeDir, nil, nil)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	store, err := app.NewPlanStore(manager.HomeDir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	plan, err := store.Load(planPath)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	credentials, err := loadApplyCredentials(plan, keysCSV, keysFile)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
+	}
+	if plan.ProviderID == "exa" {
+		validationService, err := validate.NewService(manager.HomeDir)
+		if err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return 1
+		}
+		validationReport, err := validationService.ValidateProfiles(context.Background(), provider.NewExaProvider(), exaProfilesFromSavedPlan(plan, credentials), false)
+		if err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return 1
+		}
+		if validationReport.HasFailures() {
+			_, _ = fmt.Fprintln(stderr, validate.FormatReport(validationReport))
+			return 1
+		}
 	}
 
 	opts := app.SavedPlanApplyOptions{
@@ -78,7 +97,7 @@ func runApplyCommand(args []string, stdout, stderr io.Writer) int {
 	if dryRun {
 		preflight, err := manager.PreflightSavedPlan(plan, opts)
 		if err != nil {
-			fmt.Fprintln(stderr, err)
+			_, _ = fmt.Fprintln(stderr, err)
 			return 1
 		}
 		_, _ = fmt.Fprintln(stdout, app.FormatSavedPlanPreflight(preflight, manager.Now().UTC()))
@@ -87,7 +106,7 @@ func runApplyCommand(args []string, stdout, stderr io.Writer) int {
 
 	result, err := manager.ApplySavedPlan(plan, opts)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	_, _ = fmt.Fprintln(stdout, app.FormatApplyResult(result))
@@ -192,4 +211,26 @@ func defaultApplyCredentialRefID(key, label string) string {
 		return key
 	}
 	return key + ":" + label
+}
+
+func exaProfilesFromSavedPlan(plan app.SavedPlan, credentials map[string]string) []provider.CredentialProfile {
+	profiles := make([]provider.CredentialProfile, 0, len(plan.Credentials))
+	for _, ref := range plan.Credentials {
+		ref = normalizeApplyCredentialRef(ref)
+		if ref.Key != "EXA_API_KEY" {
+			continue
+		}
+		value := strings.TrimSpace(credentials[ref.ID])
+		if value == "" {
+			continue
+		}
+		profiles = append(profiles, provider.CredentialProfile{
+			ProviderID: "exa",
+			Values: map[string]string{
+				"EXA_API_KEY": value,
+			},
+			Label: ref.Label,
+		})
+	}
+	return profiles
 }

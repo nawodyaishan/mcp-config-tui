@@ -50,6 +50,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runPlanCommand(args[1:], stdout, stderr)
 		case "apply":
 			return runApplyCommand(args[1:], stdout, stderr)
+		case "validate":
+			return runValidateCommand(args[1:], stdout, stderr)
 		}
 	}
 
@@ -78,26 +80,26 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	if dryRun && apply {
-		fmt.Fprintln(stderr, "--dry-run and --apply cannot be used together")
+		_, _ = fmt.Fprintln(stderr, "--dry-run and --apply cannot be used together")
 		return 2
 	}
 
 	manager, err := app.NewManager(homeDir, nil, nil)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(stderr, "DEBUG: detected %d apps\n", len(manager.Apps))
+		_, _ = fmt.Fprintf(stderr, "DEBUG: detected %d apps\n", len(manager.Apps))
 		for _, a := range manager.Apps {
-			fmt.Fprintf(stderr, "DEBUG: app %s id=%s files=%d\n", a.Name, a.ID, len(a.Files))
+			_, _ = fmt.Fprintf(stderr, "DEBUG: app %s id=%s files=%d\n", a.Name, a.ID, len(a.Files))
 		}
 	}
 
 	initialKeys, initialRaw, err := loadInitialKeys(keysCSV, keysFile)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
@@ -106,35 +108,35 @@ func run(args []string, stdout, stderr io.Writer) int {
 		program := tea.NewProgram(model, tea.WithAltScreen())
 		finalModel, err := program.Run()
 		if err != nil {
-			fmt.Fprintln(stderr, err)
+			_, _ = fmt.Fprintln(stderr, err)
 			return 1
 		}
 		if finalTyped, ok := finalModel.(tui.Model); ok && finalTyped.Err() != nil {
-			fmt.Fprintln(stderr, finalTyped.Err())
+			_, _ = fmt.Fprintln(stderr, finalTyped.Err())
 			return 1
 		}
 		return 0
 	}
 
 	if len(initialKeys) == 0 {
-		fmt.Fprintln(stderr, "non-interactive mode requires --keys or --keys-file")
+		_, _ = fmt.Fprintln(stderr, "non-interactive mode requires --keys or --keys-file")
 		return 1
 	}
 
 	selected := mapAllSelected(manager.Apps)
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(stderr, "DEBUG: selected %d apps\n", len(selected))
+		_, _ = fmt.Fprintf(stderr, "DEBUG: selected %d apps\n", len(selected))
 	}
 	assignments := app.DefaultAssignments(selected, len(initialKeys))
 
 	plan, err := manager.Prepare(initialKeys, selected, assignments)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(stderr, "DEBUG: plan has %d operations\n", len(plan.Operations))
+		_, _ = fmt.Fprintf(stderr, "DEBUG: plan has %d operations\n", len(plan.Operations))
 	}
 
 	if dryRun {
@@ -144,7 +146,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	result, err := manager.Apply(plan)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 

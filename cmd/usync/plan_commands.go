@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -9,7 +10,9 @@ import (
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/validate"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/version"
 )
 
@@ -49,53 +52,67 @@ func runPlan(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if providerID == "" {
-		fmt.Fprintln(stderr, "plan requires --provider")
+		_, _ = fmt.Fprintln(stderr, "plan requires --provider")
 		return 1
 	}
 	if providerID != "exa" {
-		fmt.Fprintln(stderr, "saved plan creation currently supports --provider exa only")
+		_, _ = fmt.Fprintln(stderr, "saved plan creation currently supports --provider exa only")
 		return 1
 	}
 	if targetsCSV == "" && !allDetected {
-		fmt.Fprintln(stderr, "plan requires --targets or --all-detected")
+		_, _ = fmt.Fprintln(stderr, "plan requires --targets or --all-detected")
 		return 1
 	}
 	if allDetected {
-		fmt.Fprintln(stderr, "--all-detected requires doctor mode and is not implemented yet")
+		_, _ = fmt.Fprintln(stderr, "--all-detected requires doctor mode and is not implemented yet")
 		return 1
 	}
 
 	manager, err := app.NewManager(homeDir, nil, nil)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	initialKeys, _, err := loadInitialKeys(keysCSV, keysFile)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	if len(initialKeys) == 0 {
-		fmt.Fprintln(stderr, "plan requires --keys or --keys-file for provider exa")
+		_, _ = fmt.Fprintln(stderr, "plan requires --keys or --keys-file for provider exa")
+		return 1
+	}
+	validationService, err := validate.NewService(manager.HomeDir)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+	validationReport, err := validationService.ValidateProfiles(context.Background(), provider.NewExaProvider(), exaProfilesFromKeys(initialKeys), false)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if validationReport.HasFailures() {
+		_, _ = fmt.Fprintln(stderr, validate.FormatReport(validationReport))
 		return 1
 	}
 
 	selected, err := parseTargetSelection(manager.Apps, targetsCSV)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	legacyPlan, err := manager.Prepare(initialKeys, selected, app.DefaultAssignments(selected, len(initialKeys)))
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	planID, err := app.NewPlanID()
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	credentialRefs := make([]app.CredentialRef, len(initialKeys))
@@ -115,19 +132,19 @@ func runPlan(args []string, stdout, stderr io.Writer) int {
 		Credentials:  credentialRefs,
 	})
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 
 	store, err := app.NewPlanStore(manager.HomeDir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	store.Now = manager.Now
 	path, err := store.Save(savedPlan, outPath)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	_, _ = fmt.Fprintln(stdout, path)
@@ -138,7 +155,7 @@ func runShow(args []string, stdout, stderr io.Writer) int {
 	jsonOutput, args := consumeBoolFlag(args, "--json")
 	homeDir, args, err := consumeStringFlag(args, "--home-dir")
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 2
 	}
 	flags := flag.NewFlagSet("usync show", flag.ContinueOnError)
@@ -147,24 +164,24 @@ func runShow(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if flags.NArg() != 1 {
-		fmt.Fprintln(stderr, "show requires exactly one plan path")
+		_, _ = fmt.Fprintln(stderr, "show requires exactly one plan path")
 		return 1
 	}
 
 	store, err := app.NewPlanStore(homeDir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	plan, err := store.Load(flags.Arg(0))
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	if jsonOutput {
 		data, err := app.MarshalSavedPlanJSON(plan)
 		if err != nil {
-			fmt.Fprintln(stderr, err)
+			_, _ = fmt.Fprintln(stderr, err)
 			return 1
 		}
 		_, _ = stdout.Write(data)
@@ -185,12 +202,12 @@ func runPlanList(args []string, stdout, stderr io.Writer) int {
 
 	store, err := app.NewPlanStore(homeDir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	plans, err := store.List()
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	if len(plans) == 0 {
@@ -231,12 +248,12 @@ func runPlanClean(args []string, stdout, stderr io.Writer) int {
 
 	store, err := app.NewPlanStore(homeDir)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	removed, err := store.Clean(app.CleanOptions{ExpiredOnly: expiredOnly, RemoveAll: removeAll})
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
 	if len(removed) == 0 {
