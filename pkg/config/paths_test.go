@@ -16,7 +16,11 @@ func TestDetectAppConfigs(t *testing.T) {
 	}
 
 	// Create a dummy config file for the current platform.
-	claudeConfig := appPathsForOS(home, runtime.GOOS).claudeDesktop
+	seedApps, err := DetectAppConfigsForOS(home, runtime.GOOS)
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS failed: %v", err)
+	}
+	claudeConfig := findApp(t, seedApps, AppClaudeDesktop).Files[0].Path
 	_ = os.MkdirAll(filepath.Dir(claudeConfig), 0700)
 	_ = os.WriteFile(claudeConfig, []byte("{}"), 0600)
 

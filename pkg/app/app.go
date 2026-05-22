@@ -38,6 +38,8 @@ type Operation struct {
 	FileLabel       string
 	Path            string
 	Kind            config.FileKind
+	Scope           string
+	GitWarning      bool
 	CredentialLabel string
 	ProviderID      string
 	Config          provider.MCPConfig
@@ -164,16 +166,20 @@ func (m *Manager) PrepareProvider(
 
 		if appConfig.ID == config.AppClaudeCode {
 			m.logDebug("handling Claude Code", "app", appConfig.Name)
+			targetPath, targetScope, gitWarning := claudeCodeTarget(appConfig)
 			op := Operation{
 				AppID:           appConfig.ID,
 				AppName:         appConfig.Name,
 				FileLabel:       "Claude Code CLI",
+				Path:            targetPath,
 				Kind:            config.FileKindClaudeCodeCLI,
+				Scope:           targetScope,
+				GitWarning:      gitWarning,
 				CredentialLabel: profile.Label,
 				ProviderID:      prov.ID(),
 				Config:          cfg,
-				CLIRemoveArgs:   []string{"mcp", "remove", prov.ID(), "-s", "user"},
-				CLIAddArgs:      buildClaudeCodeAddArgs(prov.ID(), cfg),
+				CLIRemoveArgs:   []string{"mcp", "remove", prov.ID(), "-s", claudeCodeCLIScope(targetScope)},
+				CLIAddArgs:      buildClaudeCodeAddArgs(prov.ID(), cfg, targetScope),
 			}
 			if _, err := m.Runner.LookPath("claude"); err != nil {
 				op.SkipReason = "claude CLI not found; skipping direct mutation of ~/.claude.json"
@@ -202,6 +208,8 @@ func (m *Manager) PrepareProvider(
 				FileLabel:       file.Label,
 				Path:            file.Path,
 				Kind:            file.Kind,
+				Scope:           file.Scope,
+				GitWarning:      file.GitWarning,
 				CredentialLabel: profile.Label,
 				ProviderID:      prov.ID(),
 				Config:          fileCfg,
@@ -227,13 +235,35 @@ func providerPrerequisiteWarning(providerID string, cfg provider.MCPConfig, runn
 	return ""
 }
 
-func buildClaudeCodeAddArgs(providerID string, cfg provider.MCPConfig) []string {
+func buildClaudeCodeAddArgs(providerID string, cfg provider.MCPConfig, scope string) []string {
+	cliScope := claudeCodeCLIScope(scope)
 	if cfg.Type == provider.TransportStdio {
-		args := []string{"mcp", "add", "-s", "user", providerID, "--", cfg.Command}
+		args := []string{"mcp", "add", "-s", cliScope, providerID, "--", cfg.Command}
 		args = append(args, cfg.Args...)
 		return args
 	}
-	return []string{"mcp", "add", "--transport", string(cfg.Type), "-s", "user", providerID, cfg.URL}
+	return []string{"mcp", "add", "--transport", string(cfg.Type), "-s", cliScope, providerID, cfg.URL}
+}
+
+func claudeCodeTarget(appConfig config.AppConfig) (string, string, bool) {
+	if len(appConfig.Files) == 0 {
+		return "", "user", false
+	}
+	file := appConfig.Files[0]
+	scope := file.Scope
+	if scope == "" {
+		scope = "user"
+	}
+	return file.Path, scope, file.GitWarning
+}
+
+func claudeCodeCLIScope(scope string) string {
+	switch scope {
+	case "project", "local", "user":
+		return scope
+	default:
+		return "user"
+	}
 }
 
 func (m *Manager) Prepare(keys []string, selected map[config.AppID]bool, assignments map[config.AppID]int) (ExecutionPlan, error) {
@@ -535,7 +565,7 @@ func (m *Manager) prepareOperations(plan ExecutionPlan, result *ApplyResult) ([]
 }
 
 func (m *Manager) prepareFileOperation(op Operation) (preparedWrite, error) {
-	if err := validatePathWithinHome(m.HomeDir, op.Path); err != nil {
+	if err := validateOperationPath(m.HomeDir, op.Scope, op.Path); err != nil {
 		return preparedWrite{}, fmt.Errorf("%s (%s): %w", op.AppName, op.FileLabel, err)
 	}
 
@@ -666,6 +696,21 @@ func validatePathWithinHome(homeDir, target string) error {
 		return fmt.Errorf("target path escapes configured home directory")
 	}
 	return nil
+}
+
+func validateOperationPath(homeDir, scope, target string) error {
+	switch scope {
+	case "project", "workspace":
+		if target == "" {
+			return fmt.Errorf("empty target path")
+		}
+		if _, err := canonicalPath(target); err != nil {
+			return fmt.Errorf("resolve target path: %w", err)
+		}
+		return nil
+	default:
+		return validatePathWithinHome(homeDir, target)
+	}
 }
 
 func canonicalPath(path string) (string, error) {

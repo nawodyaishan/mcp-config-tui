@@ -51,6 +51,7 @@ type CredentialRef struct {
 type PlanOperation struct {
 	TargetID      string   `json:"target_id"`
 	TargetName    string   `json:"target_name"`
+	TargetScope   string   `json:"target_scope,omitempty"`
 	Action        string   `json:"action"`
 	ProviderID    string   `json:"provider_id,omitempty"`
 	CredentialRef string   `json:"credential_ref,omitempty"`
@@ -65,6 +66,7 @@ type PlanOperation struct {
 	IsSymlink     bool     `json:"is_symlink"`
 	ResolvedPath  string   `json:"resolved_path,omitempty"`
 	WillCreate    bool     `json:"will_create,omitempty"`
+	GitWarning    bool     `json:"git_warning,omitempty"`
 	Warnings      []string `json:"warnings,omitempty"`
 }
 
@@ -133,10 +135,12 @@ func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[str
 	planOp := PlanOperation{
 		TargetID:      string(op.AppID),
 		TargetName:    op.AppName,
+		TargetScope:   op.Scope,
 		ProviderID:    op.ProviderID,
 		CredentialRef: credentialRefID,
 		FileKind:      string(op.Kind),
 		Transport:     string(op.Config.Type),
+		GitWarning:    op.GitWarning,
 		Warnings:      []string{},
 	}
 
@@ -147,6 +151,7 @@ func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[str
 	} else if op.Kind == config.FileKindClaudeCodeCLI {
 		planOp.Action = PlanActionUpdate
 		planOp.Manager = PlanManagerCLI
+		planOp.FilePath = op.Path
 		planOp.CLICommand = redactStrings(append([]string{"claude"}, op.CLIAddArgs...))
 		planOp.Redacted = redact.Text(fmt.Sprintf("%s: update %s [cli, credential=%s]", op.AppName, op.ProviderID, op.CredentialLabel))
 		return planOp, nil

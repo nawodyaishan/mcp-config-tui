@@ -177,7 +177,7 @@ func credentialHelpURL(providerID, key string) string {
 	return ""
 }
 
-func redactedCredentialLabel(providerID, key, value string) string {
+func RedactedCredentialLabel(providerID, key, value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return key
@@ -195,6 +195,10 @@ func redactedCredentialLabel(providerID, key, value string) string {
 	default:
 		return redact.Key(value)
 	}
+}
+
+func redactedCredentialLabel(providerID, key, value string) string {
+	return RedactedCredentialLabel(providerID, key, value)
 }
 
 func redactGitHubToken(value string) string {

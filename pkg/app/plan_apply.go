@@ -202,9 +202,10 @@ func (m *Manager) prepareSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (
 
 		switch planOp.Manager {
 		case PlanManagerFile:
-			if err := validatePathWithinHome(m.HomeDir, planOp.FilePath); err != nil {
+			if err := validateOperationPath(m.HomeDir, planOp.TargetScope, planOp.FilePath); err != nil {
 				return savedPreparedApply{}, fmt.Errorf("%s: %w", planOp.TargetName, err)
 			}
+			appendScopeApprovalPrompt(&prepared.preflight, planOp)
 
 			sha, err := currentSHA(planOp.FilePath)
 			if err != nil {
@@ -230,7 +231,7 @@ func (m *Manager) prepareSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (
 				if planOp.ResolvedPath == "" {
 					return savedPreparedApply{}, fmt.Errorf("%s: missing resolved symlink target for %s", planOp.TargetName, planOp.FilePath)
 				}
-				if err := validatePathWithinHome(m.HomeDir, planOp.ResolvedPath); err != nil {
+				if err := validateOperationPath(m.HomeDir, planOp.TargetScope, planOp.ResolvedPath); err != nil {
 					return savedPreparedApply{}, fmt.Errorf("%s: %w", planOp.TargetName, err)
 				}
 				writePath = planOp.ResolvedPath
@@ -261,6 +262,7 @@ func (m *Manager) prepareSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (
 				displayPath: planOp.FilePath,
 			})
 		case PlanManagerCLI:
+			appendScopeApprovalPrompt(&prepared.preflight, planOp)
 			if err := validateSavedCLIOperation(built, planOp, m.Runner); err != nil {
 				return savedPreparedApply{}, err
 			}
@@ -314,6 +316,8 @@ func (m *Manager) buildOperationFromSavedPlan(plan SavedPlan, planOp PlanOperati
 		FileLabel:       fileLabel,
 		Path:            planOp.FilePath,
 		Kind:            config.FileKind(planOp.FileKind),
+		Scope:           planOp.TargetScope,
+		GitWarning:      planOp.GitWarning,
 		CredentialLabel: credentialLabel,
 		ProviderID:      providerID,
 		BackupPath:      planOp.BackupPath,
@@ -335,8 +339,8 @@ func (m *Manager) buildOperationFromSavedPlan(plan SavedPlan, planOp PlanOperati
 		if appID != config.AppClaudeCode || op.Kind != config.FileKindClaudeCodeCLI {
 			return Operation{}, fmt.Errorf("%s: unsupported CLI target %s", planOp.TargetName, appID)
 		}
-		op.CLIRemoveArgs = []string{"mcp", "remove", providerID, "-s", "user"}
-		op.CLIAddArgs = buildClaudeCodeAddArgs(providerID, cfg)
+		op.CLIRemoveArgs = []string{"mcp", "remove", providerID, "-s", claudeCodeCLIScope(op.Scope)}
+		op.CLIAddArgs = buildClaudeCodeAddArgs(providerID, cfg, op.Scope)
 		if string(cfg.Type) != planOp.Transport {
 			return Operation{}, fmt.Errorf("%s: CLI transport changed since plan creation", planOp.TargetName)
 		}
@@ -410,6 +414,36 @@ func savedPlanFileLabel(apps []config.AppConfig, appID config.AppID, path string
 		return "Saved plan operation"
 	}
 	return filepath.Base(path)
+}
+
+func appendScopeApprovalPrompt(preflight *SavedPlanPreflight, planOp PlanOperation) {
+	scope := planOp.TargetScope
+	if scope != "project" && scope != "workspace" && !planOp.GitWarning {
+		return
+	}
+
+	path := planOp.FilePath
+	if path == "" {
+		path = planOp.TargetName
+	}
+
+	message := fmt.Sprintf("Apply changes to %s-scoped config %s", scopeLabel(scope), path)
+	if planOp.GitWarning {
+		message = fmt.Sprintf("%s (this file may be shared through source control)", message)
+	}
+
+	preflight.ApprovalPrompts = append(preflight.ApprovalPrompts, ApprovalPrompt{
+		Reason:     "scope",
+		TargetPath: path,
+		Message:    message,
+	})
+}
+
+func scopeLabel(scope string) string {
+	if scope == "" {
+		return "user"
+	}
+	return scope
 }
 
 func confirmApprovalPrompts(prompts []ApprovalPrompt, opts SavedPlanApplyOptions) error {
