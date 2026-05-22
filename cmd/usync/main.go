@@ -56,6 +56,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runDoctorCommand(args[1:], stdout, stderr)
 		case "providers":
 			return runProvidersCommand(args[1:], stdout, stderr)
+		case "migrate":
+			return runMigrateCommand(args[1:], stdout, stderr)
 		}
 	}
 
@@ -110,12 +112,25 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	if !apply && !dryRun {
-		model := tui.NewWizardModel(manager, initialKeys, initialRaw)
+		var finalModel tea.Model
 		if wizard {
-			model = tui.NewWizardModel(manager, initialKeys, initialRaw)
+			model := tui.NewWizardModel(manager, initialKeys, initialRaw)
+			program := tea.NewProgram(model, tea.WithAltScreen())
+			finalModel, err = program.Run()
+		} else {
+			workspaceDir, _ := os.Getwd()
+			scanner := tui.NewProductionScanner(homeDir, workspaceDir)
+			model := tui.NewDashboardModel(scanner)
+			program := tea.NewProgram(model, tea.WithAltScreen())
+			finalModel, err = program.Run()
+
+			if m, ok := finalModel.(tui.DashboardModel); ok && m.RouteToWizard {
+				wizardModel := tui.NewWizardModel(manager, initialKeys, initialRaw)
+				program := tea.NewProgram(wizardModel, tea.WithAltScreen())
+				finalModel, err = program.Run()
+			}
 		}
-		program := tea.NewProgram(model, tea.WithAltScreen())
-		finalModel, err := program.Run()
+
 		if err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return 1
