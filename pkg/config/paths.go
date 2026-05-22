@@ -248,10 +248,14 @@ func legacyTargetLabel(appID AppID, candidateLabel string) string {
 		}
 		return "Gemini settings"
 	case AppAntigravityCLI:
-		if candidateLabel == "legacy-darwin-mcp" {
-			return "Antigravity CLI MCP config"
+		switch candidateLabel {
+		case "legacy-gemini-config":
+			return "Antigravity CLI legacy config (gemini)"
+		case "legacy-pre-io26":
+			return "Antigravity CLI legacy config (pre-IO26)"
+		default:
+			return "Antigravity CLI settings"
 		}
-		return "Antigravity CLI settings"
 	case AppAntigravity:
 		return "Antigravity IDE MCP config"
 	case AppCodexCLI:
