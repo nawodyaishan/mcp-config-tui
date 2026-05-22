@@ -52,6 +52,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runApplyCommand(args[1:], stdout, stderr)
 		case "validate":
 			return runValidateCommand(args[1:], stdout, stderr)
+		case "doctor":
+			return runDoctorCommand(args[1:], stdout, stderr)
 		}
 	}
 
@@ -63,6 +65,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	var dryRun bool
 	var apply bool
 	var showVersion bool
+	var wizard bool
 
 	flags.StringVar(&keysFile, "keys-file", "", "path to a file containing Exa API keys")
 	flags.StringVar(&keysCSV, "keys", "", "comma-separated Exa API keys")
@@ -70,6 +73,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	flags.BoolVar(&dryRun, "dry-run", false, "print the redacted plan without writing files")
 	flags.BoolVar(&apply, "apply", false, "apply updates without launching the TUI")
 	flags.BoolVar(&showVersion, "version", false, "print version information and exit")
+	flags.BoolVar(&wizard, "wizard", false, "launch the legacy setup wizard")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -104,7 +108,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	if !apply && !dryRun {
-		model := tui.NewModel(manager, initialKeys, initialRaw)
+		model := tui.NewWizardModel(manager, initialKeys, initialRaw)
+		if wizard {
+			model = tui.NewWizardModel(manager, initialKeys, initialRaw)
+		}
 		program := tea.NewProgram(model, tea.WithAltScreen())
 		finalModel, err := program.Run()
 		if err != nil {

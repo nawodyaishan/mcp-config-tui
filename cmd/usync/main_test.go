@@ -154,6 +154,37 @@ func TestRunValidateInvalidGitHubKeyFailsWithoutLeakingToken(t *testing.T) {
 	}
 }
 
+func TestRunDoctorJSON(t *testing.T) {
+	t.Setenv("PATH", "")
+
+	homeDir := t.TempDir()
+	claudePath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
+	if err := os.MkdirAll(filepath.Dir(claudePath), 0o700); err != nil {
+		t.Fatalf("mkdir claude dir: %v", err)
+	}
+	if err := os.WriteFile(claudePath, []byte("{\"mcpServers\":{\"context7\":{\"url\":\"https://context7.example/mcp\"}}}\n"), 0o600); err != nil {
+		t.Fatalf("write claude config: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := run([]string{
+		"doctor",
+		"--home-dir", homeDir,
+		"--no-runtimes",
+		"--json",
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "\"id\": \"claude-desktop\"") {
+		t.Fatalf("unexpected doctor json output:\n%s", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "context7.example") {
+		t.Fatalf("doctor json leaked config content:\n%s", stdout.String())
+	}
+}
+
 func TestRunPlanCreatesSavedPlan(t *testing.T) {
 	homeDir := t.TempDir()
 	outPath := filepath.Join(homeDir, "plan.json")
