@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,11 +35,24 @@ func loadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "sync" {
-		// Strip "sync" and continue as if it were the main command
-		os.Args = append(os.Args[:1], os.Args[2:]...)
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "sync" {
+		args = args[1:]
+	}
+	if len(args) > 0 {
+		switch args[0] {
+		case "show":
+			return runShow(args[1:], stdout, stderr)
+		case "plan":
+			return runPlanCommand(args[1:], stdout, stderr)
+		}
 	}
 
+	flags := flag.NewFlagSet("usync", flag.ContinueOnError)
+	flags.SetOutput(stderr)
 	var keysFile string
 	var keysCSV string
 	var homeDir string
@@ -46,41 +60,43 @@ func main() {
 	var apply bool
 	var showVersion bool
 
-	flag.StringVar(&keysFile, "keys-file", "", "path to a file containing Exa API keys")
-	flag.StringVar(&keysCSV, "keys", "", "comma-separated Exa API keys")
-	flag.StringVar(&homeDir, "home-dir", "", "override the target home directory for testing")
-	flag.BoolVar(&dryRun, "dry-run", false, "print the redacted plan without writing files")
-	flag.BoolVar(&apply, "apply", false, "apply updates without launching the TUI")
-	flag.BoolVar(&showVersion, "version", false, "print version information and exit")
-	flag.Parse()
+	flags.StringVar(&keysFile, "keys-file", "", "path to a file containing Exa API keys")
+	flags.StringVar(&keysCSV, "keys", "", "comma-separated Exa API keys")
+	flags.StringVar(&homeDir, "home-dir", "", "override the target home directory for testing")
+	flags.BoolVar(&dryRun, "dry-run", false, "print the redacted plan without writing files")
+	flags.BoolVar(&apply, "apply", false, "apply updates without launching the TUI")
+	flags.BoolVar(&showVersion, "version", false, "print version information and exit")
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
 
 	if showVersion {
-		_, _ = fmt.Fprintln(os.Stdout, version.String())
-		return
+		_, _ = fmt.Fprintln(stdout, version.String())
+		return 0
 	}
 
 	if dryRun && apply {
-		fmt.Fprintln(os.Stderr, "--dry-run and --apply cannot be used together")
-		os.Exit(2)
+		fmt.Fprintln(stderr, "--dry-run and --apply cannot be used together")
+		return 2
 	}
 
 	manager, err := app.NewManager(homeDir, nil, nil)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
 
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(os.Stderr, "DEBUG: detected %d apps\n", len(manager.Apps))
+		fmt.Fprintf(stderr, "DEBUG: detected %d apps\n", len(manager.Apps))
 		for _, a := range manager.Apps {
-			fmt.Fprintf(os.Stderr, "DEBUG: app %s id=%s files=%d\n", a.Name, a.ID, len(a.Files))
+			fmt.Fprintf(stderr, "DEBUG: app %s id=%s files=%d\n", a.Name, a.ID, len(a.Files))
 		}
 	}
 
 	initialKeys, initialRaw, err := loadInitialKeys(keysCSV, keysFile)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
 
 	if !apply && !dryRun {
@@ -88,49 +104,50 @@ func main() {
 		program := tea.NewProgram(model, tea.WithAltScreen())
 		finalModel, err := program.Run()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			fmt.Fprintln(stderr, err)
+			return 1
 		}
 		if finalTyped, ok := finalModel.(tui.Model); ok && finalTyped.Err() != nil {
-			fmt.Fprintln(os.Stderr, finalTyped.Err())
-			os.Exit(1)
+			fmt.Fprintln(stderr, finalTyped.Err())
+			return 1
 		}
-		return
+		return 0
 	}
 
 	if len(initialKeys) == 0 {
-		fmt.Fprintln(os.Stderr, "non-interactive mode requires --keys or --keys-file")
-		os.Exit(1)
+		fmt.Fprintln(stderr, "non-interactive mode requires --keys or --keys-file")
+		return 1
 	}
 
 	selected := mapAllSelected(manager.Apps)
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(os.Stderr, "DEBUG: selected %d apps\n", len(selected))
+		fmt.Fprintf(stderr, "DEBUG: selected %d apps\n", len(selected))
 	}
 	assignments := app.DefaultAssignments(selected, len(initialKeys))
 
 	plan, err := manager.Prepare(initialKeys, selected, assignments)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
 
 	if os.Getenv("USYNC_DEBUG") == "true" {
-		fmt.Fprintf(os.Stderr, "DEBUG: plan has %d operations\n", len(plan.Operations))
+		fmt.Fprintf(stderr, "DEBUG: plan has %d operations\n", len(plan.Operations))
 	}
 
 	if dryRun {
-		_, _ = fmt.Fprintln(os.Stdout, app.FormatPlan(plan))
-		return
+		_, _ = fmt.Fprintln(stdout, app.FormatPlan(plan))
+		return 0
 	}
 
 	result, err := manager.Apply(plan)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, app.FormatApplyResult(result))
+	_, _ = fmt.Fprintln(stdout, app.FormatApplyResult(result))
+	return 0
 }
 
 func mapAllSelected(apps []config.AppConfig) map[config.AppID]bool {
