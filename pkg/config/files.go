@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,11 @@ import (
 
 const privatePerm = 0o600
 const privateDirPerm = 0o700
+
+const fileLockRetryCount = 5
+const fileLockRetryDelay = 10 * time.Millisecond
+
+var ErrFileLocked = errors.New("config file is locked")
 
 type WriteOutcome struct {
 	Path       string
@@ -44,6 +50,12 @@ func WriteWithBackup(path string, data []byte, now time.Time) (WriteOutcome, err
 		return WriteOutcome{}, err
 	}
 
+	unlock, err := acquireFileLock(path)
+	if err != nil {
+		return WriteOutcome{}, err
+	}
+	defer unlock()
+
 	existing, existed, err := ReadFileOrEmpty(path)
 	if err != nil {
 		return WriteOutcome{}, err
@@ -66,6 +78,33 @@ func WriteWithBackup(path string, data []byte, now time.Time) (WriteOutcome, err
 	}
 
 	return outcome, nil
+}
+
+func acquireFileLock(path string) (func(), error) {
+	lockPath := path + ".lock"
+	if err := EnsureParentDir(lockPath); err != nil {
+		return nil, err
+	}
+
+	for attempt := 0; attempt < fileLockRetryCount; attempt++ {
+		lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, privatePerm)
+		if err == nil {
+			_ = lockFile.Close()
+			return func() {
+				_ = os.Remove(lockPath)
+			}, nil
+		}
+
+		if !os.IsExist(err) {
+			return nil, fmt.Errorf("create lock file %s: %w", lockPath, err)
+		}
+
+		if attempt < fileLockRetryCount-1 {
+			time.Sleep(fileLockRetryDelay)
+		}
+	}
+
+	return nil, fmt.Errorf("%w: %s", ErrFileLocked, lockPath)
 }
 
 func RollbackWrite(outcome WriteOutcome) error {
