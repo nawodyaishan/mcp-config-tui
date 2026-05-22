@@ -56,7 +56,9 @@ func (w Writer) Append(entry Entry) error {
 	if err != nil {
 		return fmt.Errorf("open audit log %s: %w", w.Path, err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	if err := file.Chmod(privateFilePerm); err != nil {
 		return fmt.Errorf("chmod audit log %s: %w", w.Path, err)

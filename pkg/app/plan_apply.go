@@ -187,9 +187,7 @@ func (m *Manager) prepareSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (
 
 	for _, planOp := range plan.Operations {
 		if planOp.Action == PlanActionSkip {
-			for _, warning := range planOp.Warnings {
-				prepared.preflight.Warnings = append(prepared.preflight.Warnings, warning)
-			}
+			prepared.preflight.Warnings = append(prepared.preflight.Warnings, planOp.Warnings...)
 			continue
 		}
 		if planOp.Action == PlanActionConflict {
