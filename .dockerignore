@@ -1,0 +1,9 @@
+.git
+artifacts
+bin
+coverage.out
+*.test
+*.log
+.DS_Store
+tmp
+vendor
