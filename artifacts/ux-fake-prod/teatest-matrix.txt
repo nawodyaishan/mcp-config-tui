@@ -1,0 +1,51 @@
+go: downloading github.com/charmbracelet/x/exp/golden v0.0.0-20241011142426-46044092ad91
+go: downloading github.com/charmbracelet/x/exp/teatest v0.0.0-20260511125431-fe5d686e0c99
+go: downloading github.com/aymanbagabas/go-udiff v0.3.1
+=== RUN   TestDashboardFlowMatrix_MissingCredentialsBlocksBeforePlan
+--- PASS: TestDashboardFlowMatrix_MissingCredentialsBlocksBeforePlan (0.08s)
+=== RUN   TestDashboardFlowMatrix_DeselectOnlyTargetBlocksPlan
+--- PASS: TestDashboardFlowMatrix_DeselectOnlyTargetBlocksPlan (0.11s)
+=== RUN   TestDashboardFlowMatrix_RWithoutConflictDoesNotAdvance
+--- PASS: TestDashboardFlowMatrix_RWithoutConflictDoesNotAdvance (0.05s)
+=== RUN   TestDashboardFlowMatrix_NoKeyProviderCanPlanWithoutCredentials
+--- PASS: TestDashboardFlowMatrix_NoKeyProviderCanPlanWithoutCredentials (0.11s)
+=== RUN   TestDashboardFlowMatrix_ConflictChosenPathReachesPlan
+--- PASS: TestDashboardFlowMatrix_ConflictChosenPathReachesPlan (0.16s)
+=== RUN   TestDashboardFlowMatrix_RFromTargetRowOpensConflict
+--- PASS: TestDashboardFlowMatrix_RFromTargetRowOpensConflict (0.11s)
+=== RUN   TestDashboardFlowMatrix_ConflictSecondPathReachesPlan
+--- PASS: TestDashboardFlowMatrix_ConflictSecondPathReachesPlan (0.16s)
+=== RUN   TestDashboardFlowMatrix_SkippedConflictIsExcluded
+--- PASS: TestDashboardFlowMatrix_SkippedConflictIsExcluded (0.16s)
+=== RUN   TestDashboardFlowMatrix_WorkspaceToggleChangesTargets
+--- PASS: TestDashboardFlowMatrix_WorkspaceToggleChangesTargets (0.13s)
+=== RUN   TestDashboardFlowMatrix_WorkspaceOffExcludesProjectTargets
+--- PASS: TestDashboardFlowMatrix_WorkspaceOffExcludesProjectTargets (0.11s)
+=== RUN   TestDashboardFlowMatrix_WorkspaceTargetShowsScopeWarning
+--- PASS: TestDashboardFlowMatrix_WorkspaceTargetShowsScopeWarning (0.11s)
+=== RUN   TestDashboardFlowMatrix_MultiFileClientCanSelectOneCandidate
+--- PASS: TestDashboardFlowMatrix_MultiFileClientCanSelectOneCandidate (0.11s)
+=== RUN   TestDashboardFlowMatrix_StuckProviderReadyConflictHidesAll
+--- PASS: TestDashboardFlowMatrix_StuckProviderReadyConflictHidesAll (0.06s)
+=== RUN   TestDashboardFlowMatrix_DoubleEnterDuringValidationIsSafe
+--- PASS: TestDashboardFlowMatrix_DoubleEnterDuringValidationIsSafe (0.00s)
+=== RUN   TestDashboardFlowMatrix_DoubleYDuringApplyIsSafe
+--- PASS: TestDashboardFlowMatrix_DoubleYDuringApplyIsSafe (0.00s)
+=== RUN   TestDashboardFlowMatrix_DoubleRescanIsSafe
+--- PASS: TestDashboardFlowMatrix_DoubleRescanIsSafe (0.00s)
+=== RUN   TestDashboardFlowMatrix_EscFromProviderReadyKeepsReport
+--- PASS: TestDashboardFlowMatrix_EscFromProviderReadyKeepsReport (0.08s)
+=== RUN   TestDashboardFlowMatrix_EscPreservesTargetSelections
+--- PASS: TestDashboardFlowMatrix_EscPreservesTargetSelections (0.00s)
+=== RUN   TestDashboardFlowMatrix_EscFromPlanPreviewKeepsSelections
+--- PASS: TestDashboardFlowMatrix_EscFromPlanPreviewKeepsSelections (0.00s)
+=== RUN   TestDashboardFlowMatrix_ResolvedConflictSurvivesRescan
+--- PASS: TestDashboardFlowMatrix_ResolvedConflictSurvivesRescan (0.00s)
+=== RUN   TestDashboardFlowMatrix_RescanRebuildsTargetSelections
+--- PASS: TestDashboardFlowMatrix_RescanRebuildsTargetSelections (0.00s)
+=== RUN   TestDashboardFlowMatrix_BatchApplyThreeTargets
+--- PASS: TestDashboardFlowMatrix_BatchApplyThreeTargets (0.13s)
+=== RUN   TestDashboardFlowMatrix_SequentialProvidersInOneSession
+--- PASS: TestDashboardFlowMatrix_SequentialProvidersInOneSession (0.00s)
+PASS
+ok  	github.com/nawodyaishan/universal-mcp-sync/pkg/tui	1.688s

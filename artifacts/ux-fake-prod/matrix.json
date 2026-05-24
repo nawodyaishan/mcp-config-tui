@@ -1,0 +1,49 @@
+{
+  "runner": "ux-fake-prod",
+  "cases": [
+    {
+      "id": "DM-P31",
+      "kind": "real-tui-pty",
+      "status": "captured",
+      "artifacts": {
+        "ansi": "flows/DM-P31.ansi",
+        "text": "flows/DM-P31.txt"
+      }
+    },
+    {
+      "id": "FAKE-PROD-MATRIX",
+      "kind": "docker-fake-prod-teatest",
+      "status": "pass",
+      "artifacts": {
+        "text": "fake-prod-matrix.txt"
+      }
+    },
+    {
+      "id": "UX-MATRIX",
+      "kind": "teatest",
+      "status": "pass",
+      "artifacts": {
+        "text": "teatest-matrix.txt"
+      }
+    },
+    {
+      "id": "DOCTOR-JSON",
+      "kind": "real-cli",
+      "status": "findings",
+      "artifacts": {
+        "json": "doctor.json",
+        "stderr": "doctor.stderr"
+      }
+    },
+    {
+      "id": "PLAN-ALL-DETECTED",
+      "kind": "real-cli",
+      "status": "pass",
+      "artifacts": {
+        "plan": "plans/fake-prod-plan.json",
+        "stdout": "plan.stdout",
+        "stderr": "plan.stderr"
+      }
+    }
+  ]
+}

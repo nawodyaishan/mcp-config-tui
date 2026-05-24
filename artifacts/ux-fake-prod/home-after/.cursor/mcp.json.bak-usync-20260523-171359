@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "exa": {
+      "_usync": {
+        "at": "2026-05-23T17:13:59Z",
+        "managedBy": "usync",
+        "planID": "dm-p57-first"
+      },
+      "url": "https://mcp.exa.ai/mcp?exaApiKey=11111111-1111-1111-1111-111111111111\u0026tools=web_search_exa%2Cweb_search_advanced_exa%2Cweb_fetch_exa"
+    },
+    "playwright": {
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "command": "npx"
+    }
+  }
+}

@@ -1,0 +1,442 @@
+{
+  "platform": "linux",
+  "clients": [
+    {
+      "id": "antigravity-cli",
+      "name": "Antigravity CLI",
+      "installed": true,
+      "cli_available": true,
+      "effective_path": "/tmp/usync-fake-prod/home/.gemini/antigravity-cli/mcp_config.json",
+      "confidence": "high",
+      "configured_providers": [
+        "context7",
+        "exa"
+      ],
+      "candidates": [
+        {
+          "label": "mcp-config",
+          "path": "/tmp/usync-fake-prod/home/.gemini/antigravity-cli/mcp_config.json",
+          "scope": "user",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true,
+          "providers": [
+            "context7"
+          ]
+        },
+        {
+          "label": "legacy-pre-io26",
+          "path": "/tmp/usync-fake-prod/home/.gemini/antigravity/mcp_config.json",
+          "scope": "legacy",
+          "deprecated": true,
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true
+        },
+        {
+          "label": "legacy-gemini-config",
+          "path": "/tmp/usync-fake-prod/home/.gemini/config/mcp_config.json",
+          "scope": "legacy",
+          "deprecated": true,
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true,
+          "providers": [
+            "exa"
+          ]
+        },
+        {
+          "label": "workspace",
+          "path": "/tmp/usync-fake-prod/workspace/.agents/mcp_config.json",
+          "scope": "workspace",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity IDE",
+      "installed": true,
+      "confidence": "conflict",
+      "configured_providers": [
+        "exa"
+      ],
+      "candidates": [
+        {
+          "label": "alternate-symlink",
+          "path": "/tmp/usync-fake-prod/home/.gemini/antigravity/mcp_config.json",
+          "scope": "managed",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true
+        },
+        {
+          "label": "repo-current",
+          "path": "/tmp/usync-fake-prod/home/.gemini/config/mcp_config.json",
+          "scope": "user",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true,
+          "providers": [
+            "exa"
+          ]
+        }
+      ],
+      "issues": [
+        "multiple current config candidates exist"
+      ],
+      "warnings": [
+        "~/.gemini/config/mcp_config.json overlaps with the Antigravity CLI post-migration fallback path (issue #60); doctor conflict detection covers both surfaces."
+      ],
+      "migration_hints": [
+        {
+          "from_id": "antigravity",
+          "to_id": "antigravity",
+          "reason": "resolve Antigravity config path conflict before applying changes"
+        }
+      ]
+    },
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "installed": true,
+      "cli_available": true,
+      "effective_path": "/tmp/usync-fake-prod/home/.claude.json",
+      "confidence": "high",
+      "configured_providers": [
+        "playwright"
+      ],
+      "candidates": [
+        {
+          "label": "user",
+          "path": "/tmp/usync-fake-prod/home/.claude.json",
+          "scope": "user",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true,
+          "providers": [
+            "playwright"
+          ]
+        },
+        {
+          "label": "project",
+          "path": "/tmp/usync-fake-prod/workspace/.mcp.json",
+          "scope": "project",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "claude-desktop",
+      "name": "Claude Desktop",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "user-linux",
+          "path": "/tmp/usync-fake-prod/home/.config/Claude/claude_desktop_config.json",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "codex-cli",
+      "name": "Codex CLI",
+      "installed": true,
+      "cli_available": true,
+      "confidence": "medium",
+      "candidates": [
+        {
+          "label": "user",
+          "path": "/tmp/usync-fake-prod/home/.codex/config.toml",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcp_servers",
+          "root_key_ok": false
+        },
+        {
+          "label": "project",
+          "path": "/tmp/usync-fake-prod/workspace/.codex/config.toml",
+          "scope": "project",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcp_servers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "installed": true,
+      "effective_path": "/tmp/usync-fake-prod/home/.cursor/mcp.json",
+      "confidence": "high",
+      "configured_providers": [
+        "playwright"
+      ],
+      "candidates": [
+        {
+          "label": "global",
+          "path": "/tmp/usync-fake-prod/home/.cursor/mcp.json",
+          "scope": "global",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": true,
+          "providers": [
+            "playwright"
+          ]
+        },
+        {
+          "label": "project",
+          "path": "/tmp/usync-fake-prod/workspace/.cursor/mcp.json",
+          "scope": "project",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "kiro",
+      "name": "Kiro",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "user",
+          "path": "/tmp/usync-fake-prod/home/.kiro/settings/mcp.json",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "global-linux",
+          "path": "/tmp/usync-fake-prod/home/.config/opencode/opencode.json",
+          "scope": "global",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcp",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "roocode",
+      "name": "Roo Code",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "user-linux",
+          "path": "/tmp/usync-fake-prod/home/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "vscode",
+      "name": "VS Code",
+      "installed": true,
+      "confidence": "conflict",
+      "configured_providers": [
+        "context7",
+        "playwright"
+      ],
+      "candidates": [
+        {
+          "label": "user-linux",
+          "path": "/tmp/usync-fake-prod/home/.config/Code/User/mcp.json",
+          "scope": "user",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "servers",
+          "root_key_ok": true,
+          "providers": [
+            "playwright"
+          ]
+        },
+        {
+          "label": "workspace",
+          "path": "/tmp/usync-fake-prod/workspace/.vscode/mcp.json",
+          "scope": "workspace",
+          "exists": true,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "servers",
+          "root_key_ok": true,
+          "providers": [
+            "context7"
+          ]
+        }
+      ],
+      "issues": [
+        "multiple current config candidates exist"
+      ]
+    },
+    {
+      "id": "windsurf",
+      "name": "Windsurf",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "user-linux",
+          "path": "/tmp/usync-fake-prod/home/.codeium/mcp_config.json",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        },
+        {
+          "label": "legacy-linux",
+          "path": "/tmp/usync-fake-prod/home/.codeium/windsurf/mcp_config.json",
+          "scope": "legacy",
+          "deprecated": true,
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "mcpServers",
+          "root_key_ok": false
+        }
+      ]
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "installed": false,
+      "confidence": "low",
+      "candidates": [
+        {
+          "label": "user",
+          "path": "/tmp/usync-fake-prod/home/.config/zed/settings.json",
+          "scope": "user",
+          "exists": false,
+          "parse_ok": true,
+          "writable": true,
+          "root_key": "context_servers",
+          "root_key_ok": false
+        }
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "Node.js",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/node",
+      "version": "fake 1.0.0",
+      "required_for": [
+        "github",
+        "tavily",
+        "playwright",
+        "kubernetes"
+      ]
+    },
+    {
+      "id": "npx",
+      "name": "npx",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/npx",
+      "version": "fake 1.0.0",
+      "required_for": [
+        "github",
+        "tavily",
+        "playwright",
+        "kubernetes"
+      ]
+    },
+    {
+      "id": "docker",
+      "name": "Docker",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/docker",
+      "version": "fake runtime",
+      "required_for": [
+        "terraform"
+      ]
+    },
+    {
+      "id": "claude",
+      "name": "Claude CLI",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/claude",
+      "version": "fake 1.0.0",
+      "required_for": [
+        "claude-code"
+      ]
+    },
+    {
+      "id": "codex",
+      "name": "Codex CLI",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/codex",
+      "version": "fake 1.0.0",
+      "required_for": [
+        "codex-cli"
+      ]
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity CLI",
+      "available": true,
+      "path": "/tmp/usync-fake-prod/bin/agy",
+      "version": "fake 1.0.0",
+      "required_for": [
+        "antigravity-cli"
+      ]
+    }
+  ]
+}
