@@ -1,7 +1,5 @@
 package manifest
 
-const geminiSunsetDeadline = "2026-06-18"
-
 var allClients = []ClientManifest{
 	{
 		ID:        ClientClaudeDesktop,
@@ -38,7 +36,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://modelcontextprotocol.io/quickstart/user", Title: "MCP User Quickstart", VerifiedAt: "2026-05-21"},
+			{URL: "https://modelcontextprotocol.io/quickstart/user", Title: "MCP User Quickstart", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -78,7 +76,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://docs.anthropic.com/en/docs/claude-code/mcp", Title: "Claude Code MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://docs.anthropic.com/en/docs/claude-code/mcp", Title: "Claude Code MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -117,7 +115,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://docs.cursor.com/context/model-context-protocol", Title: "Cursor MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://docs.cursor.com/context/model-context-protocol", Title: "Cursor MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -170,7 +168,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://code.visualstudio.com/docs/copilot/chat/mcp-servers", Title: "VS Code MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://code.visualstudio.com/docs/copilot/chat/mcp-servers", Title: "VS Code MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -224,7 +222,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://docs.windsurf.com/plugins/cascade/mcp", Title: "Windsurf MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://docs.windsurf.com/plugins/cascade/mcp", Title: "Windsurf MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -249,7 +247,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://zed.dev/docs/assistant/model-context-protocol", Title: "Zed MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://zed.dev/docs/assistant/model-context-protocol", Title: "Zed MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -287,7 +285,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://docs.roocode.com/features/mcp/using-mcp-in-roo", Title: "Roo Code MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://docs.roocode.com/features/mcp/using-mcp-in-roo", Title: "Roo Code MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -325,7 +323,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://opencode.ai/docs/mcp", Title: "OpenCode MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://opencode.ai/docs/mcp", Title: "OpenCode MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -350,52 +348,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://kiro.dev/docs/mcp", Title: "Kiro MCP", VerifiedAt: "2026-05-21"},
-		},
-	},
-	{
-		ID:        ClientGeminiCLI,
-		Name:      "Gemini CLI",
-		Platforms: []string{"darwin", "linux"},
-		Manager:   ManagerFile,
-		CLIName:   "gemini",
-		DocsURL:   "https://github.com/google-gemini/gemini-cli",
-		Candidates: []ConfigCandidate{
-			{
-				Label:        "settings",
-				PathTemplate: "{{.Home}}/.gemini/settings.json",
-				Platforms:    []string{"darwin", "linux"},
-				Scope:        ScopeUser,
-				Format:       FormatJSON,
-				MutationKind: MutationMCPServers,
-				RootKey:      "mcpServers",
-				URLField:     "url",
-				Creatable:    true,
-				Confidence:   ConfidenceHigh,
-				Precedence:   20,
-			},
-			{
-				Label:           "legacy-darwin-mcp",
-				PathTemplate:    "{{.Home}}/.gemini/mcp_config.json",
-				Platforms:       []string{"darwin"},
-				Scope:           ScopeLegacy,
-				Format:          FormatJSON,
-				MutationKind:    MutationBareMCPServers,
-				RootKey:         "",
-				URLField:        "url",
-				Creatable:       true,
-				Confidence:      ConfidenceLow,
-				Precedence:      30,
-				Deprecated:      true,
-				ReplacedBy:      "settings",
-				DeprecationNote: "legacy macOS Gemini MCP config path",
-			},
-		},
-		Warnings: []ClientWarning{
-			{Code: "sunset", Message: "Gemini CLI is deprecated and should migrate to Antigravity.", Deadline: geminiSunsetDeadline},
-		},
-		Sources: []SourceRef{
-			{URL: "https://github.com/google-gemini/gemini-cli", Title: "Gemini CLI", VerifiedAt: "2026-05-21"},
+			{URL: "https://kiro.dev/docs/mcp", Title: "Kiro MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -471,8 +424,8 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://antigravity.google/docs/mcp", Title: "Antigravity MCP", VerifiedAt: "2026-05-21"},
-			{URL: "https://antigravity.google/docs/gcli-migration", Title: "Gemini CLI Migration Guide", VerifiedAt: "2026-05-23"},
+			{URL: "https://antigravity.google/docs/mcp", Title: "Antigravity MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
+			{URL: "https://antigravity.google/docs/gcli-migration", Title: "Gemini CLI Migration Guide", VerifiedAt: "2026-05-23", Confidence: "official"},
 		},
 	},
 	{
@@ -514,7 +467,7 @@ var allClients = []ClientManifest{
 			{Code: "path-dispute", Message: "~/.gemini/config/mcp_config.json overlaps with the Antigravity CLI post-migration fallback path (issue #60); doctor conflict detection covers both surfaces."},
 		},
 		Sources: []SourceRef{
-			{URL: "https://antigravity.google/docs/mcp", Title: "Antigravity MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://antigravity.google/docs/mcp", Title: "Antigravity MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -553,7 +506,7 @@ var allClients = []ClientManifest{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://developers.openai.com/codex/mcp", Title: "Codex MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://developers.openai.com/codex/mcp", Title: "Codex MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 }

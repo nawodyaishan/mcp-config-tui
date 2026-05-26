@@ -24,7 +24,6 @@ func TestAllClientsIncludesRepoAppIDsInOrder(t *testing.T) {
 		ClientRooCode,
 		ClientOpenCode,
 		ClientKiro,
-		ClientGeminiCLI,
 		ClientAntigravityCLI,
 		ClientAntigravity,
 		ClientCodexCLI,
@@ -194,7 +193,7 @@ func TestRuntimeRequirementsCoverExpectedIDs(t *testing.T) {
 		runtimeIDs = append(runtimeIDs, runtime.ID)
 	}
 
-	for _, requiredID := range []string{"node", "npx", "docker", "claude", "codex", "gemini", "antigravity"} {
+	for _, requiredID := range []string{"node", "npx", "docker", "claude", "codex", "antigravity"} {
 		if !slices.Contains(runtimeIDs, requiredID) {
 			t.Fatalf("missing runtime requirement %q", requiredID)
 		}
@@ -228,4 +227,21 @@ func findClient(clients []ClientManifest, id ClientID) (ClientManifest, bool) {
 		}
 	}
 	return ClientManifest{}, false
+}
+
+func TestAllSourceRefsHaveConfidence(t *testing.T) {
+	for _, client := range AllClients() {
+		for i, src := range client.Sources {
+			if src.Confidence == "" {
+				t.Errorf("client %s Sources[%d] URL=%q missing Confidence", client.ID, i, src.URL)
+			}
+		}
+	}
+	for _, prov := range AllProviders() {
+		for i, src := range prov.Sources {
+			if src.Confidence == "" {
+				t.Errorf("provider %s Sources[%d] URL=%q missing Confidence", prov.ID, i, src.URL)
+			}
+		}
+	}
 }

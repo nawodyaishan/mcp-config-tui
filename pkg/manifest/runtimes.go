@@ -42,14 +42,6 @@ var allRuntimeRequirements = []RuntimeRequirement{
 		RequiredFor: []string{string(ClientCodexCLI)},
 	},
 	{
-		ID:          "gemini",
-		Name:        "Gemini CLI",
-		Command:     "gemini",
-		Args:        []string{"--version"},
-		InstallURL:  "https://github.com/google-gemini/gemini-cli",
-		RequiredFor: []string{string(ClientGeminiCLI)},
-	},
-	{
 		ID:          "antigravity",
 		Name:        "Antigravity CLI",
 		Command:     "agy",

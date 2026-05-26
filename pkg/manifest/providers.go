@@ -17,7 +17,7 @@ var allProviders = []ProviderMeta{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://exa.ai/docs/reference/exa-mcp", Title: "Exa MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://exa.ai/docs/reference/exa-mcp", Title: "Exa MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -43,7 +43,7 @@ var allProviders = []ProviderMeta{
 		},
 		RuntimeIDs: []string{"node", "npx"},
 		Sources: []SourceRef{
-			{URL: "https://github.com/settings/tokens", Title: "GitHub Tokens", VerifiedAt: "2026-05-21"},
+			{URL: "https://github.com/settings/tokens", Title: "GitHub Tokens", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -62,7 +62,7 @@ var allProviders = []ProviderMeta{
 			},
 		},
 		Sources: []SourceRef{
-			{URL: "https://context7.com/docs/api-guide", Title: "Context7 API Guide", VerifiedAt: "2026-05-21"},
+			{URL: "https://context7.com/docs/api-guide", Title: "Context7 API Guide", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -88,7 +88,7 @@ var allProviders = []ProviderMeta{
 		},
 		RuntimeIDs: []string{"node", "npx"},
 		Sources: []SourceRef{
-			{URL: "https://docs.tavily.com/documentation/mcp", Title: "Tavily MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://docs.tavily.com/documentation/mcp", Title: "Tavily MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -97,7 +97,7 @@ var allProviders = []ProviderMeta{
 		DocsURL:    "https://playwright.dev/docs/getting-started-mcp",
 		RuntimeIDs: []string{"node", "npx"},
 		Sources: []SourceRef{
-			{URL: "https://playwright.dev/docs/getting-started-mcp", Title: "Playwright MCP", VerifiedAt: "2026-05-21"},
+			{URL: "https://playwright.dev/docs/getting-started-mcp", Title: "Playwright MCP", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -106,7 +106,7 @@ var allProviders = []ProviderMeta{
 		DocsURL:    "https://github.com/manusa/kubernetes-mcp-server",
 		RuntimeIDs: []string{"node", "npx"},
 		Sources: []SourceRef{
-			{URL: "https://github.com/manusa/kubernetes-mcp-server", Title: "Kubernetes MCP Server", VerifiedAt: "2026-05-21"},
+			{URL: "https://github.com/manusa/kubernetes-mcp-server", Title: "Kubernetes MCP Server", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 	{
@@ -126,7 +126,7 @@ var allProviders = []ProviderMeta{
 		},
 		RuntimeIDs: []string{"docker"},
 		Sources: []SourceRef{
-			{URL: "https://developer.hashicorp.com/terraform/mcp-server", Title: "Terraform MCP Server", VerifiedAt: "2026-05-21"},
+			{URL: "https://developer.hashicorp.com/terraform/mcp-server", Title: "Terraform MCP Server", VerifiedAt: "2026-05-21", Confidence: "official"},
 		},
 	},
 }

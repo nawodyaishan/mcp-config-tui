@@ -18,7 +18,6 @@ const (
 	ClientRooCode        ClientID = "roocode"
 	ClientOpenCode       ClientID = "opencode"
 	ClientKiro           ClientID = "kiro"
-	ClientGeminiCLI      ClientID = "gemini-cli"
 	ClientAntigravityCLI ClientID = "antigravity-cli"
 	ClientAntigravity    ClientID = "antigravity"
 	ClientCodexCLI       ClientID = "codex-cli"
@@ -46,6 +45,7 @@ const (
 	MutationNamedServer    MutationKind = "namedServer"
 	MutationCodexTOML      MutationKind = "codexTOML"
 	MutationClaudeCodeCLI  MutationKind = "claudeCodeCLI"
+	MutationCodexCLI       MutationKind = "codexCLI" // user-scope codex mcp add CLI path
 )
 
 const (
@@ -109,6 +109,7 @@ type SourceRef struct {
 	URL        string
 	Title      string
 	VerifiedAt string
+	Confidence string // "official" (primary docs/source) | "empirical" (community/issue-tracker observation)
 }
 
 type ProviderMeta struct {
