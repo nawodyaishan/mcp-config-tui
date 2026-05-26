@@ -10,6 +10,7 @@ import (
 
 const privateFilePerm = 0o600
 const privateDirPerm = 0o700
+const maxAuditLogBytes int64 = 5 * 1024 * 1024
 
 type Entry struct {
 	Timestamp    time.Time `json:"ts"`
@@ -44,10 +45,20 @@ func NewWriter(homeDir string) (Writer, error) {
 	}, nil
 }
 
+// maybeRotate renames audit.log → audit.log.1 when size ≥ 5 MB. Best-effort.
+func (w Writer) maybeRotate() {
+	info, err := os.Stat(w.Path)
+	if err != nil || info.Size() < maxAuditLogBytes {
+		return
+	}
+	_ = os.Rename(w.Path, w.Path+".1")
+}
+
 func (w Writer) Append(entry Entry) error {
 	if w.Path == "" {
 		return fmt.Errorf("missing audit log path")
 	}
+	w.maybeRotate()
 	if err := os.MkdirAll(filepath.Dir(w.Path), privateDirPerm); err != nil {
 		return fmt.Errorf("create audit directory for %s: %w", w.Path, err)
 	}
