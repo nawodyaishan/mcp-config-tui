@@ -68,10 +68,6 @@ var Matrix = map[config.AppID]Capability{
 	config.AppKiro: {
 		Supports: TransportSupport{StreamableHTTP: true, HTTP: true, Stdio: true},
 	},
-	config.AppGeminiCLI: {
-		// Gemini CLI does not support local stdio subprocess servers.
-		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
-	},
 	config.AppAntigravityCLI: {
 		Supports: TransportSupport{StreamableHTTP: true, HTTP: true},
 	},

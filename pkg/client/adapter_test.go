@@ -69,18 +69,6 @@ func TestAdapt(t *testing.T) {
 			wantCmd:  "npx",
 		},
 		{
-			name:     "GeminiCLI passes StreamableHTTP unchanged (no bridge needed)",
-			appID:    config.AppGeminiCLI,
-			input:    remoteHTTP,
-			wantType: provider.TransportStreamableHTTP,
-		},
-		{
-			name:     "GeminiCLI returns stdio unchanged (caller must check CanHandle)",
-			appID:    config.AppGeminiCLI,
-			input:    stdioGitHub,
-			wantType: provider.TransportStdio, // pass-through, CanHandle=false
-		},
-		{
 			name:     "AntigravityCLI passes StreamableHTTP unchanged (no bridge needed)",
 			appID:    config.AppAntigravityCLI,
 			input:    remoteHTTP,
@@ -134,8 +122,6 @@ func TestCanHandle(t *testing.T) {
 		{config.AppClaudeDesktop, provider.TransportStdio, true},
 		{config.AppClaudeDesktop, provider.TransportStreamableHTTP, true}, // via bridge
 		{config.AppClaudeDesktop, provider.TransportHTTP, true},           // via bridge
-		{config.AppGeminiCLI, provider.TransportStreamableHTTP, true},
-		{config.AppGeminiCLI, provider.TransportStdio, false}, // no support, no bridge
 		{config.AppAntigravityCLI, provider.TransportStreamableHTTP, true},
 		{config.AppAntigravityCLI, provider.TransportStdio, false}, // no support, no bridge
 		{config.AppAntigravity, provider.TransportStdio, false},
@@ -151,15 +137,10 @@ func TestCanHandle(t *testing.T) {
 	}
 }
 
-func TestHeadersFor_GeminiAddsAccept(t *testing.T) {
+func TestHeadersFor_AntigravityAddsAccept(t *testing.T) {
 	base := map[string]string{"CONTEXT7_API_KEY": "ctx7sk_test"}
-	got := client.HeadersFor(config.AppGeminiCLI, base)
+	got := client.HeadersFor(config.AppAntigravityCLI, base)
 	if got["Accept"] == "" {
-		t.Error("expected Accept header for Gemini CLI")
-	}
-
-	gotAG := client.HeadersFor(config.AppAntigravityCLI, base)
-	if gotAG["Accept"] == "" {
 		t.Error("expected Accept header for Antigravity CLI")
 	}
 }

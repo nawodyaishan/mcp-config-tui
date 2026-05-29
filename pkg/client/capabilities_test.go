@@ -28,16 +28,6 @@ func TestClaudeDesktopCapabilities(t *testing.T) {
 	}
 }
 
-func TestGeminiCLICapabilities(t *testing.T) {
-	cap := client.Matrix[config.AppGeminiCLI]
-	if cap.Supports.Stdio {
-		t.Error("GeminiCLI does not support local stdio subprocess servers")
-	}
-	if !cap.Supports.StreamableHTTP {
-		t.Error("GeminiCLI must support StreamableHTTP")
-	}
-}
-
 func TestAntigravityCLICapabilities(t *testing.T) {
 	cap := client.Matrix[config.AppAntigravityCLI]
 	if cap.Supports.Stdio {
