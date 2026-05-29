@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -81,8 +82,13 @@ func e2eEnv(homeDir string) []string {
 	)
 }
 
+var usyncAtRE = regexp.MustCompile(`"at": "[^"]*"`)
+
 func scrubPath(content []byte, pathToScrub string) []byte {
-	return bytes.ReplaceAll(content, []byte(pathToScrub), []byte("{{HOME}}"))
+	out := bytes.ReplaceAll(content, []byte(pathToScrub), []byte("{{HOME}}"))
+	// Scrub _usync.at timestamps so golden files are time-stable.
+	out = usyncAtRE.ReplaceAll(out, []byte(`"at": "{{TIMESTAMP}}"`))
+	return out
 }
 
 func assertGolden(t *testing.T, actual []byte, goldenFile string) {
@@ -122,7 +128,6 @@ func getFilesToScaffold() []string {
 		filepath.Join("Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
 		".opencode.json",
 		filepath.Join(".kiro", "settings", "mcp.json"),
-		filepath.Join(".gemini", "settings.json"),
 		filepath.Join(".gemini", "antigravity-cli", "mcp_config.json"),
 		filepath.Join(".gemini", "config", "mcp_config.json"),
 		filepath.Join(".codex", "config.toml"),
