@@ -278,3 +278,128 @@ func TestFormatSavedPlanPreflightIncludesApprovals(t *testing.T) {
 		t.Fatalf("expected approval message, got:\n%s", formatted)
 	}
 }
+
+// --- Secret indirection tests ---
+
+func TestBuildSavedPlan_VSCodeInputVariables(t *testing.T) {
+	homeDir := t.TempDir()
+	vscodePath := filepath.Join(homeDir, ".vscode", "mcp.json")
+	mustWriteFile(t, vscodePath, []byte(`{"servers":{}}`))
+
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS: %v", err)
+	}
+
+	key := "11111111-1111-1111-1111-111111111111"
+	selected := map[config.AppID]bool{config.AppVSCode: true}
+	prov := provider.NewExaProvider()
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "exa",
+		Values:     map[string]string{"EXA_API_KEY": key},
+		Label:      "1111...1111",
+	}}
+	plan, err := manager.PrepareProvider(prov, profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
+
+	planID, _ := NewPlanID()
+	saved, err := manager.BuildSavedPlan(plan, SavedPlanOptions{
+		PlanID:            planID,
+		CreatedAt:         fixedNow()(),
+		UsyncVersion:      "test",
+		ProviderID:        "exa",
+		Credentials:       buildCredentialRefsFromProfiles(prov, profiles),
+		UseInputVariables: true,
+	})
+	if err != nil {
+		t.Fatalf("BuildSavedPlan: %v", err)
+	}
+
+	found := false
+	for _, op := range saved.Operations {
+		if op.TargetID == string(config.AppVSCode) {
+			found = true
+			if len(op.VSCodeInputs) == 0 {
+				t.Error("expected VSCodeInputs non-empty for VS Code target")
+			}
+			if strings.Contains(op.Redacted, key) {
+				t.Errorf("raw key must not appear in Redacted: %s", op.Redacted)
+			}
+			if !strings.Contains(op.Redacted, "${input:") {
+				t.Errorf("expected ${input:…} in Redacted, got: %s", op.Redacted)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected VS Code operation in plan")
+	}
+}
+
+func TestBuildSavedPlan_DefaultFlagsNoChange(t *testing.T) {
+	homeDir := t.TempDir()
+	vscodePath := filepath.Join(homeDir, ".vscode", "mcp.json")
+	mustWriteFile(t, vscodePath, []byte(`{"servers":{}}`))
+
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager: %v", err)
+	}
+	manager.Apps, err = config.DetectAppConfigsForOS(homeDir, "darwin")
+	if err != nil {
+		t.Fatalf("DetectAppConfigsForOS: %v", err)
+	}
+
+	key := "11111111-1111-1111-1111-111111111111"
+	selected := map[config.AppID]bool{config.AppVSCode: true}
+	prov := provider.NewExaProvider()
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "exa",
+		Values:     map[string]string{"EXA_API_KEY": key},
+		Label:      "1111...1111",
+	}}
+	plan, err := manager.PrepareProvider(prov, profiles, selected, DefaultAssignments(selected, 1))
+	if err != nil {
+		t.Fatalf("PrepareProvider: %v", err)
+	}
+
+	planID, _ := NewPlanID()
+	saved, err := manager.BuildSavedPlan(plan, SavedPlanOptions{
+		PlanID:       planID,
+		CreatedAt:    fixedNow()(),
+		UsyncVersion: "test",
+		ProviderID:   "exa",
+		Credentials:  buildCredentialRefsFromProfiles(prov, profiles),
+		// UseInputVariables: false (default)
+	})
+	if err != nil {
+		t.Fatalf("BuildSavedPlan: %v", err)
+	}
+
+	for _, op := range saved.Operations {
+		if op.TargetID == string(config.AppVSCode) && len(op.VSCodeInputs) != 0 {
+			t.Errorf("expected no VSCodeInputs with default flags, got %+v", op.VSCodeInputs)
+		}
+	}
+}
+
+// buildCredentialRefsFromProfiles is a test helper mirroring cmd/usync logic.
+func buildCredentialRefsFromProfiles(prov provider.MCPProvider, profiles []provider.CredentialProfile) []CredentialRef {
+	refs := make([]CredentialRef, 0, len(profiles))
+	for _, p := range profiles {
+		for _, cred := range prov.RequiredCredentials() {
+			if _, ok := p.Values[cred.Key]; ok {
+				refs = append(refs, CredentialRef{
+					Key:   cred.Key,
+					Label: p.Label,
+				})
+			}
+		}
+	}
+	return refs
+}

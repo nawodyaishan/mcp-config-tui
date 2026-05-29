@@ -4,11 +4,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/manifest"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/redact"
 )
 
@@ -36,6 +40,7 @@ type SavedPlan struct {
 	UsyncVersion  string          `json:"usync_version"`
 	ProviderID    string          `json:"provider_id"`
 	Credentials   []CredentialRef `json:"credential_refs"`
+	ContentHash   string          `json:"content_hash,omitempty"` // sha256 of all Redacted strings in order
 	Operations    []PlanOperation `json:"operations"`
 	Warnings      []string        `json:"warnings,omitempty"`
 	DoctorSummary DoctorSummary   `json:"doctor_summary"`
@@ -63,11 +68,14 @@ type PlanOperation struct {
 	Manager       string   `json:"manager"`
 	CLICommand    []string `json:"cli_command,omitempty"`
 	Redacted      string   `json:"redacted"`
-	IsSymlink     bool     `json:"is_symlink"`
-	ResolvedPath  string   `json:"resolved_path,omitempty"`
-	WillCreate    bool     `json:"will_create,omitempty"`
-	GitWarning    bool     `json:"git_warning,omitempty"`
-	Warnings      []string `json:"warnings,omitempty"`
+	IsSymlink    bool               `json:"is_symlink"`
+	ResolvedPath string             `json:"resolved_path,omitempty"`
+	WillCreate   bool               `json:"will_create,omitempty"`
+	GitWarning   bool               `json:"git_warning,omitempty"`
+	Warnings     []string           `json:"warnings,omitempty"`
+	// VSCodeInputs holds the input variable definitions to merge into the VS Code
+	// mcp.json root-level "inputs" array when UseInputVariables is set.
+	VSCodeInputs []config.VSCodeInput `json:"vscode_inputs,omitempty"`
 }
 
 type DoctorSummary struct {
@@ -78,12 +86,14 @@ type DoctorSummary struct {
 }
 
 type SavedPlanOptions struct {
-	PlanID       string
-	CreatedAt    time.Time
-	UsyncVersion string
-	ProviderID   string
-	Credentials  []CredentialRef
-	Doctor       DoctorSummary
+	PlanID            string
+	CreatedAt         time.Time
+	UsyncVersion      string
+	ProviderID        string
+	Credentials       []CredentialRef
+	Doctor            DoctorSummary
+	UseInputVariables bool // emit ${input:id} for VS Code HTTP NamedServer targets (default false)
+	UseEnvExpansion   bool // emit ${VAR:-} for Claude Code project-scope targets (default false)
 }
 
 func (m *Manager) BuildSavedPlan(plan ExecutionPlan, opts SavedPlanOptions) (SavedPlan, error) {
@@ -116,17 +126,24 @@ func (m *Manager) BuildSavedPlan(plan ExecutionPlan, opts SavedPlanOptions) (Sav
 	}
 
 	for _, op := range plan.Operations {
-		planOp, err := m.buildPlanOperation(op, credentialRefsByLabel)
+		planOp, err := m.buildPlanOperation(op, credentialRefsByLabel, opts)
 		if err != nil {
 			return SavedPlan{}, err
 		}
 		saved.Operations = append(saved.Operations, planOp)
 	}
 
+	// Compute plan content integrity hash over all Redacted strings in order.
+	h := sha256.New()
+	for _, op := range saved.Operations {
+		_, _ = io.WriteString(h, op.Redacted)
+	}
+	saved.ContentHash = "sha256:" + hex.EncodeToString(h.Sum(nil))
+
 	return saved, nil
 }
 
-func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[string]CredentialRef) (PlanOperation, error) {
+func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[string]CredentialRef, opts SavedPlanOptions) (PlanOperation, error) {
 	credentialRefID := ""
 	if ref, ok := credentialRefsByLabel[op.CredentialLabel]; ok {
 		credentialRefID = ref.ID
@@ -177,6 +194,36 @@ func (m *Manager) buildPlanOperation(op Operation, credentialRefsByLabel map[str
 		planOp.IsSymlink = isSymlink
 		planOp.ResolvedPath = resolvedPath
 		planOp.Redacted = redact.Text(fmt.Sprintf("%s: %s %s [%s, credential=%s]", op.AppName, planOp.Action, op.ProviderID, op.Config.Type, op.CredentialLabel))
+	}
+
+	// VS Code HTTP secret indirection (FR-17): store VSCodeInputs metadata on the plan
+	// operation so that buildOperationFromSavedPlan can substitute ${input:id} at apply time
+	// and prepareSavedPlan can merge the inputs block into the VS Code config root.
+	if opts.UseInputVariables &&
+		op.AppID == config.AppVSCode &&
+		op.Kind == config.FileKindNamedServer &&
+		op.Config.Type != provider.TransportStdio {
+		inputID := strings.ToLower(strings.ReplaceAll(op.ProviderID, "_", "-")) + "-api-key"
+		planOp.VSCodeInputs = []config.VSCodeInput{{
+			Type:        "promptString",
+			ID:          inputID,
+			Description: op.ProviderID + " API Key",
+			Password:    true,
+		}}
+		planOp.Redacted = redact.Text(fmt.Sprintf(
+			"%s: %s %s [vscode-input:${input:%s}]",
+			op.AppName, planOp.Action, op.ProviderID, inputID,
+		))
+	}
+
+	// Claude Code project-scope env expansion (FR-18).
+	if opts.UseEnvExpansion &&
+		op.AppID == config.AppClaudeCode &&
+		op.Scope == string(manifest.ScopeProject) {
+		planOp.Redacted = redact.Text(fmt.Sprintf(
+			"%s: %s %s [env-expansion, credential=%s]",
+			op.AppName, planOp.Action, op.ProviderID, op.CredentialLabel,
+		))
 	}
 
 	if len(planOp.Warnings) == 0 {
