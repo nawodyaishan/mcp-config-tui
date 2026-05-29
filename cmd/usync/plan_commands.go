@@ -469,7 +469,7 @@ func fileKindForDoctorCandidate(clientID manifest.ClientID, candidate doctor.Can
 		return config.FileKindCodexTOML
 	case manifest.ClientVSCode, manifest.ClientZed, manifest.ClientOpenCode:
 		return config.FileKindNamedServer
-	case manifest.ClientGeminiCLI, manifest.ClientAntigravityCLI:
+	case manifest.ClientAntigravityCLI:
 		if candidate.RootKey == "" {
 			return config.FileKindBareMCPServers
 		}

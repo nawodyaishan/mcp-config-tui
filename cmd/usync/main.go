@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -11,9 +12,28 @@ import (
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/app"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/config"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/exa"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/tui"
+	"github.com/nawodyaishan/universal-mcp-sync/pkg/validate"
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/version"
 )
+
+// dashboardManagerAdapter wraps *app.Manager and validate.Service to satisfy tui.DashboardManager.
+type dashboardManagerAdapter struct {
+	*app.Manager
+	validator validate.Service
+}
+
+func (a dashboardManagerAdapter) Validate(
+	ctx context.Context,
+	prov provider.MCPProvider,
+	profiles []provider.CredentialProfile,
+	live bool,
+) (validate.Report, error) {
+	return a.validator.ValidateProfiles(ctx, prov, profiles, live)
+}
+
+func (a dashboardManagerAdapter) HomeDir() string { return a.Manager.HomeDir }
 
 func loadInitialKeys(keysCSV, keysFile string) ([]string, string, error) {
 	if keysCSV != "" {
@@ -56,8 +76,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return runDoctorCommand(args[1:], stdout, stderr)
 		case "providers":
 			return runProvidersCommand(args[1:], stdout, stderr)
-		case "migrate":
-			return runMigrateCommand(args[1:], stdout, stderr)
+		case "replay":
+			return runReplayCommand(args[1:], stdout, stderr)
 		}
 	}
 
@@ -71,6 +91,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	var showVersion bool
 	var wizard bool
 
+	var recordPath string
+	var recordEnabled bool
+
 	flags.StringVar(&keysFile, "keys-file", "", "path to a file containing Exa API keys")
 	flags.StringVar(&keysCSV, "keys", "", "comma-separated Exa API keys")
 	flags.StringVar(&homeDir, "home-dir", "", "override the target home directory for testing")
@@ -78,8 +101,24 @@ func run(args []string, stdout, stderr io.Writer) int {
 	flags.BoolVar(&apply, "apply", false, "apply updates without launching the TUI")
 	flags.BoolVar(&showVersion, "version", false, "print version information and exit")
 	flags.BoolVar(&wizard, "wizard", false, "launch the legacy setup wizard")
+	flags.BoolVar(&recordEnabled, "record", false, "record the interactive session to a JSONL transcript")
+	flags.StringVar(&recordPath, "record-path", "", "override the transcript path (default: artifacts/journeys/usync-<ts>.jsonl)")
 	if err := flags.Parse(args); err != nil {
 		return 2
+	}
+	if recordPath != "" {
+		recordEnabled = true
+	}
+
+	if recordEnabled {
+		if apply || dryRun {
+			_, _ = fmt.Fprintln(stderr, "--record cannot be combined with --apply or --dry-run (non-interactive modes)")
+			return 2
+		}
+		if keysCSV != "" || keysFile != "" {
+			_, _ = fmt.Fprintln(stderr, "--record cannot be combined with --keys or --keys-file (interactive only)")
+			return 2
+		}
 	}
 
 	if showVersion {
@@ -120,7 +159,29 @@ func run(args []string, stdout, stderr io.Writer) int {
 		} else {
 			workspaceDir, _ := os.Getwd()
 			scanner := tui.NewProductionScanner(homeDir, workspaceDir)
-			model := tui.NewDashboardModel(scanner)
+			vs, vsErr := validate.NewService(manager.HomeDir)
+			var dashMgr tui.DashboardManager
+			if vsErr == nil {
+				dashMgr = dashboardManagerAdapter{Manager: manager, validator: vs}
+			}
+			var dashProfiles []provider.CredentialProfile
+			if len(initialKeys) > 0 {
+				dashProfiles = []provider.CredentialProfile{{
+					ProviderID: "exa",
+					Values:     map[string]string{"EXA_API_KEY": initialKeys[0]},
+					Label:      exa.RedactKey(initialKeys[0]),
+				}}
+			}
+			model := tui.NewDashboardModel(scanner, dashMgr, dashProfiles)
+			if recordEnabled {
+				rec, recErr := tui.NewSessionRecorder(recordPath)
+				if recErr != nil {
+					_, _ = fmt.Fprintf(stderr, "--record: %v\n", recErr)
+					return 1
+				}
+				model = model.WithRecorder(rec)
+				_, _ = fmt.Fprintf(stderr, "recording session to %s\n", rec.Path())
+			}
 			program := tea.NewProgram(model, tea.WithAltScreen())
 			finalModel, err = program.Run()
 
