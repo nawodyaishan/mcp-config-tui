@@ -59,9 +59,6 @@ func TestDetectAppConfigsForOS_DarwinPreservesCurrentPaths(t *testing.T) {
 	assertAppPath(t, apps, AppWindsurf, filepath.Join(home, ".codeium", "windsurf", "mcp_config.json"))
 	assertAppPath(t, apps, AppRooCode, filepath.Join(home, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"))
 	assertAppPath(t, apps, AppOpenCode, filepath.Join(home, ".opencode.json"))
-	if files := findApp(t, apps, AppGeminiCLI).Files; len(files) != 2 {
-		t.Fatalf("expected darwin Gemini CLI to keep 2 files, got %d", len(files))
-	}
 	if files := findApp(t, apps, AppAntigravityCLI).Files; len(files) != 3 {
 		t.Fatalf("expected darwin Antigravity CLI to have 3 files (mcp-config + 2 legacy), got %d", len(files))
 	}
@@ -84,9 +81,6 @@ func TestDetectAppConfigsForOS_LinuxUsesNativePaths(t *testing.T) {
 	assertAppPath(t, apps, AppKiro, filepath.Join(home, ".kiro", "settings", "mcp.json"))
 	assertAppPath(t, apps, AppCodexCLI, filepath.Join(home, ".codex", "config.toml"))
 	assertAppPath(t, apps, AppCursor, filepath.Join(home, ".cursor", "mcp.json"))
-	if files := findApp(t, apps, AppGeminiCLI).Files; len(files) != 1 {
-		t.Fatalf("expected linux Gemini CLI to use settings.json only, got %d files", len(files))
-	}
 	if files := findApp(t, apps, AppAntigravityCLI).Files; len(files) != 3 {
 		t.Fatalf("expected linux Antigravity CLI to have 3 files (mcp-config + 2 legacy), got %d files", len(files))
 	}
@@ -144,7 +138,6 @@ func TestAppName(t *testing.T) {
 	}{
 		{AppClaudeDesktop, "Claude Desktop"},
 		{AppClaudeCode, "Claude Code"},
-		{AppGeminiCLI, "Gemini CLI (deprecated)"},
 		{AppAntigravity, "Antigravity IDE"},
 		{AppAntigravityCLI, "Antigravity CLI"},
 		{"custom", "custom"},

@@ -143,6 +143,94 @@ func UpdateOpenCodeJSON(data []byte, providerID string, cfg provider.MCPConfig) 
 	return marshalJSON(root)
 }
 
+// UsyncMeta returns the _usync provenance annotation map for a server entry.
+// planID may be "" for the legacy Apply path where no plan ID is available.
+func UsyncMeta(planID, at string) map[string]any {
+	return map[string]any{
+		"_usync": map[string]any{
+			"managedBy": "usync",
+			"at":        at,
+			"planID":    planID,
+		},
+	}
+}
+
+// VSCodeInput describes one entry in the VS Code mcp.json root-level "inputs" array.
+// VS Code prompts the user for the value on first server start and stores it securely.
+type VSCodeInput struct {
+	Type        string `json:"type"` // always "promptString"
+	ID          string `json:"id"`
+	Description string `json:"description"`
+	Password    bool   `json:"password"`
+}
+
+// MergeVSCodeInputs merges input definitions into the root-level "inputs" array of VS Code
+// mcp.json content. Entries with the same id replace existing ones; all others are preserved.
+// Safe to call with an empty inputs slice (returns data unchanged).
+func MergeVSCodeInputs(data []byte, inputs []VSCodeInput) ([]byte, error) {
+	if len(inputs) == 0 {
+		return data, nil
+	}
+	root, err := decodeJSONObject(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build ordered list of existing inputs, keyed by id for dedup.
+	var order []string
+	byID := make(map[string]VSCodeInput)
+
+	if raw, ok := root["inputs"].([]any); ok {
+		for _, item := range raw {
+			m, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			id, _ := m["id"].(string)
+			if id == "" {
+				continue
+			}
+			if _, seen := byID[id]; !seen {
+				order = append(order, id)
+			}
+			byID[id] = decodeVSCodeInput(m)
+		}
+	}
+
+	// Merge new inputs: replace on duplicate id, append otherwise.
+	for _, inp := range inputs {
+		if _, exists := byID[inp.ID]; !exists {
+			order = append(order, inp.ID)
+		}
+		byID[inp.ID] = inp
+	}
+
+	// Rebuild ordered slice.
+	merged := make([]any, 0, len(order))
+	for _, id := range order {
+		merged = append(merged, byID[id])
+	}
+	root["inputs"] = merged
+	return marshalJSON(root)
+}
+
+func decodeVSCodeInput(m map[string]any) VSCodeInput {
+	inp := VSCodeInput{}
+	if v, ok := m["type"].(string); ok {
+		inp.Type = v
+	}
+	if v, ok := m["id"].(string); ok {
+		inp.ID = v
+	}
+	if v, ok := m["description"].(string); ok {
+		inp.Description = v
+	}
+	if v, ok := m["password"].(bool); ok {
+		inp.Password = v
+	}
+	return inp
+}
+
 func decodeJSONObject(data []byte) (map[string]any, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {

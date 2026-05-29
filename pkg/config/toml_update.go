@@ -65,7 +65,10 @@ func UpdateCodexTOML(data []byte, providerID string, cfg provider.MCPConfig) ([]
 }
 
 func buildCodexBlock(providerID string, cfg provider.MCPConfig) []string {
-	block := []string{fmt.Sprintf("[mcp_servers.%s]", providerID)}
+	block := []string{
+		"# managed-by=usync",
+		fmt.Sprintf("[mcp_servers.%s]", providerID),
+	}
 	if cfg.Type == provider.TransportStdio {
 		block = append(block, fmt.Sprintf("command = %q", cfg.Command))
 		if len(cfg.Args) > 0 {

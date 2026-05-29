@@ -13,7 +13,6 @@ type AppID string
 const (
 	AppClaudeDesktop  AppID = "claude-desktop"
 	AppClaudeCode     AppID = "claude-code"
-	AppGeminiCLI      AppID = "gemini-cli"
 	AppAntigravity    AppID = "antigravity"
 	AppAntigravityCLI AppID = "antigravity-cli"
 	AppCodexCLI       AppID = "codex-cli"
@@ -34,6 +33,7 @@ const (
 	FileKindNamedServer    FileKind = "namedServer"
 	FileKindCodexTOML      FileKind = "codexTOML"
 	FileKindClaudeCodeCLI  FileKind = "claudeCodeCLI"
+	FileKindCodexCLIAdd    FileKind = "codexCLIAdd" // user-scope codex mcp add; per-project is trust-gated
 )
 
 type TargetFile struct {
@@ -62,7 +62,6 @@ var AppOrder = []AppID{
 	AppRooCode,
 	AppOpenCode,
 	AppKiro,
-	AppGeminiCLI,
 	AppAntigravityCLI,
 	AppAntigravity,
 	AppCodexCLI,
@@ -99,7 +98,7 @@ func DetectAppConfigsForOS(home, goos string) ([]AppConfig, error) {
 
 		apps = append(apps, AppConfig{
 			ID:    appID,
-			Name:  legacyAppName(client),
+			Name:  client.Name,
 			Files: files,
 		})
 	}
@@ -215,13 +214,6 @@ func fileKindForMutation(kind manifest.MutationKind) FileKind {
 	}
 }
 
-func legacyAppName(client manifest.ClientManifest) string {
-	if client.ID == manifest.ClientGeminiCLI {
-		return "Gemini CLI (deprecated)"
-	}
-	return client.Name
-}
-
 func legacyTargetLabel(appID AppID, candidateLabel string) string {
 	switch appID {
 	case AppClaudeDesktop:
@@ -242,11 +234,6 @@ func legacyTargetLabel(appID AppID, candidateLabel string) string {
 		return "OpenCode config"
 	case AppKiro:
 		return "Kiro settings"
-	case AppGeminiCLI:
-		if candidateLabel == "legacy-darwin-mcp" {
-			return "Gemini MCP config"
-		}
-		return "Gemini settings"
 	case AppAntigravityCLI:
 		switch candidateLabel {
 		case "legacy-gemini-config":
@@ -271,8 +258,6 @@ func AppName(id AppID) string {
 		return "Claude Desktop"
 	case AppClaudeCode:
 		return "Claude Code"
-	case AppGeminiCLI:
-		return "Gemini CLI (deprecated)"
 	case AppAntigravity:
 		return "Antigravity IDE"
 	case AppAntigravityCLI:

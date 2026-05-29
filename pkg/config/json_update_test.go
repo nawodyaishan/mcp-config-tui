@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nawodyaishan/universal-mcp-sync/pkg/provider"
@@ -285,5 +286,100 @@ func TestUpdateOpenCodeJSONReplacesProviderOnly(t *testing.T) {
 	entry := mcp["playwright"].(map[string]any)
 	if entry["type"] != "remote" || entry["url"] != "https://new.example.com/mcp" {
 		t.Fatalf("expected provider entry to be replaced, got %#v", entry)
+	}
+}
+
+// --- MergeVSCodeInputs tests ---
+
+func TestMergeVSCodeInputs_Empty(t *testing.T) {
+	data := []byte(`{"servers":{"exa":{"url":"https://x.example/mcp"}}}` + "\n")
+	out, err := MergeVSCodeInputs(data, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !bytes.Equal(out, data) {
+		t.Errorf("expected unchanged output for nil inputs, got %s", out)
+	}
+}
+
+func TestMergeVSCodeInputs_Adds(t *testing.T) {
+	data := []byte(`{"servers":{"exa":{"url":"https://x.example/mcp"}}}` + "\n")
+	inp := []VSCodeInput{{Type: "promptString", ID: "exa-api-key", Description: "Exa API Key", Password: true}}
+	out, err := MergeVSCodeInputs(data, inp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(string(out), `"inputs"`) {
+		t.Errorf("expected inputs key in output, got %s", out)
+	}
+	if !strings.Contains(string(out), `"exa-api-key"`) {
+		t.Errorf("expected exa-api-key in output, got %s", out)
+	}
+}
+
+func TestMergeVSCodeInputs_Deduplicates(t *testing.T) {
+	data := []byte(`{"inputs":[{"type":"promptString","id":"exa-api-key","description":"Old","password":false}],"servers":{}}` + "\n")
+	inp := []VSCodeInput{{Type: "promptString", ID: "exa-api-key", Description: "New", Password: true}}
+	out, err := MergeVSCodeInputs(data, inp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Count(string(out), `"exa-api-key"`) != 1 {
+		t.Errorf("expected exactly one exa-api-key in output, got %s", out)
+	}
+	if strings.Contains(string(out), `"Old"`) {
+		t.Errorf("expected old description replaced, got %s", out)
+	}
+	if !strings.Contains(string(out), `"New"`) {
+		t.Errorf("expected new description in output, got %s", out)
+	}
+}
+
+func TestMergeVSCodeInputs_PreservesOthers(t *testing.T) {
+	data := []byte(`{"inputs":[{"type":"promptString","id":"other-key","description":"Other","password":false}],"servers":{}}` + "\n")
+	inp := []VSCodeInput{{Type: "promptString", ID: "exa-api-key", Description: "Exa API Key", Password: true}}
+	out, err := MergeVSCodeInputs(data, inp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(string(out), `"other-key"`) {
+		t.Errorf("expected other-key preserved in output, got %s", out)
+	}
+	if !strings.Contains(string(out), `"exa-api-key"`) {
+		t.Errorf("expected exa-api-key added in output, got %s", out)
+	}
+}
+
+func TestMergeVSCodeInputs_MalformedJSON(t *testing.T) {
+	_, err := MergeVSCodeInputs([]byte(`{broken`), []VSCodeInput{{ID: "x"}})
+	if err == nil {
+		t.Error("expected error for malformed JSON")
+	}
+}
+
+func TestUpdateNamedServerJSON_PreservesSandboxFields(t *testing.T) {
+	data := []byte(`{
+  "servers": {
+    "exa": {
+      "type": "http",
+      "url": "https://old.example/mcp",
+      "sandboxEnabled": true,
+      "sandbox": {"filesystem": "readonly", "network": "none"}
+    }
+  }
+}`)
+	cfg := provider.MCPConfig{Type: provider.TransportStreamableHTTP, URL: "https://new.example/mcp"}
+	updated, err := UpdateNamedServerJSON(data, "exa", "servers", "url", cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(updated, []byte(`"sandboxEnabled": true`)) {
+		t.Errorf("sandboxEnabled was stripped:\n%s", updated)
+	}
+	if !bytes.Contains(updated, []byte(`"sandbox"`)) {
+		t.Errorf("sandbox object was stripped:\n%s", updated)
+	}
+	if !bytes.Contains(updated, []byte(`"readonly"`)) {
+		t.Errorf("sandbox content was stripped:\n%s", updated)
 	}
 }
