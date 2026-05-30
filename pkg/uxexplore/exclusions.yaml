@@ -1,0 +1,5 @@
+# Coverage cells that are intentionally unreachable.
+exclusions:
+  - screen: CredentialEntry
+    precondition_class: scan-error
+    reason: "credential entry only reachable after successful scan"
