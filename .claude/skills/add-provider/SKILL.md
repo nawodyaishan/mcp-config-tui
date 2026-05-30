@@ -24,7 +24,7 @@ Read the following files to understand the system context:
 - `pkg/provider/exa.go`
 - `pkg/provider/context7.go`
 - `docs/contributors/adding-a-provider.md`
-- `docs/specs/add-context7-provider.md`
+- `docs/specs/providers/add-context7-provider.md`
 
 ## 2. Look up official docs
 Use your search tools (or the Context7 MCP if available) to query the target server's configuration schema. Identify if it requires an API key, env vars, or specific arguments.
