@@ -1,0 +1,125 @@
+{
+  "reached": [
+    {
+      "screen": "ApplyResult",
+      "precondition_class": "apply-error",
+      "hits": 2
+    },
+    {
+      "screen": "ApplyResult",
+      "precondition_class": "ok",
+      "hits": 14
+    },
+    {
+      "screen": "ApplyResult",
+      "precondition_class": "runtime-missing",
+      "hits": 1
+    },
+    {
+      "screen": "ConflictResolve",
+      "precondition_class": "conflict-unresolved",
+      "hits": 3
+    },
+    {
+      "screen": "CredentialEntry",
+      "precondition_class": "conflict-unresolved",
+      "hits": 6
+    },
+    {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "hits": 140
+    },
+    {
+      "screen": "CredentialEntry",
+      "precondition_class": "network-failure",
+      "hits": 14
+    },
+    {
+      "screen": "Doctor",
+      "precondition_class": "conflict-unresolved",
+      "hits": 6
+    },
+    {
+      "screen": "Doctor",
+      "precondition_class": "missing-credentials",
+      "hits": 20
+    },
+    {
+      "screen": "Doctor",
+      "precondition_class": "ok",
+      "hits": 20
+    },
+    {
+      "screen": "Doctor",
+      "precondition_class": "runtime-missing",
+      "hits": 1
+    },
+    {
+      "screen": "Doctor",
+      "precondition_class": "scan-error",
+      "hits": 2
+    },
+    {
+      "screen": "PlanPreview",
+      "precondition_class": "ok",
+      "hits": 74
+    },
+    {
+      "screen": "PlanPreview",
+      "precondition_class": "runtime-missing",
+      "hits": 2
+    },
+    {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "hits": 6
+    },
+    {
+      "screen": "ProviderReady",
+      "precondition_class": "missing-credentials",
+      "hits": 139
+    },
+    {
+      "screen": "ProviderReady",
+      "precondition_class": "network-failure",
+      "hits": 14
+    },
+    {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "hits": 139
+    },
+    {
+      "screen": "ProviderReady",
+      "precondition_class": "runtime-missing",
+      "hits": 1
+    },
+    {
+      "screen": "TargetSelect",
+      "precondition_class": "conflict-unresolved",
+      "hits": 54
+    },
+    {
+      "screen": "TargetSelect",
+      "precondition_class": "no-targets-selected",
+      "hits": 22
+    },
+    {
+      "screen": "TargetSelect",
+      "precondition_class": "ok",
+      "hits": 78
+    },
+    {
+      "screen": "TargetSelect",
+      "precondition_class": "plan-error",
+      "hits": 8
+    },
+    {
+      "screen": "TargetSelect",
+      "precondition_class": "runtime-missing",
+      "hits": 4
+    }
+  ],
+  "gaps": null
+}

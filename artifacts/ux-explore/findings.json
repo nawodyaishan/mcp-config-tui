@@ -1,0 +1,950 @@
+[
+  {
+    "kind": "silent-noop",
+    "fixture": "conflict-no-key",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P0af5d833"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "plan-error",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P11b4f31c"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "invalid-credentials-many-targets",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P15c37e43"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-key-many-targets",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P164ebaca"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-targets-deselected",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P18bff63e"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "conflict-no-key",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-P1dcaf324"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "workspace-with-conflict",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-P215f712d"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "credential-and-conflict",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-P24b7be51"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "apply-error-workspace",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P2dde2986"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "runtime-missing",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P323917e0"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P3804fd36"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "happy-path-no-key",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P3e12e188"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "runtime-missing",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P3e27b589"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "happy-path-exa",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P4079b214"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "credential-workspace",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P40fb7af5"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "apply-error",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P44790794"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "many-targets",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P4a46eed9"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-creds-anchor",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P4d77de3b"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "happy-path-no-key",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P4dc842b5"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "many-conflicts",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-P517488da"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "runtime-missing",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "runtime-missing",
+      "block_reason": "runtime missing",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P5f281a6c"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "invalid-credentials-many-targets",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P61eb86ee"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "credential-and-conflict",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P6a581865"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "happy-path-exa",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P7c9e12e6"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "workspace-on",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P7f91f381"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "preflight-warning-many-targets",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P83720228"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure-no-key",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P85afeff6"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-key-no-targets",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P88504572"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "runtime-missing-with-conflict",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P8ad24c96"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-key-no-targets",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P8ca3d303"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure",
+    "path": [
+      "ProviderReady",
+      "enter"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"enter\" does not change state on ProviderReady",
+    "matrix_id": "DM-P908295c3"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "plan-error-no-key",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P91ebbc08"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "apply-error-workspace",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-P9802a4b6"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "credential-workspace",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-P9ef2f421"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure-no-key",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pa3da293f"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-creds-anchor",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pa500d957"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "invalid-credentials",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pab3b449b"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "preflight-warning",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pae906d8f"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "runtime-missing-with-conflict",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-Pb2160d0a"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "invalid-credentials",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pb28b4844"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "workspace-with-conflict",
+    "path": [
+      "TargetSelect",
+      "invariant:I-17",
+      ""
+    ],
+    "state": {
+      "screen": "TargetSelect",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "non-terminal state TargetSelect/conflict-unresolved has no progress edge in action bar",
+    "matrix_id": "DM-Pb39b847e"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "plan-error-no-key",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pb612eddc"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "many-conflicts",
+    "path": [
+      "TargetSelect",
+      "invariant:I-17",
+      ""
+    ],
+    "state": {
+      "screen": "TargetSelect",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "non-terminal state TargetSelect/conflict-unresolved has no progress edge in action bar",
+    "matrix_id": "DM-Pb6b470e7"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-targets-deselected",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pc235250b"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "many-targets",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pd6fe18b4"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pd711ed3d"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure-no-key",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pd83eff83"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "conflict-then-resolve",
+    "path": [
+      "ProviderReady",
+      "invariant:I-16",
+      ""
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "providerCursor=0 does not point at a rendered row",
+    "matrix_id": "DM-Pd99a9477"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "preflight-warning",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pd9dd6759"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "no-key-many-targets",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pda1c2bff"
+  },
+  {
+    "kind": "invariant-violation",
+    "fixture": "conflict-then-resolve",
+    "path": [
+      "TargetSelect",
+      "invariant:I-17",
+      ""
+    ],
+    "state": {
+      "screen": "TargetSelect",
+      "precondition_class": "conflict-unresolved",
+      "block_reason": "conflict unresolved",
+      "has_error": false
+    },
+    "recommendation": "non-terminal state TargetSelect/conflict-unresolved has no progress edge in action bar",
+    "matrix_id": "DM-Pda58a2b5"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "apply-error",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pdac2c57d"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pddc62740"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "workspace-on",
+    "path": [
+      "CredentialEntry",
+      "enter"
+    ],
+    "state": {
+      "screen": "CredentialEntry",
+      "precondition_class": "missing-credentials",
+      "block_reason": "missing credentials",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"enter\" does not change state on CredentialEntry",
+    "matrix_id": "DM-Pe4bf14b6"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "plan-error",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pe4d9d1db"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "network-failure-no-key",
+    "path": [
+      "ProviderReady",
+      "enter"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "network-failure",
+      "block_reason": "validation error",
+      "has_error": true
+    },
+    "recommendation": "advertised key \"enter\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pe788226d"
+  },
+  {
+    "kind": "silent-noop",
+    "fixture": "preflight-warning-many-targets",
+    "path": [
+      "ProviderReady",
+      "v"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "ok",
+      "has_error": false
+    },
+    "recommendation": "advertised key \"v\" does not change state on ProviderReady",
+    "matrix_id": "DM-Pe859ac18"
+  },
+  {
+    "kind": "unadvertised-key",
+    "fixture": "keymap-audit",
+    "path": [
+      "ConflictResolve",
+      "2"
+    ],
+    "state": {
+      "screen": "ConflictResolve",
+      "precondition_class": "",
+      "has_error": false
+    },
+    "recommendation": "handler ConflictResolve accepts key \"2\" but no action bar advertises it",
+    "matrix_id": "DM-Pa98a32b9"
+  },
+  {
+    "kind": "unadvertised-key",
+    "fixture": "keymap-audit",
+    "path": [
+      "ProviderReady",
+      "j"
+    ],
+    "state": {
+      "screen": "ProviderReady",
+      "precondition_class": "",
+      "has_error": false
+    },
+    "recommendation": "handler ProviderReady accepts key \"j\" but no action bar advertises it",
+    "matrix_id": "DM-Pa13d84e3"
+  },
+  {
+    "kind": "unadvertised-key",
+    "fixture": "keymap-audit",
+    "path": [
+      "TargetSelect",
+      "j"
+    ],
+    "state": {
+      "screen": "TargetSelect",
+      "precondition_class": "",
+      "has_error": false
+    },
+    "recommendation": "handler TargetSelect accepts key \"j\" but no action bar advertises it",
+    "matrix_id": "DM-P2ed1bd5d"
+  }
+]
