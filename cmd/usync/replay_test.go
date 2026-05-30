@@ -29,9 +29,10 @@ func TestRun_ReplayReproducesDigest(t *testing.T) {
 	dir := t.TempDir()
 	transcript := filepath.Join(dir, "session.jsonl")
 
-	// Craft a transcript that drives the happy-path-exa fixture from Doctor
-	// to Plan Preview via [p] [enter] [enter] [n] [enter].
+	// Craft a transcript that drives the happy-path-exa fixture from Welcome
+	// into Doctor mode, then through provider validation.
 	entries := []tui.RecordEntry{
+		{Kind: "key", Key: "d", Screen: "Welcome"},
 		{Kind: "key", Key: "p", Screen: "Doctor"},
 		{Kind: "key", Key: "enter", Screen: "ProviderReady"},
 	}
@@ -44,6 +45,24 @@ func TestRun_ReplayReproducesDigest(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "final screen=") {
 		t.Errorf("replay output missing final-state line:\n%s", out.String())
+	}
+}
+
+func TestRun_ReplaySupportsLegacyDoctorTranscript(t *testing.T) {
+	dir := t.TempDir()
+	transcript := filepath.Join(dir, "legacy-session.jsonl")
+	entries := []tui.RecordEntry{
+		{Kind: "key", Key: "p", Screen: "Doctor"},
+	}
+	writeJSONL(t, transcript, entries)
+
+	var out, errBuf bytes.Buffer
+	code := runReplayCommand([]string{"--against-fixture", "happy-path-exa", transcript}, &out, &errBuf)
+	if code != 0 {
+		t.Fatalf("legacy replay exit = %d, stderr=%s", code, errBuf.String())
+	}
+	if !strings.Contains(out.String(), "Provider Readiness") {
+		t.Errorf("legacy replay did not prime doctor mode:\n%s", out.String())
 	}
 }
 
@@ -72,7 +91,7 @@ func writeJSONL(t *testing.T, path string, entries []tui.RecordEntry) {
 	if err != nil {
 		t.Fatalf("create transcript: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	enc := json.NewEncoder(f)
 	for _, e := range entries {
 		if err := enc.Encode(e); err != nil {
