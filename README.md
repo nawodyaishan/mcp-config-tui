@@ -46,7 +46,7 @@ MCP client configuration is fragmented. Each AI client stores different JSON or 
 
 `usync` focuses on the native-config sync path:
 
-- **One guided setup** for supported MCP servers and local AI clients.
+- **Two guided modes**: Doctor Mode for system-aware setup and Wizard Mode for direct provider-first setup.
 - **Dry-run first** so users see exact target files, actions, and redacted credentials before writes.
 - **Client-aware output** for `mcpServers`, `servers`, `context_servers`, `httpUrl`, `serverUrl`, TOML, and stdio bridges.
 - **Local safety controls** with redaction, same-directory backups, atomic writes, rollback, and verification.
@@ -74,9 +74,9 @@ Requirements for source builds:
 - Go 1.23+
 - macOS or Linux for full local client path detection
 
-### Configure With The TUI
+### Choose A Mode
 
-The TUI is the main provider-neutral workflow:
+Run `usync` to open the interactive dashboard:
 ```bash
 usync
 ```
@@ -86,11 +86,96 @@ If you built from source:
 ./bin/usync
 ```
 
-The wizard lets you choose a provider, enter credentials, select target clients, preview the plan, and apply when ready.
+The first screen lets you choose between two workflows:
+
+- **Doctor Mode** scans installed AI clients, checks runtimes and existing MCP config paths, highlights conflicts, then guides provider selection, credential entry, target selection, plan preview, and apply.
+- **Wizard Mode** is the direct guided setup flow for users who already know the provider, credentials, and target clients they want to configure.
+
+Doctor Mode is the recommended default for real machines because it starts from the current system state. Wizard Mode is still useful for a fast provider-first setup or test fixture flow.
+
+### Doctor Mode
+
+Start from the dashboard and choose Doctor Mode:
+```bash
+usync
+```
+
+Doctor Mode walks through:
+
+1. Scan installed clients, config files, runtime dependencies, and conflicts.
+2. Choose an MCP provider and validate credentials.
+3. Select target client config files, including optional workspace/project targets.
+4. Review a saved plan with redacted credentials and approval prompts.
+5. Apply with backups, rollback safeguards, verification, and a follow-up scan.
+
+For a read-only terminal report without launching the TUI:
+```bash
+usync doctor
+usync doctor --verbose
+usync doctor --json
+```
+
+Useful filters:
+```bash
+usync doctor --clients cursor,vscode,codex-cli
+usync doctor --workspace /path/to/project
+usync doctor --no-runtimes
+```
+
+`usync doctor` exits with code `2` when it finds warnings, conflicts, missing runtimes, malformed config, or other actionable findings.
+
+### Wizard Mode
+
+Open the guided setup wizard directly:
+```bash
+usync --wizard
+```
+
+Wizard Mode lets you choose a provider, enter credentials, select clients, assign credential profiles, preview the plan, and apply when ready. It uses the same provider architecture and apply safeguards as the rest of the app.
 
 ### Preview And Apply From CLI
 
-The current non-interactive CLI path supports Exa key files:
+For automation, use the saved-plan flow. It is provider-neutral and mirrors the interactive Doctor Mode pipeline.
+
+Create a plan for selected targets:
+```bash
+usync plan \
+  --provider exa \
+  --keys-file ./exa_keys.txt \
+  --targets cursor,vscode,codex-cli \
+  --out ./usync-plan.json
+```
+
+Or let Doctor Mode discovery select every high/medium-confidence target:
+```bash
+usync plan \
+  --provider exa \
+  --keys-file ./exa_keys.txt \
+  --all-detected \
+  --out ./usync-plan.json
+```
+
+Review the saved plan:
+```bash
+usync show ./usync-plan.json
+```
+
+Dry-run the apply preflight:
+```bash
+usync apply --plan ./usync-plan.json --dry-run
+```
+
+Apply only after the preview is correct:
+```bash
+usync apply --plan ./usync-plan.json
+```
+
+Use `--auto-approve` only in trusted automation after reviewing the plan:
+```bash
+usync apply --plan ./usync-plan.json --auto-approve
+```
+
+The older Exa-only compatibility path still works:
 ```bash
 usync sync --keys-file ./exa_keys.txt --dry-run
 ```
@@ -105,7 +190,7 @@ MCP sync plan
   backup: .../claude_desktop_config.json.bak-usync-20260509-084228
 ```
 
-Apply only after the preview is correct:
+Apply with the compatibility path:
 ```bash
 usync sync --keys-file ./exa_keys.txt --apply
 ```
@@ -143,7 +228,9 @@ Several MCP tools solve adjacent problems:
 
 ## Safety Model
 
-- **No writes by default**: Preview mode and the TUI review step show the plan first.
+- **Read-only diagnosis first**: Doctor Mode and `usync doctor` scan clients, runtimes, paths, and conflicts before planning writes.
+- **No writes by default**: TUI review, saved-plan preview, and CLI dry-run/preflight steps show target paths and approval prompts first.
+- **Saved plans for automation**: `usync plan` and `usync apply --plan` separate decision-making from mutation and check stale plans before apply.
 - **Credential redaction**: API keys, secret URLs, headers, env values, and generated args are redacted in user-facing output.
 - **Atomic file updates**: Config files are written through the repo's backup/write path rather than ad hoc in-place edits.
 - **Rollback on failure**: If an apply sequence fails after earlier writes, `usync` attempts to restore previous files.
@@ -155,8 +242,8 @@ Several MCP tools solve adjacent problems:
 ```mermaid
 flowchart TB
     subgraph entry["Entry Points"]
-        cli["cmd/usync<br/>flags: --keys, --keys-file, --dry-run, --apply"]
-        tui["pkg/tui<br/>provider setup, target selection, preview"]
+        cli["cmd/usync<br/>doctor / plan / apply / sync"]
+        tui["pkg/tui<br/>Doctor Mode dashboard / Wizard Mode"]
     end
 
     subgraph orchestration["Orchestration"]
