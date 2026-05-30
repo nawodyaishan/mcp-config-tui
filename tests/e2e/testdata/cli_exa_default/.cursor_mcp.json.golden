@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "exa": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "url": "https://mcp.exa.ai/mcp?exaApiKey=33333333-3333-3333-3333-333333333333\u0026tools=web_search_exa%2Cweb_search_advanced_exa%2Cweb_fetch_exa"
     }
   }

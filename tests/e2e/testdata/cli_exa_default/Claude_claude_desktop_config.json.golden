@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "exa": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "-y",
         "mcp-remote",
