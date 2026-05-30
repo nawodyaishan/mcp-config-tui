@@ -1,4 +1,4 @@
-.PHONY: help tidy tidy-check mod-verify fmt vet lint test build run dry-run apply verify snapshot tag release clean gitignore-check
+.PHONY: help tidy tidy-check mod-verify fmt vet lint test build run record replay dry-run apply verify snapshot tag release clean gitignore-check ux-matrix ux-fake-prod ux-explore
 
 help:
 	@bash scripts/help.sh
@@ -38,6 +38,12 @@ build:
 run:
 	@bash scripts/run.sh
 
+record: ## launch usync with session recording (transcript path overridable via RECORD_PATH=...)
+	@bash scripts/record.sh
+
+replay: ## replay a recorded transcript against a uxexplore fixture (TRANSCRIPT=... FIXTURE=happy-path-exa)
+	@TRANSCRIPT="$(TRANSCRIPT)" FIXTURE="$(FIXTURE)" EMIT_MATRIX="$(EMIT_MATRIX)" bash scripts/replay.sh
+
 dry-run:
 	@KEYS_FILE="$(KEYS_FILE)" bash scripts/dry-run.sh
 
@@ -58,6 +64,16 @@ release:
 
 gitignore-check:
 	@bash scripts/gitignore-check.sh
+
+ux-matrix:
+	@USYNC_UX_MATRIX=1 go test -v ./pkg/tui -run TestDashboardFlowMatrix
+
+ux-fake-prod:
+	@bash tests/ux-fake-prod/docker-run.sh
+
+ux-explore: ## run state-space explorer + coverage gates
+	@go test ./pkg/uxexplore/...
+	@go run ./cmd/ux-explore
 
 clean:
 	@bash scripts/clean.sh

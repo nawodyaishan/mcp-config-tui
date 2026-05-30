@@ -342,6 +342,6 @@ Run `make lint` and `make verify` when changing shared logic, release tooling, o
 - [Project Specification](docs/specification.md)
 - [Sync Engine Design](docs/architecture/sync-engine-design.md)
 - [Architecture Upgrade Plan](docs/specs/architecture-upgrade-plan.md)
-- [Context7 Provider Spec](docs/specs/add-context7-provider.md)
+- [Context7 Provider Spec](docs/specs/providers/add-context7-provider.md)
 - [Scalability and Plugin Research](docs/architecture/scalability-research.md)
 - [Phase 2 Registry Wizard Roadmap](docs/roadmap/phase-2-registry-wizard.md)
