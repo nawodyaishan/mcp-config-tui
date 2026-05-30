@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "context7": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "-y",
         "@upstash/context7-mcp",

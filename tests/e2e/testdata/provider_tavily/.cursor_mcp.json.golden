@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "tavily": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "-y",
         "tavily-mcp@latest"

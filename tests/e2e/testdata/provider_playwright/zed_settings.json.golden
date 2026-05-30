@@ -1,6 +1,11 @@
 {
   "context_servers": {
     "playwright": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "@playwright/mcp@latest"
       ],

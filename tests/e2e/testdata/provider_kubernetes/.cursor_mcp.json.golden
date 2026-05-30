@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "kubernetes": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "-y",
         "kubernetes-mcp-server@latest",

@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "terraform": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "run",
         "-i",

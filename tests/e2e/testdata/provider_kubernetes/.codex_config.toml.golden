@@ -1,3 +1,4 @@
+# managed-by=usync
 [mcp_servers.kubernetes]
 command = "npx"
 args = ["-y", "kubernetes-mcp-server@latest", "--read-only"]

@@ -1,6 +1,11 @@
 {
   "mcpServers": {
     "github": {
+      "_usync": {
+        "at": "{{TIMESTAMP}}",
+        "managedBy": "usync",
+        "planID": ""
+      },
       "args": [
         "-y",
         "@modelcontextprotocol/server-github"

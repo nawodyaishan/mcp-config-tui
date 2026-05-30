@@ -1,3 +1,4 @@
+# managed-by=usync
 [mcp_servers.tavily]
 command = "npx"
 args = ["-y", "tavily-mcp@latest"]
