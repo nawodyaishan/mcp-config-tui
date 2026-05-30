@@ -368,7 +368,9 @@ func verifyNamedServerFile(path string, expectedTools int) Result {
 }
 
 func verifyExaNamedServerFile(path string, cfg provider.MCPConfig) Result {
-	server, err := readRootServerEntry(path, "exa")
+	// Use readServerEntryByKind so files with a root key (Zed: context_servers,
+	// VS Code: servers) are handled alongside bare root-level entries.
+	server, err := readServerEntryByKind(path, config.FileKindNamedServer, "exa")
 	if err != nil {
 		return failure(path, err.Error())
 	}

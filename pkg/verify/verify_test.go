@@ -304,3 +304,29 @@ func TestResultFrom(t *testing.T) {
 		t.Errorf("expected Failed, got %s", res2.Status)
 	}
 }
+
+// TestVerifyProviderFile_ZedContextServers is a regression test for the bug where
+// verifyExaNamedServerFile used readRootServerEntry, which looks for root["exa"]
+// and fails on Zed's settings.json where the entry lives under root["context_servers"]["exa"].
+func TestVerifyProviderFile_ZedContextServers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	exaURL := fmt.Sprintf("https://mcp.exa.ai/mcp?exaApiKey=test-key&tools=%s", strings.Join(exa.DefaultTools, ","))
+	content := fmt.Sprintf(`{
+  "context_servers": {
+    "exa": {
+      "url": %q
+    }
+  },
+  "theme": "One Dark"
+}`, exaURL)
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("write test file: %v", err)
+	}
+
+	cfg := provider.MCPConfig{Type: provider.TransportStreamableHTTP, URL: exaURL}
+	result := VerifyProviderFile(path, config.FileKindNamedServer, "exa", cfg)
+	if result.Status == StatusFailed {
+		t.Errorf("expected OK or warning for Zed context_servers layout, got %s: %v", result.Status, result.Details)
+	}
+}
