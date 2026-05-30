@@ -31,7 +31,6 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 
 	// Initialize dummy files
 	claudeDesktopPath := filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json")
-	geminiSettingsPath := filepath.Join(homeDir, ".gemini", "settings.json")
 	antigravityPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	codexPath := filepath.Join(homeDir, ".codex", "config.toml")
 	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
@@ -43,7 +42,6 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 	kiroPath := filepath.Join(homeDir, ".kiro", "settings", "mcp.json")
 
 	mustWriteFile(t, claudeDesktopPath, []byte("{}"))
-	mustWriteFile(t, geminiSettingsPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
 	mustWriteFile(t, codexPath, []byte(""))
 	mustWriteFile(t, cursorPath, []byte("{}"))
@@ -79,13 +77,7 @@ func TestQAExaReadmeScenarios(t *testing.T) {
 		t.Errorf("Claude Desktop mismatch")
 	}
 
-	// 2. Verify Gemini CLI (httpUrl)
-	data, _ = os.ReadFile(geminiSettingsPath)
-	if !bytes.Contains(data, []byte(`"httpUrl":`)) {
-		t.Errorf("Gemini CLI mismatch")
-	}
-
-	// 3. Verify Windsurf (serverUrl)
+	// 2. Verify Windsurf (serverUrl)
 	data, _ = os.ReadFile(windsurfPath)
 	if !bytes.Contains(data, []byte(`"serverUrl":`)) {
 		t.Errorf("Windsurf mismatch")
@@ -234,10 +226,8 @@ func TestQAGitHubStdioSupportedClients(t *testing.T) {
 func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 	homeDir := t.TempDir()
 
-	geminiPath := filepath.Join(homeDir, ".gemini", "settings.json")
 	antigravityPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	antigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
-	mustWriteFile(t, geminiPath, []byte("{}"))
 	mustWriteFile(t, antigravityPath, []byte("{}"))
 	mustWriteFile(t, antigravityCLIPath, []byte("{}"))
 
@@ -251,7 +241,6 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 		Label:      "ghp_...aaaa",
 	}}
 	selected := map[config.AppID]bool{
-		config.AppGeminiCLI:      true,
 		config.AppAntigravityCLI: true,
 		config.AppAntigravity:    true,
 	}
@@ -270,7 +259,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 		}
 	}
 	if skipped == 0 && len(plan.Warnings) == 0 {
-		t.Error("expected GeminiCLI, AntigravityCLI and Antigravity to be skipped for stdio-only provider")
+		t.Error("expected AntigravityCLI and Antigravity to be skipped for stdio-only provider")
 	}
 
 	// Files should not be modified
@@ -279,11 +268,7 @@ func TestQAGitHubSkippedOnHTTPOnlyClients(t *testing.T) {
 		t.Fatalf("Apply: %v", err)
 	}
 
-	data, _ := os.ReadFile(geminiPath)
-	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Gemini settings should not be modified for GitHub stdio provider\n%s", data)
-	}
-	data, _ = os.ReadFile(antigravityCLIPath)
+	data, _ := os.ReadFile(antigravityCLIPath)
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Antigravity CLI settings should not be modified for GitHub stdio provider\n%s", data)
 	}
@@ -343,15 +328,14 @@ func TestQAContext7AllClients(t *testing.T) {
 
 	// Write empty config files for all clients
 	paths := map[config.AppID]string{
-		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppClaudeDesktop:  filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:         filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:         filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:       filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:            filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:        filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:       filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:           filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
@@ -405,12 +389,6 @@ func TestQAContext7AllClients(t *testing.T) {
 	}
 	if !bytes.Contains(data, []byte(`"CONTEXT7_API_KEY"`)) {
 		t.Errorf("Cursor: expected headers field\n%s", data)
-	}
-
-	// Gemini: also has Accept header
-	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
-	if !bytes.Contains(data, []byte(`"Accept"`)) {
-		t.Errorf("Gemini CLI: expected Accept header\n%s", data)
 	}
 
 	// Antigravity CLI: also has Accept header
@@ -562,15 +540,14 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 	homeDir := t.TempDir()
 
 	paths := map[config.AppID]string{
-		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppClaudeDesktop:  filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:         filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:         filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:       filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:            filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:        filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:       filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:           filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
@@ -600,7 +577,7 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
 	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
@@ -665,10 +642,6 @@ func TestQAPlaywrightAllClients(t *testing.T) {
 		t.Errorf("Codex: expected stdio TOML\n%s", data)
 	}
 
-	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
-	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Gemini CLI should not be modified for Playwright stdio provider\n%s", data)
-	}
 	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Antigravity CLI should not be modified for Playwright stdio provider\n%s", data)
@@ -683,15 +656,14 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 	homeDir := t.TempDir()
 
 	paths := map[config.AppID]string{
-		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppClaudeDesktop:  filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:         filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:         filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:       filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:            filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:        filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:       filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:           filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
@@ -721,7 +693,7 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
 	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
@@ -791,10 +763,6 @@ func TestQAKubernetesReadOnlyAllClients(t *testing.T) {
 		t.Errorf("Codex: expected read-only stdio TOML\n%s", data)
 	}
 
-	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
-	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Gemini CLI should not be modified for Kubernetes stdio provider\n%s", data)
-	}
 	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Antigravity CLI should not be modified for Kubernetes stdio provider\n%s", data)
@@ -809,15 +777,14 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 	homeDir := t.TempDir()
 
 	paths := map[config.AppID]string{
-		config.AppClaudeDesktop: filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
-		config.AppCursor:        filepath.Join(homeDir, ".cursor", "mcp.json"),
-		config.AppVSCode:        filepath.Join(homeDir, ".vscode", "mcp.json"),
-		config.AppWindsurf:      filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
-		config.AppZed:           filepath.Join(homeDir, ".config", "zed", "settings.json"),
-		config.AppRooCode:       filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
-		config.AppOpenCode:      filepath.Join(homeDir, ".opencode.json"),
-		config.AppKiro:          filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
-		config.AppGeminiCLI:      filepath.Join(homeDir, ".gemini", "settings.json"),
+		config.AppClaudeDesktop:  filepath.Join(homeDir, "Library", "Application Support", "Claude", "claude_desktop_config.json"),
+		config.AppCursor:         filepath.Join(homeDir, ".cursor", "mcp.json"),
+		config.AppVSCode:         filepath.Join(homeDir, ".vscode", "mcp.json"),
+		config.AppWindsurf:       filepath.Join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+		config.AppZed:            filepath.Join(homeDir, ".config", "zed", "settings.json"),
+		config.AppRooCode:        filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "mcp_settings.json"),
+		config.AppOpenCode:       filepath.Join(homeDir, ".opencode.json"),
+		config.AppKiro:           filepath.Join(homeDir, ".kiro", "settings", "mcp.json"),
 		config.AppAntigravityCLI: filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 		config.AppAntigravity:    filepath.Join(homeDir, ".gemini", "config", "mcp_config.json"),
 		config.AppCodexCLI:       filepath.Join(homeDir, ".codex", "config.toml"),
@@ -853,7 +820,7 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 	}
 
 	warnings := strings.Join(plan.Warnings, "\n")
-	if !strings.Contains(warnings, "Gemini CLI (deprecated) does not support stdio transport") {
+	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
 		t.Errorf("expected Gemini CLI skip warning, got:\n%s", warnings)
 	}
 	if !strings.Contains(warnings, "Antigravity CLI does not support stdio transport") {
@@ -933,10 +900,6 @@ func TestQATerraformDockerAllClients(t *testing.T) {
 		t.Errorf("Codex: expected Docker stdio TOML\n%s", data)
 	}
 
-	data, _ = os.ReadFile(paths[config.AppGeminiCLI])
-	if !bytes.Equal(data, []byte("{}")) {
-		t.Errorf("Gemini CLI should not be modified for Terraform stdio provider\n%s", data)
-	}
 	data, _ = os.ReadFile(paths[config.AppAntigravityCLI])
 	if !bytes.Equal(data, []byte("{}")) {
 		t.Errorf("Antigravity CLI should not be modified for Terraform stdio provider\n%s", data)

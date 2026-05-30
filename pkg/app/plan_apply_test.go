@@ -71,8 +71,8 @@ func TestPreflightSavedPlanRejectsChecksumMismatch(t *testing.T) {
 
 func TestApplySavedPlanRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 	homeDir := t.TempDir()
-	firstPath := filepath.Join(homeDir, ".gemini", "settings.json")
-	secondPath := filepath.Join(homeDir, ".gemini", "mcp_config.json")
+	firstPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
+	secondPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	firstOriginal := []byte("{\n  \"name\": \"first\"\n}\n")
 	secondOriginal := []byte("{\n  \"name\": \"second\"\n}\n")
 	mustWriteFile(t, firstPath, firstOriginal)
@@ -80,7 +80,7 @@ func TestApplySavedPlanRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 
 	manager := newDarwinQAManager(t, homeDir, fakeRunner{})
 	key := "11111111-1111-1111-1111-111111111111"
-	selected := map[config.AppID]bool{config.AppGeminiCLI: true}
+	selected := map[config.AppID]bool{config.AppAntigravityCLI: true}
 	legacyPlan, err := manager.Prepare([]string{key}, selected, DefaultAssignments(selected, 1))
 	if err != nil {
 		t.Fatalf("Prepare returned error: %v", err)

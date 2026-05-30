@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"errors"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -47,27 +48,102 @@ func TestDefaultAssignmentsForTwoKeys(t *testing.T) {
 	selected := map[config.AppID]bool{
 		config.AppClaudeDesktop:  true,
 		config.AppClaudeCode:     true,
-		config.AppGeminiCLI:      true,
 		config.AppAntigravityCLI: true,
 		config.AppAntigravity:    true,
 		config.AppCodexCLI:       true,
 	}
 
 	assignments := DefaultAssignments(selected, 2)
-	if assignments[config.AppClaudeDesktop] != 0 || assignments[config.AppGeminiCLI] != 0 || assignments[config.AppAntigravityCLI] != 0 || assignments[config.AppCodexCLI] != 0 {
-		t.Fatal("expected first key for Claude Desktop, Gemini CLI, Antigravity CLI, and Codex")
+	if assignments[config.AppClaudeDesktop] != 0 || assignments[config.AppAntigravityCLI] != 0 || assignments[config.AppCodexCLI] != 0 {
+		t.Fatal("expected first key for Claude Desktop, Antigravity CLI, and Codex")
 	}
 	if assignments[config.AppClaudeCode] != 1 || assignments[config.AppAntigravity] != 1 {
 		t.Fatal("expected second key for Claude Code and Antigravity")
 	}
 }
 
+func TestPrepareProviderAllowsNoKeyProviderWithoutProfiles(t *testing.T) {
+	homeDir := t.TempDir()
+	cursorPath := filepath.Join(homeDir, ".cursor", "mcp.json")
+	mustWriteFile(t, cursorPath, []byte("{}"))
+
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{available: map[string]bool{"npx": true}})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+	manager.Apps = []config.AppConfig{{
+		ID:   config.AppCursor,
+		Name: "Cursor",
+		Files: []config.TargetFile{{
+			Label:  "Cursor MCP config",
+			Path:   cursorPath,
+			Kind:   config.FileKindMCPServers,
+			Exists: true,
+		}},
+	}}
+
+	selected := map[config.AppID]bool{config.AppCursor: true}
+	plan, err := manager.PrepareProvider(provider.NewPlaywrightProvider(), nil, selected, nil)
+	if err != nil {
+		t.Fatalf("PrepareProvider returned error: %v", err)
+	}
+	if len(plan.Operations) != 1 {
+		t.Fatalf("expected one operation, got %d", len(plan.Operations))
+	}
+	if plan.Operations[0].Path != cursorPath {
+		t.Fatalf("unexpected operation path: %q", plan.Operations[0].Path)
+	}
+}
+
+func TestPrepareProviderWithTargetPathsNarrowsConflictCandidate(t *testing.T) {
+	homeDir := t.TempDir()
+	firstPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
+	secondPath := filepath.Join(homeDir, ".gemini", "antigravity", "mcp_config.json")
+	mustWriteFile(t, firstPath, []byte("{}"))
+	mustWriteFile(t, secondPath, []byte("{}"))
+
+	manager, err := NewManager(homeDir, fixedNow(), fakeRunner{})
+	if err != nil {
+		t.Fatalf("NewManager returned error: %v", err)
+	}
+	manager.Apps = []config.AppConfig{{
+		ID:   config.AppAntigravity,
+		Name: "Antigravity IDE",
+		Files: []config.TargetFile{
+			{Label: "first", Path: firstPath, Kind: config.FileKindMCPServers, Exists: true},
+			{Label: "second", Path: secondPath, Kind: config.FileKindMCPServers, Exists: true},
+		},
+	}}
+
+	selected := map[config.AppID]bool{config.AppAntigravity: true}
+	profiles := []provider.CredentialProfile{{
+		ProviderID: "exa",
+		Values:     map[string]string{"EXA_API_KEY": "11111111-1111-1111-1111-111111111111"},
+		Label:      "test",
+	}}
+	plan, err := manager.PrepareProviderWithTargetPaths(
+		provider.NewExaProvider(),
+		profiles,
+		selected,
+		DefaultAssignments(selected, len(profiles)),
+		TargetPathOverrides{config.AppAntigravity: secondPath},
+	)
+	if err != nil {
+		t.Fatalf("PrepareProviderWithTargetPaths returned error: %v", err)
+	}
+	if len(plan.Operations) != 1 {
+		t.Fatalf("expected one operation, got %d", len(plan.Operations))
+	}
+	if plan.Operations[0].Path != secondPath {
+		t.Fatalf("expected second candidate path %q, got %q", secondPath, plan.Operations[0].Path)
+	}
+}
+
 func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	homeDir := t.TempDir()
 	writeFixture(t, homeDir, filepath.Join("Library", "Application Support", "Claude", "claude_desktop_config.json"), filepath.Join("..", "config", "testdata", "claude_desktop.json"))
-	writeFixture(t, homeDir, filepath.Join(".gemini", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
 	writeFixture(t, homeDir, filepath.Join(".gemini", "config", "mcp_config.json"), filepath.Join("..", "config", "testdata", "antigravity.json"))
-	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity-cli", "settings.json"), filepath.Join("..", "config", "testdata", "gemini_settings.json"))
+	writeFixture(t, homeDir, filepath.Join(".gemini", "antigravity-cli", "mcp_config.json"), filepath.Join("..", "config", "testdata", "antigravity.json"))
 	writeFixture(t, homeDir, filepath.Join(".codex", "config.toml"), filepath.Join("..", "config", "testdata", "codex.toml"))
 
 	runner := fakeRunner{
@@ -96,7 +172,6 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	selected := map[config.AppID]bool{
 		config.AppClaudeDesktop:  true,
 		config.AppClaudeCode:     true,
-		config.AppGeminiCLI:      true,
 		config.AppAntigravityCLI: true,
 		config.AppAntigravity:    true,
 		config.AppCodexCLI:       true,
@@ -114,11 +189,6 @@ func TestManagerApplyUsesFixturesAndMarksOptionalCLIsSkipped(t *testing.T) {
 	result, err := manager.Apply(plan)
 	if err != nil {
 		t.Fatalf("Apply returned error: %v", err)
-	}
-
-	missingGeminiPath := filepath.Join(homeDir, ".gemini", "mcp_config.json")
-	if _, err := os.Stat(missingGeminiPath); err != nil {
-		t.Fatalf("expected missing Gemini MCP file to be created: %v", err)
 	}
 
 	missingAntigravityCLIPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
@@ -273,7 +343,6 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 		config.AppClaudeDesktop:  true,
 		config.AppVSCode:         true,
 		config.AppOpenCode:       true,
-		config.AppGeminiCLI:      true,
 		config.AppAntigravityCLI: true,
 	}
 	plan, err := manager.Prepare([]string{key}, selected, DefaultAssignments(selected, 1))
@@ -289,18 +358,14 @@ func TestManagerPrepareProviderUsesLinuxPaths(t *testing.T) {
 		filepath.Join(homeDir, ".config", "Claude", "claude_desktop_config.json"),
 		filepath.Join(homeDir, ".config", "Code", "User", "mcp.json"),
 		filepath.Join(homeDir, ".config", "opencode", "opencode.json"),
-		filepath.Join(homeDir, ".gemini", "settings.json"),
 		filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json"),
 	} {
 		if !strings.Contains(formatted, want) {
 			t.Fatalf("expected linux path %s in plan:\n%s", want, formatted)
 		}
 	}
-	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "mcp_config.json")) {
-		t.Fatalf("did not expect linux Gemini CLI plan to include legacy mcp_config.json:\n%s", formatted)
-	}
 	if strings.Contains(formatted, filepath.Join(homeDir, ".gemini", "antigravity-cli", "settings.json")) {
-		t.Fatalf("did not expect linux Antigravity CLI plan to include old settings.json:\n%s", formatted)
+		t.Fatalf("did not expect antigravity-cli plan to include old settings.json:\n%s", formatted)
 	}
 }
 
@@ -422,8 +487,8 @@ func TestPrepareProviderAllowsTerraformWhenDockerReady(t *testing.T) {
 
 func TestManagerApplyRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 	homeDir := t.TempDir()
-	firstPath := filepath.Join(homeDir, ".gemini", "settings.json")
-	secondPath := filepath.Join(homeDir, ".gemini", "mcp_config.json")
+	firstPath := filepath.Join(homeDir, ".gemini", "antigravity-cli", "mcp_config.json")
+	secondPath := filepath.Join(homeDir, ".gemini", "config", "mcp_config.json")
 	firstOriginal := []byte("{\n  \"name\": \"first\"\n}\n")
 	secondOriginal := []byte("{\n  \"name\": \"second\"\n}\n")
 
@@ -453,8 +518,8 @@ func TestManagerApplyRollsBackPriorWritesOnLaterFailure(t *testing.T) {
 
 	plan := ExecutionPlan{
 		Operations: []Operation{
-			{AppName: "Gemini CLI", FileLabel: "Gemini settings", Path: firstPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
-			{AppName: "Gemini CLI", FileLabel: "Gemini MCP config", Path: secondPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
+			{AppName: "Antigravity CLI", FileLabel: "Antigravity CLI settings", Path: firstPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
+			{AppName: "Antigravity CLI", FileLabel: "Antigravity CLI MCP config", Path: secondPath, Kind: config.FileKindMCPServers, CredentialLabel: "1111...1111", ProviderID: "exa", Config: cfg},
 		},
 	}
 
@@ -550,5 +615,34 @@ func TestFormatApplyResult(t *testing.T) {
 	formatted := FormatApplyResult(result)
 	if !strings.Contains(formatted, "Updated") || !strings.Contains(formatted, "Backups") || !strings.Contains(formatted, "warn1") {
 		t.Errorf("FormatApplyResult output missing details: %s", formatted)
+	}
+}
+
+func TestNoStdoutFromLibrary(t *testing.T) {
+	// Only scan pkg/ — cmd/ is an entry point and may use os.Stdout directly.
+	dirs := []string{"../../pkg"}
+	forbidden := []string{"fmt.Print(", "fmt.Println(", "fmt.Printf(", "os.Stdout"}
+	for _, dir := range dirs {
+		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return err
+			}
+			if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			for _, pattern := range forbidden {
+				if bytes.Contains(data, []byte(pattern)) {
+					t.Errorf("found %q in library file %s", pattern, path)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("WalkDir %s: %v", dir, err)
+		}
 	}
 }
