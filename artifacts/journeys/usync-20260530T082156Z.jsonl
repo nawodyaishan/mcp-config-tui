@@ -1,0 +1,11 @@
+{"time":"2026-05-30T08:21:58.335607Z","kind":"key","key":"enter","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:00.435666Z","kind":"key","key":"r","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:03.261755Z","kind":"key","key":"r","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:04.285751Z","kind":"key","key":"1","screen":"ConflictResolve","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:06.107924Z","kind":"key","key":"k","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:08.705284Z","kind":"key","key":"\u003cpaste\u003e","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:09.373303Z","kind":"key","key":"enter","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:11.755754Z","kind":"key","key":"y","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:13.767983Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:22:22.228006Z","kind":"key","key":"q","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-30T08:22:22.229249Z","kind":"final"}

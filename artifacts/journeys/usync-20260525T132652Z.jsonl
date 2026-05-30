@@ -1,0 +1,79 @@
+{"time":"2026-05-25T13:26:59.590907Z","kind":"key","key":"enter","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:03.034874Z","kind":"key","key":"r","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:13.135153Z","kind":"key","key":"k","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:20.613802Z","kind":"key","key":"[6ea42248-396b-4682-9e9d-d3fc309c7887]","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:22.22953Z","kind":"key","key":"enter","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:25.959313Z","kind":"key","key":"y","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:30.381693Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:40.832103Z","kind":"key","key":"r","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:27:41.814581Z","kind":"key","key":"1","screen":"ConflictResolve","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:27:47.760121Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:27:48.834497Z","kind":"key","key":"esc","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:27:51.412316Z","kind":"key","key":"r","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:52.579538Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:53.504454Z","kind":"key","key":"esc","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:27:54.075137Z","kind":"key","key":"esc","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:54.55728Z","kind":"key","key":"enter","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:56.440219Z","kind":"key","key":"r","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:58.447127Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.204464Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.25959Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.392578Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.454342Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.559582Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.573793Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.706314Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.724288Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:27:59.856209Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.015802Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.074109Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.158914Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.173661Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.30553Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.323828Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.398386Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.456927Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.522719Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.604973Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.645242Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.74286Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.759031Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.868532Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.904382Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:00.990382Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:01.429909Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:01.568982Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:01.703132Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:01.84011Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:01.977417Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.11981Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.2557Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.560007Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.662899Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.823347Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:02.963728Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:03.122101Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:03.258695Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:03.475568Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:03.581616Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:03.805468Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.257472Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.340847Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.501045Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.665387Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.800233Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:04.965837Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:05.304652Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:05.409813Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:05.595277Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:05.729818Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:05.915356Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:06.04969Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:06.232225Z","kind":"key","key":"down","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:06.590173Z","kind":"key","key":"up","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:06.736306Z","kind":"key","key":" ","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:08.404842Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:11.540207Z","kind":"key","key":"esc","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-25T13:28:12.285133Z","kind":"key","key":"esc","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:13.726394Z","kind":"key","key":"q","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-25T13:28:13.726488Z","kind":"final"}

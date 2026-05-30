@@ -1,0 +1,16 @@
+{"time":"2026-05-30T08:11:23.09351Z","kind":"key","key":"down","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:23.684964Z","kind":"key","key":"down","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:24.017779Z","kind":"key","key":"up","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:24.265178Z","kind":"key","key":"down","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:24.575524Z","kind":"key","key":"up","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:26.708179Z","kind":"key","key":"enter","screen":"Doctor","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:31.462651Z","kind":"key","key":"enter","screen":"ProviderReady","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:46.849493Z","kind":"key","key":"r","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:49.868857Z","kind":"key","key":"s","screen":"ConflictResolve","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:11:53.937194Z","kind":"key","key":"k","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:12:07.519126Z","kind":"key","key":"\u003cpaste\u003e","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:12:08.492422Z","kind":"key","key":"enter","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:12:12.608434Z","kind":"key","key":"y","screen":"CredentialEntry","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:12:14.923323Z","kind":"key","key":"enter","screen":"TargetSelect","pc":"conflict-unresolved","block_reason":"conflict unresolved"}
+{"time":"2026-05-30T08:12:50.185739Z","kind":"key","key":"q","screen":"TargetSelect","pc":"plan-error","block_reason":"plan error"}
+{"time":"2026-05-30T08:12:50.185847Z","kind":"final"}
