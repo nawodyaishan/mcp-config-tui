@@ -17,12 +17,13 @@ const (
 )
 
 type Options struct {
-	HomeDir        string
-	WorkspaceDir   string
-	GOOS           string
-	CheckRuntimes  bool
-	CommandTimeout time.Duration
-	Now            func() time.Time
+	HomeDir              string
+	WorkspaceDir         string
+	GOOS                 string
+	CheckRuntimes        bool
+	CommandTimeout       time.Duration
+	Now                  func() time.Time
+	ManagedSettingsPaths []string // nil → use defaultManagedSettingsPaths; empty → skip check
 }
 
 type Report struct {
