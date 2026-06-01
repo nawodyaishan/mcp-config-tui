@@ -17,6 +17,9 @@ func FormatSavedPlan(plan SavedPlan, now time.Time) string {
 	if !plan.ExpiresAt.IsZero() && !now.IsZero() && plan.ExpiresAt.Before(now.UTC()) {
 		builder.WriteString("warning: plan is expired\n")
 	}
+	if plan.ContentHash != "" {
+		fmt.Fprintf(&builder, "content hash: %s\n", plan.ContentHash)
+	}
 	for _, warning := range plan.Warnings {
 		builder.WriteString("warning: " + warning + "\n")
 	}
@@ -26,10 +29,16 @@ func FormatSavedPlan(plan SavedPlan, now time.Time) string {
 		if op.FilePath != "" {
 			fmt.Fprintf(&builder, "  path: %s\n", op.FilePath)
 		}
+		if op.TargetScope != "" {
+			fmt.Fprintf(&builder, "  scope: %s\n", op.TargetScope)
+		}
 		if len(op.CLICommand) > 0 {
 			fmt.Fprintf(&builder, "  command: %s\n", strings.Join(op.CLICommand, " "))
 		}
 		fmt.Fprintf(&builder, "  summary: %s\n", op.Redacted)
+		if op.GitWarning {
+			builder.WriteString("  warning: this target may be shared through source control\n")
+		}
 		for _, warning := range op.Warnings {
 			fmt.Fprintf(&builder, "  warning: %s\n", warning)
 		}
@@ -64,10 +73,16 @@ func FormatSavedPlanPreflight(preflight SavedPlanPreflight, now time.Time) strin
 		if op.FilePath != "" {
 			fmt.Fprintf(&builder, "  path: %s\n", op.FilePath)
 		}
+		if op.TargetScope != "" {
+			fmt.Fprintf(&builder, "  scope: %s\n", op.TargetScope)
+		}
 		if len(op.CLICommand) > 0 {
 			fmt.Fprintf(&builder, "  command: %s\n", strings.Join(op.CLICommand, " "))
 		}
 		fmt.Fprintf(&builder, "  summary: %s\n", op.Redacted)
+		if op.GitWarning {
+			builder.WriteString("  warning: this target may be shared through source control\n")
+		}
 	}
 	builder.WriteString("No config files were written.\n")
 	return strings.TrimRight(builder.String(), "\n")

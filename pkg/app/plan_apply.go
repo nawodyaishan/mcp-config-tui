@@ -1,7 +1,10 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -60,11 +63,31 @@ type savedPreparedApply struct {
 }
 
 func (m *Manager) PreflightSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (SavedPlanPreflight, error) {
+	if err := verifySavedPlanContentHash(plan); err != nil {
+		return SavedPlanPreflight{}, err
+	}
 	prepared, err := m.prepareSavedPlan(plan, opts)
 	if err != nil {
 		return SavedPlanPreflight{}, err
 	}
 	return prepared.preflight, nil
+}
+
+// verifySavedPlanContentHash recomputes the SHA-256 of all Redacted strings and
+// compares it to plan.ContentHash. Skipped when ContentHash is empty (backward compat).
+func verifySavedPlanContentHash(plan SavedPlan) error {
+	if plan.ContentHash == "" {
+		return nil
+	}
+	h := sha256.New()
+	for _, op := range plan.Operations {
+		_, _ = io.WriteString(h, op.Redacted)
+	}
+	computed := "sha256:" + hex.EncodeToString(h.Sum(nil))
+	if computed != plan.ContentHash {
+		return fmt.Errorf("saved plan content hash mismatch: plan may have been modified or provider configuration has drifted")
+	}
+	return nil
 }
 
 func (m *Manager) ApplySavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (result ApplyResult, err error) {
@@ -81,6 +104,10 @@ func (m *Manager) ApplySavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (re
 		}
 	}()
 
+	if err = verifySavedPlanContentHash(plan); err != nil {
+		return result, err
+	}
+
 	prepared, err := m.prepareSavedPlan(plan, opts)
 	if err != nil {
 		return result, err
@@ -91,6 +118,10 @@ func (m *Manager) ApplySavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (re
 
 	outcomes := make([]config.WriteOutcome, 0, len(prepared.files))
 	for _, item := range prepared.files {
+		if item.prepared.skipped {
+			result.SkippedTargets = append(result.SkippedTargets, item.displayPath)
+			continue
+		}
 		outcome, err := m.WriteConfig(item.prepared.op.Path, item.prepared.content, m.Now())
 		if err != nil {
 			result.Warnings = append(result.Warnings, rollbackWarnings(m.rollback(outcomes, &result))...)
@@ -252,9 +283,17 @@ func (m *Manager) prepareSavedPlan(plan SavedPlan, opts SavedPlanApplyOptions) (
 
 			opForWrite := built
 			opForWrite.Path = writePath
-			item, err := m.prepareFileOperation(opForWrite)
+			item, err := m.prepareFileOperation(opForWrite, plan.PlanID)
 			if err != nil {
 				return savedPreparedApply{}, err
+			}
+			// B2 Phase B: merge VS Code inputs block into the root of the config file.
+			if len(planOp.VSCodeInputs) > 0 {
+				merged, mergeErr := config.MergeVSCodeInputs(item.content, planOp.VSCodeInputs)
+				if mergeErr != nil {
+					return savedPreparedApply{}, fmt.Errorf("%s: merge VS Code inputs: %w", planOp.TargetName, mergeErr)
+				}
+				item.content = merged
 			}
 			prepared.files = append(prepared.files, savedPreparedWrite{
 				prepared:    item,
@@ -332,6 +371,16 @@ func (m *Manager) buildOperationFromSavedPlan(plan SavedPlan, planOp PlanOperati
 		}
 		if string(op.Config.Type) != planOp.Transport {
 			return Operation{}, fmt.Errorf("%s: transport changed since plan creation for %s", planOp.TargetName, planOp.FilePath)
+		}
+		// B2-A: substitute credential header values with ${input:id} references when
+		// the plan records VSCodeInputs. This ensures the real key is never written to the
+		// VS Code config file; VS Code resolves ${input:id} securely on first server start.
+		if len(planOp.VSCodeInputs) > 0 && op.Config.Type != provider.TransportStdio {
+			subHeaders := make(map[string]string, len(op.Config.Headers))
+			for k := range op.Config.Headers {
+				subHeaders[k] = "${input:" + planOp.VSCodeInputs[0].ID + "}"
+			}
+			op.Config.Headers = subHeaders
 		}
 	case PlanManagerCLI:
 		op.Kind = config.FileKind(planOp.FileKind)
@@ -566,8 +615,6 @@ func verifySavedCLI(fileWrites []savedPreparedWrite, cliOps []Operation, seenApp
 		switch appID {
 		case config.AppCodexCLI:
 			results = append(results, verify.VerifyOptionalCLI(runner, "codex", "mcp", "get", providerID))
-		case config.AppGeminiCLI:
-			results = append(results, verify.VerifyOptionalCLI(runner, "gemini", "mcp", "get", providerID))
 		case config.AppAntigravityCLI:
 			results = append(results, verify.VerifyOptionalCLI(runner, "antigravity", "mcp", "get", providerID))
 		}
